@@ -78,8 +78,12 @@ pub struct Jam {
     fingers: Vec<Finger>,
     /// Rings where a finger tapped: where (points), when.
     rings: Vec<([f64; 2], f64)>,
-    /// A car whose way is shown, and since when.
-    shown: Option<(u32, f64)>,
+    /// A road tapped once: where (town points) and when; a tap on another road builds between them.
+    pin: Option<([f64; 2], f64)>,
+    /// Where roads were closed: the road, where it was crossed (town points), when.
+    barriers: Vec<(usize, [f64; 2], f64)>,
+    /// The last tap on the water: where (points) and when, for its ripple.
+    splash: ([f64; 2], f64),
     /// Where slashes fell: from, to (town points), when.
     slashes: Vec<([f64; 2], [f64; 2], f64)>,
     /// The colour the town's arrivals bring, eased.
@@ -137,7 +141,13 @@ impl Jam {
         let reach = self.reach();
         match *e {
             Edit::Build(p, q) => self.town.build(p, q, reach).is_some(),
-            Edit::Cut(p, q) => !self.town.cut(p, q).is_empty(),
+            Edit::Cut(p, q) => {
+                let hit = self.town.cut(p, q);
+                for &(r, at) in &hit {
+                    self.barriers.push((r, at, self.town.t));
+                }
+                !hit.is_empty()
+            }
             Edit::Open(p) => match self.town.road_near(p, reach, true) {
                 Some((r, _, _)) if !self.town.roads[r].open => {
                     self.town.reopen(r);
@@ -169,24 +179,9 @@ impl Jam {
         }
         self.town = town;
         self.edits.clear();
-        self.shown = None;
+        self.pin = None;
+        self.barriers.clear();
         self.arrive = 1.0;
-    }
-
-    /// The car nearest a point (points), within reach.
-    fn car_at(&self, q: [f64; 2]) -> Option<usize> {
-        let reach = 22.0 * reading(self.points);
-        let mut best = None;
-        let mut bd = reach;
-        for (i, c) in self.town.cars.iter().enumerate() {
-            let p = self.to_screen(self.lane_place(c).0);
-            let d = dist(p, q);
-            if d < bd {
-                bd = d;
-                best = Some(i);
-            }
-        }
-        best
     }
 
     /// A car's place on its lane (drive on the right), and the way it faces.
@@ -222,7 +217,9 @@ impl Toy for Jam {
             windows: Vec::new(),
             fingers: Vec::new(),
             rings: Vec::new(),
-            shown: None,
+            pin: None,
+            barriers: Vec::new(),
+            splash: ([0.0, 0.0], -99.0),
             slashes: Vec::new(),
             arrive: 1.0,
             touched: false,
@@ -265,14 +262,37 @@ impl Toy for Jam {
                 let moved = dist(f.down, q);
                 let (a, b) = (self.to_town(f.down), self.to_town(q));
                 if moved < 12.0 {
-                    // a tap: a closed road opens; a car shows the way it chose
+                    // a tap: a closed road opens; a road pins a start, and a second road builds to it;
+                    // the water ripples
                     let edit = Edit::Open(a);
                     if self.apply(&edit) {
                         self.edits.push(edit);
+                        self.pin = None;
                         self.sound.thump();
                         ctx.haptic();
-                    } else if let Some(i) = self.car_at(q) {
-                        self.shown = Some((self.town.cars[i].seed, self.t));
+                    } else if self.town.road_near(a, self.reach(), false).is_some() {
+                        match self.pin {
+                            Some((p, _)) if dist(p, a) > 40.0 / self.layout().s => {
+                                let edit = Edit::Build(p, a);
+                                if self.apply(&edit) {
+                                    self.edits.push(edit);
+                                    self.sound.thump();
+                                    ctx.haptic();
+                                }
+                                self.pin = None;
+                            }
+                            Some(_) => self.pin = None,
+                            None => {
+                                let at = self.town.road_near(a, self.reach(), false).map(|(r, u, _)| self.town.roads[r].at(u).0).unwrap_or(a);
+                                self.pin = Some((at, self.t));
+                                ctx.haptic();
+                            }
+                        }
+                    } else {
+                        self.pin = None;
+                        if (a[0] / LAKE[0]).hypot(a[1] / LAKE[1]) < 1.0 {
+                            self.splash = (q, self.t);
+                        }
                     }
                     self.rings.push((q, self.t));
                     return;
@@ -330,11 +350,11 @@ impl Toy for Jam {
         }
         self.rings.retain(|(_, at)| t - at < 1.2);
         self.slashes.retain(|(_, _, at)| t - at < 0.8);
-        if let Some((_, at)) = self.shown {
-            if t - at > 3.5 {
-                self.shown = None;
-            }
+        if self.pin.is_some_and(|(_, at)| t - at > 8.0) {
+            self.pin = None;
         }
+        let town = &self.town;
+        self.barriers.retain(|&(r, _, _)| town.roads.get(r).is_some_and(|x| !x.open && x.alive));
         // the engines heard: the cars nearest the middle of the screen
         let l = self.layout();
         let mut near: Vec<(f64, (f32, f32, f32))> = self
@@ -367,8 +387,8 @@ impl Toy for Jam {
         let params = BackdropParams {
             time: tm as f32,
             scale: m,
-            center: [0.0, 0.0],
-            p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, LAKE[0] as f32, LAKE[1] as f32, arrive[0], arrive[1], arrive[2], 0.0],
+            center: [(self.splash.0[0] * k) as f32, (self.splash.0[1] * k) as f32],
+            p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, LAKE[0] as f32, LAKE[1] as f32, arrive[0], arrive[1], arrive[2], (tm - self.splash.1) as f32],
         };
         self.ground.render(gpu, &mut enc, target, size, &params);
 
@@ -451,25 +471,6 @@ impl Toy for Jam {
         }
         p.render(gpu, &mut enc, target, size, None);
 
-        // a tapped car's way: lit ahead of it, to the top
-        if let Some((seed, at)) = self.shown {
-            if let Some(i) = town.cars.iter().position(|c| c.seed == seed) {
-                let a = (((tm - at) / 0.3).min(1.0) * ((3.5 - (tm - at)) / 0.8).clamp(0.0, 1.0)) as f32;
-                let c = &town.cars[i];
-                for (n, link) in town.plan(i).into_iter().enumerate() {
-                    let r = &town.roads[link / 2];
-                    let fwd = link % 2 == 0;
-                    let mut s = if n == 0 { c.s } else { 0.0 };
-                    while s < r.len {
-                        let v = (s + 6.0).min(r.len);
-                        let (ua, ub) = if fwd { (s, v) } else { (r.len - s, r.len - v) };
-                        p.glow(px(r.at(ua).0), px(r.at(ub).0), 2.4 * m, 4.5 * m, [0.75, 0.88, 1.0, 0.55 * a]);
-                        s = v;
-                    }
-                }
-            }
-        }
-
         // the cars: a small light each, coloured by its trip so far
         for c in &town.cars {
             let (q, d) = lane_place(town, c);
@@ -518,17 +519,60 @@ impl Toy for Jam {
             let f = ((tm - at) / 1.2).clamp(0.0, 1.0) as f32;
             p.glow_ring([q[0] as f32 * kk, q[1] as f32 * kk], (6.0 + 14.0 * f) * m, 0.7 * m, 1.2 * m, [1.0, 0.97, 0.92, 0.45 * (1.0 - f)]);
         }
-        // the invitation: until the first touch, a faint road breathes across the lake
+        // closed roads: a barrier where they were cut
+        for &(r, at, when) in &self.barriers {
+            let road = &town.roads[r];
+            let (_, u) = road.nearest(at);
+            let (q, d) = road.at(u);
+            let come = ((town.t - when) / 0.25).clamp(0.0, 1.0) as f32;
+            let n = [-d[1] * 7.5, d[0] * 7.5];
+            let (e0, e1) = ([q[0] - n[0], q[1] - n[1]], [q[0] + n[0], q[1] + n[1]]);
+            p.line(px(e0), px(e1), 2.0 * m, 0.6 * m, [0.05, 0.03, 0.03, 0.9 * come]);
+            for j in 0..4 {
+                let (f0, f1) = (j as f64 / 4.0, (j as f64 + 1.0) / 4.0);
+                let a0 = [e0[0] + (e1[0] - e0[0]) * f0, e0[1] + (e1[1] - e0[1]) * f0];
+                let a1 = [e0[0] + (e1[0] - e0[0]) * f1, e0[1] + (e1[1] - e0[1]) * f1];
+                let col = if j % 2 == 0 { [1.0, 0.30, 0.20, come] } else { [0.95, 0.92, 0.88, come] };
+                p.line(px(a0), px(a1), 1.3 * m, 0.4 * m, col);
+            }
+            p.glow(px(q), px(q), 4.0 * m, 9.0 * m, [1.0, 0.3, 0.2, 0.12 * come]);
+        }
+        // a pinned start: a light on the road, waiting for the other end
+        if let Some((w, at)) = self.pin {
+            let age = tm - at;
+            let breathe = if self.still { 1.0 } else { 0.75 + 0.25 * (age * 4.0).sin() as f32 };
+            p.glow(px(w), px(w), 5.0 * m, 12.0 * m, [0.85, 0.92, 1.0, 0.25 * breathe]);
+            p.disc(px(w), 4.0 * m, 1.0 * m, [0.95, 0.97, 1.0, 0.9]);
+            p.glow_ring(px(w), (8.0 + 3.0 * breathe) * m, 0.6 * m, 1.2 * m, [0.95, 0.97, 1.0, 0.5]);
+        }
+        // the invitation: until the reader changes a road, a road of light keeps drawing itself across
+        // the lake from shore to shore
         let since = tm - self.born.unwrap_or(tm);
-        if !self.touched && since > 1.5 {
+        if self.edits.is_empty() && self.pin.is_none() && self.fingers.is_empty() && since > 1.0 {
             let (a, b) = (town.nodes[2], town.nodes[3]);
-            let come = ((since - 1.5) / 1.0).min(1.0) as f32;
-            let breathe = if self.still { 0.8 } else { 0.5 + 0.5 * (0.5 + 0.5 * ((since - 1.5) * 1.8).sin()) as f32 };
-            let n = 14;
-            for i in 1..n {
+            let come = ((since - 1.0) / 1.0).min(1.0) as f32;
+            let cycle = 3.2;
+            let ph = if self.still { 1.0 } else { ((since - 1.0) / cycle).fract() };
+            // the drawing finger goes over in the first 40% of the cycle, the line it leaves fades after
+            let reach = (ph / 0.4).min(1.0);
+            let fade = if ph < 0.4 { 1.0 } else { (1.0 - (ph - 0.4) / 0.6).max(0.0) } as f32;
+            let n = 16;
+            for i in 0..=n {
                 let f = i as f64 / n as f64;
+                if f > reach {
+                    break;
+                }
                 let q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-                p.disc(px(q), 1.3 * m, 0.8 * m, [0.9, 0.93, 1.0, 0.32 * come * breathe]);
+                p.disc(px(q), 1.5 * m, 0.7 * m, [0.92, 0.95, 1.0, 0.55 * come * fade]);
+            }
+            for end in [a, b] {
+                p.glow_ring(px(end), 7.0 * m, 0.6 * m, 1.4 * m, [0.92, 0.95, 1.0, 0.35 * come]);
+            }
+            if ph < 0.45 {
+                let f = reach;
+                let q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+                p.glow(px(q), px(q), 3.0 * m, 9.0 * m, [0.92, 0.95, 1.0, 0.5 * come]);
+                p.disc(px(q), 2.4 * m, 0.8 * m, [1.0, 1.0, 1.0, 0.9 * come]);
             }
         }
         p.render(gpu, &mut enc, target, size, None);
@@ -609,7 +653,7 @@ impl Toy for Jam {
             &[
                 "Every driver takes the way that looks quickest right now. No one plans for anyone else.",
                 "A road slows as it fills. The narrow streets fill fast; the long roads round never do.",
-                "A car warms from white to red as its trip runs long. Tap one to see its way. Shake for the old roads.",
+                "A car glows white when its trip is quick and red when it runs long. Shake for the old roads.",
             ],
             "Real: the rules, and that a new road can slow everyone (Braess, 1968). Made up: the town and its cars.",
         ))
@@ -711,6 +755,14 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let ripple = 0.5 + 0.5 * sin(m.y * 0.55 + 0.6 * sin(m.x * 0.21 + u.time * 0.4) + u.time * 0.7);
   var lake = vec3<f32>(0.020, 0.040, 0.075) * (0.85 + 0.3 * (1.0 - e));
   lake = lake + u.p1.xyz * 0.035 * ripple * smoothstep(0.2, 1.0, e);
+  // a tap on the water: rings going out from it (u.center the tap in px, p1.w the seconds since)
+  let since = u.p1.w;
+  if (since < 3.0) {
+    let r = length(px - u.center) / u.scale;
+    let front = since * 60.0;
+    let ring = exp(-pow((r - front) / 3.0, 2.0)) + 0.6 * exp(-pow((r - front * 0.6) / 3.0, 2.0));
+    lake = lake + vec3<f32>(0.10, 0.14, 0.20) * ring * (1.0 - since / 3.0);
+  }
   col = mix(col, lake, water);
   // the shore's edge
   col = col + vec3<f32>(0.05, 0.07, 0.07) * (1.0 - smoothstep(0.0, 2.5, abs(shore))) * 0.6;

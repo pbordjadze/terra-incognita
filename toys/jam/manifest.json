@@ -1,4 +1,4 @@
 {
-  "_": "The files the toy loads, by the names the code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Ghost Jam needs none: the ring's size and the drivers' rule are numbers in src/traffic.rs.",
+  "_": "The files the toy loads, by the names the code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Shortcut needs none: the town and the drivers' rule are numbers in src/town.rs.",
   "files": {}
 }

@@ -195,29 +195,33 @@ def meander():
 
 
 def jam():
-    # Salt Flat: one convoy snaking across moonlit salt, its tracks behind it, the head's tail lights red
-    img = Image.new('RGBA', (N, N), (92, 102, 122, 255))
+    # Shortcut: a town at night round a lake, a pale bridge drawn across it, the cars on the
+    # streets either end of it gone red, the long roads round empty
+    img = Image.new('RGBA', (N, N), (16, 20, 24, 255))
     d = ImageDraw.Draw(img)
-    path = [(N * (0.12 + 0.76 * k), N * (0.5 + 0.26 * math.sin(k * 2.0 * math.pi + 0.6))) for k in [i / 400 for i in range(401)]]
-    for off in (-14, 14):
-        pts = []
-        for i in range(1, 368):
-            (x0, y0), (x1, y1) = path[i - 1], path[i]
-            l = math.hypot(x1 - x0, y1 - y0) or 1
-            pts.append((x1 - (y1 - y0) / l * off, y1 + (x1 - x0) / l * off))
-        d.line(pts, fill=(40, 46, 60, 255), width=5)
-    reds = []
-    for k in range(6):
-        i = 360 - k * 58
-        (x0, y0), (x1, y1) = path[i - 3], path[i + 3]
-        l = math.hypot(x1 - x0, y1 - y0)
-        hx, hy = (x1 - x0) / l, (y1 - y0) / l
-        x, y = path[i]
-        L, W = 40, 19
-        pts = [(x + hx * L * sx - hy * W * sy, y + hy * L * sx + hx * W * sy) for sx, sy in [(1, 1), (1, -1), (-1, -1), (-1, 1)]]
-        d.polygon(pts, fill=(228, 230, 234, 255))
-        reds.append((x - hx * L, y - hy * L))
-    glow(img, reds, 13, (255, 40, 25, 230), 18)
+    c = N / 2
+    d.ellipse([c - 150, c - 330, c + 150, c + 330], fill=(8, 16, 30, 255))
+    s0, e0, a, b = (c, N * 0.92), (c, N * 0.08), (c - 230, c + 40), (c + 230, c - 40)
+
+    def bez(p, q1, q2, r, n=60):
+        out = []
+        for i in range(n + 1):
+            t = i / n
+            u = 1 - t
+            out.append(tuple(u ** 3 * p[k] + 3 * u * u * t * q1[k] + 3 * u * t * t * q2[k] + t ** 3 * r[k] for k in (0, 1)))
+        return out
+    left_st = bez(s0, (c - 200, c + 330), (c - 200, c + 330), a)
+    right_st = bez(b, (c + 200, c - 330), (c + 200, c - 330), e0)
+    left_long = bez(a, (-200, c + 60), (-200, N * 0.1), e0)
+    right_long = bez(s0, (N + 200, N * 0.9), (N + 200, c - 60), b)
+    for road in (left_long, right_long):
+        d.line(road, fill=(40, 44, 50, 255), width=26)
+    for road in (left_st, right_st, [(c, N), s0], [e0, (c, 0)]):
+        d.line(road, fill=(54, 56, 62, 255), width=22)
+    d.line([a, b], fill=(150, 152, 160, 255), width=26)
+    reds = [left_st[i] for i in range(4, 60, 7)] + [right_st[i] for i in range(4, 60, 7)] + [(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f) for f in (0.3, 0.7)]
+    glow(img, reds, 13, (255, 60, 30, 240), 16)
+    glow(img, [left_long[30], right_long[30]], 11, (255, 236, 200, 220), 14)
     return img
 
 

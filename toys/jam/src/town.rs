@@ -19,6 +19,9 @@ pub const CAP: f64 = 1.6;
 pub const GAP: f64 = 7.0;
 /// Cars a second coming into town.
 pub const DEMAND: f64 = 3.6;
+/// How long the drivers' memory of the roads beyond the next is (s), and how much they lean on it.
+pub const MEMORY: f64 = 12.0;
+pub const RECALL: f64 = 0.5;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
@@ -38,7 +41,7 @@ impl Kind {
         match self {
             Kind::Entry | Kind::Exit => 16.0,
             Kind::Street => 2.0,
-            Kind::Long => 40.0,
+            Kind::Long => 28.0,
             Kind::Built => 4.0,
         }
     }
@@ -47,7 +50,7 @@ impl Kind {
         match self {
             Kind::Entry | Kind::Exit => 220.0,
             Kind::Street => 200.0,
-            Kind::Long => 40.0,
+            Kind::Long => 28.0,
             Kind::Built => 220.0,
         }
     }
@@ -154,6 +157,9 @@ pub struct Town {
     pub speed: Vec<f64>,
     /// The quickest time on from every node, as it looks now.
     pub ahead: Vec<f64>,
+    /// The same, as the drivers remember it over the last while (eased, `MEMORY` seconds): what they
+    /// expect of the roads beyond the next, which they can't see.
+    pub usual: Vec<f64>,
     next_route: f64,
     next_car: f64,
     rng: u32,
@@ -195,7 +201,7 @@ pub fn first_roads() -> (Vec<[f64; 2]>, Vec<Road>) {
     // the long way round: out past the edge of the screen and back
     let long = |p: [f64; 2], q: [f64; 2], side: f64| -> Vec<[f64; 2]> {
         let dy = (q[1] - p[1]).signum();
-        bezier(p, [side * 330.0, p[1] + 40.0 * dy], [side * 330.0, q[1] - 10.0 * dy], q, 60)
+        bezier(p, [side * 250.0, p[1] + 40.0 * dy], [side * 250.0, q[1] - 10.0 * dy], q, 60)
     };
     let roads = vec![
         Road::new(0, 1, vec![o, s0], Kind::Entry),
@@ -230,6 +236,7 @@ impl Town {
             to: 5,
             speed: Vec::new(),
             ahead: Vec::new(),
+            usual: Vec::new(),
             next_route: 0.0,
             next_car: 0.0,
             rng: seed | 1,
@@ -320,6 +327,13 @@ impl Town {
                 }
             }
         }
+        // the remembered times ease toward what is seen now; a new node starts from what is seen
+        let k = 1.0 - (-0.25 / MEMORY).exp();
+        self.usual.resize(nn, f64::NAN);
+        for i in 0..nn {
+            let (u, b) = (self.usual[i], best[i]);
+            self.usual[i] = if !u.is_finite() || !b.is_finite() { b } else { u + (b - u) * k };
+        }
         self.ahead = best;
     }
 
@@ -332,7 +346,9 @@ impl Town {
             if !self.usable(l) || self.ends(l).0 != node {
                 continue;
             }
-            let on = self.ahead[self.ends(l).1];
+            let end = self.ends(l).1;
+            // the next road as it looks now; beyond it, half what is seen now and half what is usual
+            let on = if self.ahead[end].is_finite() && self.usual[end].is_finite() { (1.0 - RECALL) * self.ahead[end] + RECALL * self.usual[end] } else { self.ahead[end] };
             if !on.is_finite() {
                 continue;
             }
@@ -584,18 +600,19 @@ impl Town {
         Some(self.roads.len() - 1)
     }
 
-    /// Closes every road the stroke from `p` to `q` crosses (not the ways in and out). Returns them.
-    pub fn cut(&mut self, p: [f64; 2], q: [f64; 2]) -> Vec<usize> {
+    /// Closes every road the stroke from `p` to `q` crosses (not the ways in and out). Returns them,
+    /// each with where the stroke crossed it.
+    pub fn cut(&mut self, p: [f64; 2], q: [f64; 2]) -> Vec<(usize, [f64; 2])> {
         let mut hit = vec![];
         for (i, r) in self.roads.iter().enumerate() {
             if !r.alive || !r.open || matches!(r.kind, Kind::Entry | Kind::Exit) {
                 continue;
             }
-            if r.pts.windows(2).any(|w| crosses(p, q, w[0], w[1])) {
-                hit.push(i);
+            if let Some(w) = r.pts.windows(2).find(|w| crosses(p, q, w[0], w[1])) {
+                hit.push((i, [(w[0][0] + w[1][0]) / 2.0, (w[0][1] + w[1][1]) / 2.0]));
             }
         }
-        for &i in &hit {
+        for &(i, _) in &hit {
             self.roads[i].open = false;
             self.roads[i].changed = self.t;
         }
@@ -677,3 +694,34 @@ mod tests {
     }
 }
 
+
+#[cfg(test)]
+mod settle {
+    use super::*;
+
+    /// After the bridge is closed the town settles back: the drivers' expected trips come back to
+    /// within a tenth of the old ones within 40 s and stay there.
+    #[test]
+    fn the_town_settles_after_a_cut() {
+        let mut t = Town::new(0x5107_c0de);
+        t.step(70.0);
+        let eta = |t: &Town| (0..t.cars.len()).map(|i| t.eta(i)).sum::<f64>() / t.cars.len().max(1) as f64;
+        let base = eta(&t);
+        let (a, b) = (t.nodes[2], t.nodes[3]);
+        t.build(a, b, 10.0);
+        t.step(40.0);
+        t.cut([0.0, -34.0], [0.0, 34.0]);
+        let mut line = String::new();
+        let mut worst = 0.0f64;
+        for i in 0..40 {
+            t.step(2.0);
+            let e = eta(&t) / base;
+            line += &format!("{e:.2} ");
+            if i >= 20 {
+                worst = worst.max((e - 1.0).abs());
+            }
+        }
+        eprintln!("{line}");
+        assert!(worst < 0.1, "still sloshing: {line}");
+    }
+}

@@ -1,21 +1,28 @@
 {
- "_": "The 13-inch iPad: the salt at its size, a tap on the longest convoy's head, then a light held.",
+ "_": "The 13-inch iPad: the town at its size; the bridge drawn across the lake, the town reddening; a slash closes it again.",
  "size": [
   2064,
   2752
  ],
  "ppp": 2,
- "seconds": 30,
+ "seconds": 36,
  "fps": 30,
  "events": [
   {
    "t": 4.0,
-   "tap": "head"
+   "drag": [
+    "west",
+    "east"
+   ],
+   "for": 0.8
   },
   {
-   "t": 14.0,
-   "hold": "open",
-   "for": 14.0
+   "t": 30.0,
+   "drag": [
+    "slash-a",
+    "slash-b"
+   ],
+   "for": 0.35
   }
  ],
  "shots": [
@@ -24,12 +31,16 @@
    "name": "flow"
   },
   {
-   "t": 10.0,
-   "name": "wave"
+   "t": 5.5,
+   "name": "bridge"
   },
   {
-   "t": 27.0,
-   "name": "light"
+   "t": 28.0,
+   "name": "slower"
+  },
+  {
+   "t": 31.0,
+   "name": "closed"
   }
  ]
 }
