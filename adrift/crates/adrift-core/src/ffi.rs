@@ -1,4 +1,11 @@
 //! The device's C ABI (adrift/ios/Sources/Adrift/*.swift calls it): a CAMetalLayer in, frames out.
+//!
+//! # Safety
+//!
+//! Every `unsafe` function here has one contract: a `shell` is null or the pointer `adrift_new`
+//! returned and `adrift_free` has not yet freed, used from the main thread; a buffer and its length
+//! come together from Swift and the buffer holds that many bytes; a C string is null-terminated.
+#![allow(clippy::missing_safety_doc)] // the contract above, once for all of them
 
 use crate::app::App;
 use crate::assets::DirAssets;
@@ -590,14 +597,8 @@ pub unsafe extern "C" fn adrift_free(shell: *mut Shell) {
 /// Runs a future that is ready at once or after the Metal backend's synchronous work (wgpu's Metal
 /// adapter and device requests complete without a reactor).
 fn pollster_lite<F: std::future::Future>(f: F) -> F::Output {
-    use std::sync::Arc;
-    use std::task::{Context, Poll, Wake, Waker};
-    struct Noop;
-    impl Wake for Noop {
-        fn wake(self: Arc<Self>) {}
-    }
-    let waker = Waker::from(Arc::new(Noop));
-    let mut cx = Context::from_waker(&waker);
+    use std::task::{Context, Poll, Waker};
+    let mut cx = Context::from_waker(Waker::noop());
     let mut f = Box::pin(f);
     loop {
         if let Poll::Ready(v) = f.as_mut().poll(&mut cx) {

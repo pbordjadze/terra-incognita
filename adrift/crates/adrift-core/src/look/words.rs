@@ -450,10 +450,10 @@ impl Words {
             out.push(GlyphInstance {
                 rect: [x0, y0, page_w, page_h],
                 uv: [
-                    (b.x as f32 + 2.0) / self.face.width,
-                    (b.y as f32 + 2.0) / self.face.height,
-                    (b.w as f32 - 4.0) / self.face.width,
-                    (b.h as f32 - 4.0) / self.face.height,
+                    (b.x + 2.0) / self.face.width,
+                    (b.y + 2.0) / self.face.height,
+                    (b.w - 4.0) / self.face.width,
+                    (b.h - 4.0) / self.face.height,
                 ],
                 ink: page,
                 halo: [0.0, 0.0, 0.0, 0.0],
@@ -711,6 +711,7 @@ impl Words {
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
     pub fn prepare_foot(
         &mut self,
         gpu: &Gpu,
@@ -794,10 +795,10 @@ impl Words {
             .and_then(|f| f.glyphs.get("\u{2588}"))
         {
             let uv = [
-                (b.x as f32 + 2.0) / self.face.width,
-                (b.y as f32 + 2.0) / self.face.height,
-                (b.w as f32 - 4.0) / self.face.width,
-                (b.h as f32 - 4.0) / self.face.height,
+                (b.x + 2.0) / self.face.width,
+                (b.y + 2.0) / self.face.height,
+                (b.w - 4.0) / self.face.width,
+                (b.h - 4.0) / self.face.height,
             ];
             glyphs.push(GlyphInstance {
                 rect: [cx - rule_w / 2.0, rule_y - rule_h / 2.0, rule_w, rule_h],
@@ -884,6 +885,7 @@ impl Words {
     /// the date is kept, a quiet caption, 15 points, on the paper under the globe in the clip's window
     /// (`clip`, points x, y, w, h), or not at all when the globe fills the clip (R11). Through the clip's
     /// last beat (`ending`) it grows a touch quieter. `date_bounds` keeps the live screen's.
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
     pub fn prepare_caption(
         &mut self,
         gpu: &Gpu,
@@ -939,6 +941,7 @@ impl Words {
     /// from the top toward the take's longest (`studio::TAKE_MAX`, 60 s), a smooth stroke (R10), the
     /// seconds beside it in small italic. Its rect, 44 reading points square whatever is drawn, goes
     /// to `record_bounds` for Motion's probe.
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
     pub fn record_control(
         &mut self,
         recording: Option<f32>,

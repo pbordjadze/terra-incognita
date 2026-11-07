@@ -386,7 +386,7 @@ impl Maybes {
             pass.set_pipeline(if flight { &self.flight } else { &self.walk });
             for (i, p) in steps.iter().enumerate() {
                 pass.set_bind_group(0, &self.bind, &[(i as u64 * SLOT) as u32]);
-                pass.dispatch_workgroups((p.count + 63) / 64, 1, 1);
+                pass.dispatch_workgroups(p.count.div_ceil(64), 1, 1);
             }
         }
         gpu.queue.submit([enc.finish()]);

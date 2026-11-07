@@ -168,7 +168,7 @@ pub async fn run<T: Toy>(canvas_id: &str, key: &str) -> Result<(), JsValue> {
         cb.forget();
     }
 
-    let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
+    let f: Rc<RefCell<Option<Frame>>> = Rc::new(RefCell::new(None));
     let g = f.clone();
     let (canvas2, window2, host2, perf2) =
         (canvas.clone(), window.clone(), host.clone(), perf.clone());
@@ -211,3 +211,6 @@ pub async fn run<T: Toy>(canvas_id: &str, key: &str) -> Result<(), JsValue> {
     window.request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())?;
     Ok(())
 }
+
+/// The animation frame's callback, which schedules itself again.
+type Frame = Closure<dyn FnMut()>;

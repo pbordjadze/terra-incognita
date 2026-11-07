@@ -783,8 +783,8 @@ impl Terra {
         if (z1 / z0).ln().abs() < 1e-3 {
             return 1.0;
         }
-        let g = ((self.globe.camera.zoom / z0).ln() / (z1 / z0).ln()).clamp(0.0, 1.0);
-        g
+
+        ((self.globe.camera.zoom / z0).ln() / (z1 / z0).ln()).clamp(0.0, 1.0)
     }
 
     /// The scene in its light: the toy's whole frame scaled down into a round window over the light,

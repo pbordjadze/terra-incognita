@@ -269,13 +269,7 @@ impl River {
                     piece.push(q);
                 }
             }
-            if !cut {
-                out.push(Oxbow {
-                    line: piece,
-                    born: o.born,
-                    course: o.course,
-                });
-            } else if piece.len() >= 9 {
+            if !cut || piece.len() >= 9 {
                 out.push(Oxbow {
                     line: piece,
                     born: o.born,

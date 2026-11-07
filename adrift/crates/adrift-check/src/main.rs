@@ -708,7 +708,9 @@ fn play_plan(
                 ff.stdin.as_mut().unwrap().write_all(&px)?;
                 if n == 0 || n + 1 == frames {
                     let rgba: Vec<u8> = px
-                        .chunks_exact(4)
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
                         .flat_map(|p| [p[2], p[1], p[0], p[3]])
                         .collect();
                     save(
@@ -780,7 +782,7 @@ fn play_plan(
             let line = format!("{i:3} t={t:7.2}s export {name}: {n} frames {ew}x{eh} in {:.1}s, the replay ends {} from the take\n", t_export.elapsed().as_secs_f64(), drift.map_or("(no end recorded)".to_string(), |d| format!("{d:.3} km")));
             write!(say, "{line}")?;
             log.push_str(&line);
-            if drift.map_or(true, |d| d > 0.5) {
+            if drift.is_none_or(|d| d > 0.5) {
                 failed += 1;
                 let line =
                     format!("{i:3} t={t:7.2}s EXPECT FAILED: the replay drifted from the take\n");
@@ -1166,9 +1168,11 @@ fn journey(args: &[String]) -> Result<()> {
         t_take += t.elapsed().as_secs_f64();
         let t = std::time::Instant::now();
         ff.stdin.as_mut().unwrap().write_all(&px)?;
-        if i == 0 || i + 1 == frames || i % 900 == 0 {
+        if i == 0 || i + 1 == frames || i.is_multiple_of(900) {
             let rgba: Vec<u8> = px
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .flat_map(|p| [p[2], p[1], p[0], p[3]])
                 .collect();
             save(&out.with_extension(format!("{i:05}.png")), ew, eh, &rgba)?;

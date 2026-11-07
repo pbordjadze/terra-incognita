@@ -987,7 +987,7 @@ mod tests {
         let li = before.len() - 1;
         let (leg, next) = (legs[li], legs[li + 1]);
         let k = leg.world;
-        assert!(k >= 1 && k <= WORLDS, "the cue chose a world: {legs:?}");
+        assert!((1..=WORLDS).contains(&k), "the cue chose a world: {legs:?}");
         assert_eq!(
             Leg {
                 world: before[li].world,

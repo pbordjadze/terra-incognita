@@ -107,6 +107,8 @@ impl Gpu {
                 )
             }));
         }
+        // (on the web wgpu's device is neither Send nor Sync: one Arc type for every target)
+        #[allow(clippy::arc_with_non_send_sync)]
         let device = Arc::new(device);
         crate::budget::start_report(device.clone());
         let format = match surface {
@@ -307,7 +309,7 @@ impl Offscreen {
             out.extend_from_slice(row);
         }
         if gpu.format == wgpu::TextureFormat::Bgra8Unorm {
-            for px in out.chunks_exact_mut(4) {
+            for px in out.as_chunks_mut::<4>().0 {
                 px.swap(0, 2);
             }
         }

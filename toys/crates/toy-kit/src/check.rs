@@ -675,7 +675,7 @@ pub fn loudness(samples: &[f32], rate: f64) -> (f64, f64, f64) {
 /// spread over the whole range, so a faint panel or a seam shows.
 pub fn stretch(rgba: &[u8]) -> Vec<u8> {
     let mut hist = [0usize; 256];
-    for p in rgba.chunks_exact(4) {
+    for p in rgba.as_chunks::<4>().0 {
         hist[((p[0] as u32 * 54 + p[1] as u32 * 183 + p[2] as u32 * 19) >> 8) as usize] += 1;
     }
     let n = rgba.len() / 4;
@@ -691,7 +691,9 @@ pub fn stretch(rgba: &[u8]) -> Vec<u8> {
     };
     let (lo, hi) = (pct(0.005), pct(0.995));
     let span = (hi - lo).max(1.0);
-    rgba.chunks_exact(4)
+    rgba.as_chunks::<4>()
+        .0
+        .iter()
         .flat_map(|p| {
             let s = |c: u8| ((c as f64 - lo) / span * 255.0).round().clamp(0.0, 255.0) as u8;
             [s(p[0]), s(p[1]), s(p[2]), 255]
@@ -839,8 +841,10 @@ fn small(rgba: &[u8], w: u32, h: u32) -> Vec<u8> {
 
 /// Which 4×4 blocks differ by 2 levels or more in a channel.
 fn changed(a: &[u8], b: &[u8]) -> Vec<bool> {
-    a.chunks_exact(3)
-        .zip(b.chunks_exact(3))
+    a.as_chunks::<3>()
+        .0
+        .iter()
+        .zip(b.as_chunks::<3>().0)
         .map(|(p, q)| p.iter().zip(q.iter()).any(|(x, y)| x.abs_diff(*y) >= 2))
         .collect()
 }

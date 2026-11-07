@@ -131,8 +131,7 @@ impl Carol {
         let below = 24.0 * ui + 2.0 * 30.0 * ui;
         let s = (w - 28.0)
             .min(h - top - bottom - above - below - 24.0)
-            .min(820.0)
-            .max(200.0);
+            .clamp(200.0, 820.0);
         let x0 = (w - s) / 2.0;
         let y0 = top + ((h - top - bottom) - (above + s + below)) / 2.0 + above;
         let span = (s - 8.0).min(w - 40.0);

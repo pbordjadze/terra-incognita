@@ -24,3 +24,6 @@ path = "src/bin/check.rs"
 [[bin]]
 name = "taste-taster"
 path = "src/bin/taster.rs"
+
+[lints]
+workspace = true

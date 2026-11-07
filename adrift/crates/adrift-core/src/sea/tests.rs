@@ -624,8 +624,8 @@ fn maybes_budget() {
         ),
     ] {
         let reference = r.flights(Drift::put(from), JULY, JULY + 30.0, 0.25, 3, 8192);
-        let mut rlon: Vec<f64> = reference.iter().map(|f| f.drift.at.lon).collect();
-        let mut rlat: Vec<f64> = reference.iter().map(|f| f.drift.at.lat).collect();
+        let rlon: Vec<f64> = reference.iter().map(|f| f.drift.at.lon).collect();
+        let rlat: Vec<f64> = reference.iter().map(|f| f.drift.at.lat).collect();
         let reast = rlon.iter().filter(|l| **l >= -65.0).count() as f64 / rlon.len() as f64;
         eprintln!("{name}: reference 8192 paths at 1/4 day: spread {:.0} x {:.0} km, east of 65 W {:.2}, ashore {}",
             std(&rlon) * 111.0 * (from.lat.to_radians().cos()), std(&rlat) * 111.0, reast, reference.iter().filter(|f| f.held == Held::Coast).count());
@@ -1248,7 +1248,7 @@ fn draw_pairs(r: &Rules, panels: &[(Vec<LonLat>, Vec<LonLat>)], path: &Path) {
                 );
             }
         }
-        let mut dot =
+        let dot =
             |img: &mut image::RgbImage, (x, y): (f64, f64), rgb: [u8; 3], a: f32, rad: i32| {
                 for dy in -rad..=rad {
                     for dx in -rad..=rad {

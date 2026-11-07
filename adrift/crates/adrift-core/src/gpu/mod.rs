@@ -68,6 +68,8 @@ impl Gpu {
             }
             None => wgpu::TextureFormat::Rgba8Unorm,
         };
+        // (on the web wgpu's device is neither Send nor Sync: one Arc type for every target)
+        #[allow(clippy::arc_with_non_send_sync)]
         Ok(Gpu {
             device: Arc::new(device),
             queue: Arc::new(queue),
@@ -182,7 +184,7 @@ impl Offscreen {
 
     /// The pixels, RGBA8, rows top down.
     pub fn read(&self, gpu: &Gpu) -> Vec<u8> {
-        let bpr = (self.width * 4 + 255) / 256 * 256;
+        let bpr = (self.width * 4).div_ceil(256) * 256;
         let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("readback"),
             size: (bpr * self.height) as u64,
@@ -224,7 +226,7 @@ impl Offscreen {
             out.extend_from_slice(row);
         }
         if gpu.format == wgpu::TextureFormat::Bgra8Unorm {
-            for px in out.chunks_exact_mut(4) {
+            for px in out.as_chunks_mut::<4>().0 {
                 px.swap(0, 2);
             }
         }
@@ -248,7 +250,7 @@ pub struct Readback {
 
 impl Readback {
     pub fn new(gpu: &Gpu, target: &Offscreen, depth: usize) -> Readback {
-        let bpr = (target.width * 4 + 255) / 256 * 256;
+        let bpr = (target.width * 4).div_ceil(256) * 256;
         let bufs = (0..depth.max(1))
             .map(|_| {
                 gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -335,7 +337,7 @@ impl Readback {
                 let dst = &mut out[y * stride..y * stride + row];
                 dst.copy_from_slice(src);
                 if swap {
-                    for px in dst.chunks_exact_mut(4) {
+                    for px in dst.as_chunks_mut::<4>().0 {
                         px.swap(0, 2);
                     }
                 }

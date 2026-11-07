@@ -474,7 +474,8 @@ fn the_winds_tempo() {
     use crate::sea::{MediumRules, Rules};
     let sea = Rules::load(&DirAssets(assets())).unwrap();
     let wind = air().preset();
-    let cases: [(&str, &dyn MediumRules, Leg, f64, &[f64]); 4] = [
+    type Case<'a> = (&'a str, &'a dyn MediumRules, Leg, f64, &'a [f64]);
+    let cases: [Case; 4] = [
         (
             "sea, Hatteras",
             &sea,
