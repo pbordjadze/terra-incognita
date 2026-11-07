@@ -223,6 +223,9 @@ install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
 - By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`
   (and qa-explore.yml's, in painting-company's shared copy), then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
 - Lint before pushing: `bash ci/lint.sh` (`fix` formats). Formatting goes in its own commit.
+- A lint is silenced only with its reason beside it: `#[allow(...)] // why` on the same line (or the line above, where rustfmt moves it), `# noqa: CODE why`,
+  and a comment line with the reason directly above a `# shellcheck disable=` or `// swiftlint:disable`; a rule
+  loosened for a whole tool goes in its config file with its reason. `ci/silenced.py` (in `ci/lint.sh`) holds to it.
 
 ## The runtime: one library that grows
 

@@ -387,7 +387,6 @@ impl Whales {
         self.globe.camera = next;
     }
 
-    #[allow(clippy::needless_range_loop)]
     fn sing(&mut self, dt: f64) {
         // where each song is: the audio thread's when the sound runs, the toy's own clock when it doesn't
         let frames = self.mix.frames.load(Ordering::Relaxed);

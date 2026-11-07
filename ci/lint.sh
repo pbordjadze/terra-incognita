@@ -6,10 +6,11 @@
 #   ShellCheck                        every shell script
 #   actionlint                        the workflows (.github/actionlint.yaml), with shellcheck on their scripts
 #   SwiftLint                         the Swift (.swiftlint.yml), when `swiftlint` is on PATH
+#   ci/silenced.py                    every lint silenced in the code says why, beside it
 # ci/qa/ and qa-explore.yml are generated from painting-company's shared copy and linted there.
 #
 #   bash ci/lint.sh            # everything; the exit status says whether all passed
-#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift
+#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced
 #   bash ci/lint.sh fix        # rustfmt and ruff's safe fixes in place, then everything
 # The versions are pinned: Rust by rust-toolchain.toml, ruff, shellcheck and actionlint by
 # tools/requirements.txt (python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt), SwiftLint
@@ -40,6 +41,9 @@ if want rust; then
 fi
 if want python; then
   run ruff ruff check .
+fi
+if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = silenced ]; then
+  run "every silenced lint says why" python3 ci/silenced.py
 fi
 if want shell; then
   run shellcheck bash -c "git ls-files -z '*.sh' ':!ci/qa/*' | xargs -0 shellcheck"
