@@ -299,7 +299,7 @@ impl Town {
     /// A link's start and end nodes.
     pub fn ends(&self, link: usize) -> (usize, usize) {
         let r = &self.roads[link / 2];
-        if link % 2 == 0 {
+        if link.is_multiple_of(2) {
             (r.a, r.b)
         } else {
             (r.b, r.a)
@@ -309,7 +309,7 @@ impl Town {
     /// Where a car is, and the way it faces.
     pub fn place(&self, c: &Car) -> ([f64; 2], [f64; 2]) {
         let r = &self.roads[c.link / 2];
-        if c.link % 2 == 0 {
+        if c.link.is_multiple_of(2) {
             r.at(c.s)
         } else {
             let (p, d) = r.at(r.len - c.s);

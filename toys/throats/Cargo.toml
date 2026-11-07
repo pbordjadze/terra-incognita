@@ -21,3 +21,6 @@ image = { workspace = true }
 [[bin]]
 name = "throats-check"
 path = "src/bin/check.rs"
+
+[lints]
+workspace = true

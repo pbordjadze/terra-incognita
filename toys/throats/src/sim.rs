@@ -123,7 +123,7 @@ impl Hill {
         for _ in 0..steps {
             self.step();
         }
-        let rest: Vec<Flip> = self.pending.drain(..).collect();
+        let rest: Vec<Flip> = std::mem::take(&mut self.pending);
         for f in rest {
             self.show(f);
         }
@@ -298,7 +298,7 @@ impl Hill {
     #[allow(clippy::needless_range_loop)]
     pub fn step(&mut self) {
         // apply what is still waiting from the last step at once
-        let rest: Vec<Flip> = self.pending.drain(..).collect();
+        let rest: Vec<Flip> = std::mem::take(&mut self.pending);
         for f in rest {
             self.show(f);
         }

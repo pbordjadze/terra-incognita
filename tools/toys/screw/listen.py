@@ -87,7 +87,7 @@ def main():
 NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 def note_name(f):
-    m = int(round(69 + 12 * np.log2(f / 440)))
+    m = round(69 + 12 * np.log2(f / 440))
     return f'{NAMES[m % 12]}{m // 12 - 1}'
 
 def measure(plan, x, R):

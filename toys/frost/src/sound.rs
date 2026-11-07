@@ -305,7 +305,7 @@ impl CrackleSynth {
                 self.cascade.clear();
                 for i in 0..14 {
                     let at = 0.11 * i as f32 + 0.02 * self.rand();
-                    let step = 15 - i as i32 - if self.rand() < 0.3 { 1 } else { 0 };
+                    let step = 15 - i - if self.rand() < 0.3 { 1 } else { 0 };
                     let pan = -0.6 + 1.2 * i as f32 / 13.0;
                     let amp = 0.10 * (1.0 - 0.5 * i as f32 / 13.0);
                     self.cascade.push((
