@@ -67,6 +67,9 @@ struct Squeeze {
     g: f64,
     near: f64,
     settling: bool,
+    /// Whether the two fingers are Terra's: only once they have closed in (a pinch out), so two fingers on
+    /// a toy that takes several (Meander's pushes, row 253) stay the toy's.
+    decided: bool,
 }
 /// Where in a scene's own frame the window onto it centres while it is small (fractions of the glass):
 /// what the toy is, where it is in its first frame (Frost's ice grows from the window's foot).
@@ -1096,8 +1099,11 @@ impl Terra {
                         .max(1.0),
                 )
             };
-        let ours =
-            |sq: &Option<Squeeze>| sq.is_some_and(|s| !s.settling && (s.a == e.id || s.b == e.id));
+        let ours = |sq: &Option<Squeeze>| {
+            sq.is_some_and(|s| s.decided && !s.settling && (s.a == e.id || s.b == e.id))
+        };
+        let watching =
+            |sq: &Option<Squeeze>| sq.is_some_and(|s| !s.decided && (s.a == e.id || s.b == e.id));
         match e.phase {
             Phase::Down => {
                 self.inside_fingers.insert(e.id, [e.x, e.y]);
@@ -1106,19 +1112,9 @@ impl Terra {
                     && !self.reduce_motion
                 {
                     let other = *self.inside_fingers.keys().find(|&&k| k != e.id).unwrap();
-                    let p = self.inside_fingers[&other];
-                    // the first finger, if the toy had it already, is let go of (held, it never reached it)
-                    if self.held.first().map(|h| h.id) == Some(other) {
-                        self.held.clear();
-                    } else if let Some(r) = self.room.as_mut() {
-                        r.pointer(PointerEvent {
-                            id: other,
-                            phase: Phase::Cancel,
-                            x: p[0],
-                            y: p[1],
-                            t: e.t,
-                        });
-                    }
+                    // pinching again while the last settles: Terra's at once; else the two are watched, and
+                    // stay the toy's unless they close in
+                    let again = self.squeeze.is_some_and(|s| s.settling);
                     let d0 = spread(&self.inside_fingers, other, e.id).unwrap_or(1.0);
                     let near = self.rise_to(self.globe.camera).zoom;
                     let g = self.squeeze.map_or(1.0, |s| s.g);
@@ -1130,14 +1126,42 @@ impl Terra {
                         g,
                         near,
                         settling: false,
+                        decided: again,
                     });
-                    return true;
+                    return again;
                 }
                 ours(&self.squeeze)
             }
             Phase::Move => {
                 if let Some(f) = self.inside_fingers.get_mut(&e.id) {
                     *f = [e.x, e.y];
+                }
+                if watching(&self.squeeze) {
+                    let mut sq = self.squeeze.unwrap();
+                    let closed =
+                        spread(&self.inside_fingers, sq.a, sq.b).is_some_and(|d| d / sq.d0 < 0.85);
+                    if !closed {
+                        return false;
+                    }
+                    // they close in: a pinch out, Terra's; the toy lets go of both fingers (or never had the
+                    // first, held)
+                    sq.decided = true;
+                    self.squeeze = Some(sq);
+                    for id in [sq.a, sq.b] {
+                        if self.held.first().map(|h| h.id) == Some(id) {
+                            self.held.clear();
+                        } else if let (Some(r), Some(p)) =
+                            (self.room.as_mut(), self.inside_fingers.get(&id))
+                        {
+                            r.pointer(PointerEvent {
+                                id,
+                                phase: Phase::Cancel,
+                                x: p[0],
+                                y: p[1],
+                                t: e.t,
+                            });
+                        }
+                    }
                 }
                 if !ours(&self.squeeze) {
                     return false;
@@ -1153,6 +1177,11 @@ impl Terra {
             }
             Phase::Up | Phase::Cancel => {
                 self.inside_fingers.remove(&e.id);
+                if watching(&self.squeeze) {
+                    // lifted without closing in: they were the toy's all along
+                    self.squeeze = None;
+                    return false;
+                }
                 if !ours(&self.squeeze) {
                     return false;
                 }
@@ -1647,7 +1676,7 @@ impl Toy for Terra {
                 if let Some(r) = self.room.as_mut() {
                     r.update(t);
                 }
-                if let Some(mut sq) = self.squeeze {
+                if let Some(mut sq) = self.squeeze.filter(|s| s.decided) {
                     if sq.settling {
                         sq.g += (1.0 - sq.g) * (dt / 0.12).min(1.0) + 0.3 * dt;
                     }
@@ -1833,7 +1862,7 @@ impl Toy for Terra {
                 self.draw_earth_mark(ctx, target, a as f32);
             }
             State::Inside => {
-                if let Some(sq) = self.squeeze {
+                if let Some(sq) = self.squeeze.filter(|s| s.decided) {
                     // pinched back toward its light: the Earth under it, the window shrinking with the fingers
                     self.draw_atlas(ctx, target, 1.0);
                     self.draw_scene(ctx, target, sq.g, 1.0, true);

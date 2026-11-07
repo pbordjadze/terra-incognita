@@ -114,4 +114,5 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   quiet, Meander's true descent, night over England on the way to Murmuration, out over the same place, almost no
   chrome. Ship as is: no. Released at six rounds. Next: Murmuration's own arrival from above (its flock at its
   true size over the reeds, the eye tipping to the horizon as it comes down), in Murmuration itself; a newcomer
-  who pinches (two of two tapped and never pinched).
+  who pinches (two of two tapped and never pinched). Before the release: two fingers inside a scene stay the
+  toy's unless they close in (Meander takes several fingers, row 253; plan `meander-two`, strict).
