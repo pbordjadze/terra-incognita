@@ -120,7 +120,7 @@ A toy isn't done until it opens on a phone; the Linux renders can't prove that. 
     sudo apt-get install -y mesa-vulkan-drivers ffmpeg     # once: Vulkan in software, for wgpu
     python3 tools/toys/assets.py <toy> --link
     cd toys && cargo run --release -p <toy> --bin <toy>-check -- play <toy>/plans/start.json build/<toy>/out
-    bash ../tools/toys/film.sh build/<toy>/out              # when the plan has a film
+    bash ../tools/toys/film.sh build/<toy>/out              # when the plan has a film (`"fingers": true` rings each finger down)
 
 A full-size phone frame (1179×2556) takes about a second on the software driver; add `--size 2064x2752
 --ppp 2` for the 13-inch iPad. Look at every render before CI: CI renders the same plans.

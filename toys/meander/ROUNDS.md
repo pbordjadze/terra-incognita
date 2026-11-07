@@ -58,3 +58,8 @@ before reading the tools:
   bend in toward its middle, which would flatten it); one finger alone keeps its long pull. Critic: "yes, ship": every
   finger moves its own reach and the river stays a river (lakes in two, hand, share, push); weakest, the rub combs the
   big loops into small even wiggles that don't swell ("I tidied it", not "I did that").
+- Round 4: a bend a finger lets go keeps a loosened bank (a kick), so a rub's dented bends swell and cut. Critic: "yes,
+  ship": every plan ends in lakes the fingers caused; the rub's pulled reach grows back into loops and cuts at ~4.75 s
+  ("the first round where the rub ends in an 'I did that'"); weakest, polish again: late in `two` (10.5-13.5 s) two
+  swelling loops lie over each other without cutting, as the opening frame's upper loop does before any touch. Polish
+  two rounds running: done at round 4.

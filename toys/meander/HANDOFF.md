@@ -60,3 +60,23 @@ Shipped as `meander-build-169` (2:10 AM ET, Nov 6), from main 502e1be; the IPA o
   Rings are still the Painter's on the target.
 - The deposit grid uploads only the rows the river changed since the last frame (a persistent half-float copy).
 - Not measured: frame rate and touch feel on a phone (the Linux check's update is ~1.4 ms on CPU).
+
+## Row 253 (Nov 7, 2026): multitouch
+
+Paul on build 169: "Meander is incredible—just needs multitouch." Four rounds (ROUNDS.md), each a fresh critic on films of
+several fingers.
+
+- Every finger is a `Hand` of its own (toy.rs): its push, its kick, its rising ticks (panned to it; one note and one
+  haptic at most every 70 ms across fingers); a tap by one finger while others push is still a tap; Cancel is not a tap.
+- A finger holds one reach (`River::push`'s `hook`, sim.rs): the node it first meets, carried with HOOK_SPAN nodes each way
+  and the channel either side coming along less (HOOK_ARC), so a sweep pushes that reach over the others (cutting where
+  it meets them) instead of gathering every strand. With other fingers down it lets go after LET_GO_PT (90 pt), or
+  LET_GO_IN_PT (35 pt) when pushing a bend in toward its middle, leaving a kick, and catches again a fingertip clear. One
+  finger alone is as it was (its pushed bend still cuts ~0.3 s after the lift in `push`).
+- `River::kick` merges a kick into a nearby, just-made one, so five fingers cost what one does.
+- The deposit grid is uploaded by 40-cell tiles whose half floats changed (0.39 MB a drawn frame on average with five
+  fingers; it had been the whole 3 MB every frame, as the river spans every row). Pixel-identical to before.
+- Plans: `two`, `share`, `rub`, `hand` (tools/toys/meander/plans.py); films show the fingers (the kit's `film.fingers`).
+  Worst CPU frame with five fingers down ~2.5-3 ms on Linux (now counting the fingers' events; spikes to ~6 ms at cuts).
+- Open: two loops swelling into each other can overlap a while before cutting (also in the opening frame); not
+  measured: feel and frame rate under real fingers on a phone.
