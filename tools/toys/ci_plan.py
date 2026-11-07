@@ -12,7 +12,10 @@ and which are built as IPAs on the shared macOS runners. Prints `check=<json lis
   commit's first line. A run started by hand checks its `toy` (or all) and builds it when `ipa`.
 - kit: whether toy-kit changed (or a run started by hand): its library forms are built (no globe; web).
 """
-import json, re, subprocess, sys
+import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,7 +40,7 @@ else:
             # docs line, and a kit change earlier on the branch would go unchecked)
             before = subprocess.run(['git', 'merge-base', 'origin/main', sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.strip()
         files = subprocess.run(['git', 'diff', '--name-only', before, sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.split()
-    except Exception:
+    except (subprocess.CalledProcessError, OSError):
         files = subprocess.run(['git', 'show', '--name-only', '--format=', sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.split()
     own = [t for t in TOYS if any(f.startswith(f'toys/{t}/') for f in files)]
     shared = any(f.startswith(SHARED) for f in files)

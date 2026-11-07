@@ -10,11 +10,13 @@ is a plain blue; the water near the drawn shore is paler and greener, as shallow
 
 Rebuild, never hand-edit. SOURCES.md in the pack says what this picture claims and does not.
 """
-import sys, math
+import itertools
+import sys
 from pathlib import Path
+
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
 import shapefile
+from PIL import Image, ImageDraw, ImageFilter
 
 WEST, SOUTH, EAST, NORTH = 24.0, 26.0, 37.0, 34.0
 PX = 0.01                      # degrees a pixel
@@ -40,7 +42,7 @@ def main(ne_dir):
         if bb[2] < WEST or bb[0] > EAST or bb[3] < SOUTH or bb[1] > NORTH:
             continue
         parts = list(shape.parts) + [len(shape.points)]
-        for a, b in zip(parts, parts[1:]):
+        for a, b in itertools.pairwise(parts):
             ring = [px(x, y) for x, y in shape.points[a:b]]
             if len(ring) > 2:
                 d.polygon(ring, fill=255)        # (holes are lakes: none matter here)

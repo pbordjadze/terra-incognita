@@ -23,14 +23,16 @@ plain.json  {"side_m", "px", "centre_utm", "turn_deg", "date", "tiles", "lonlat_
 
 Never hand-edit the output; rebuild it.
 """
-import json, math, os, sys
+import json
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
 import rasterio
+from PIL import Image
 from rasterio.enums import Resampling
 from rasterio.windows import from_bounds
-from PIL import Image
 from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -85,7 +87,7 @@ def take_out_river(a):
     keep[1:] = sizes > 4000
     river = keep[lab]
     # pastures are also warm and bright: the river is the long thin one, so drop blobs that are fat
-    lab2, n2 = ndimage.label(river)
+    lab2, _n2 = ndimage.label(river)
     out = np.zeros_like(river)
     for i, sl in enumerate(ndimage.find_objects(lab2), 1):
         comp = lab2[sl] == i
@@ -131,7 +133,7 @@ def main():
     lon, lat = -67.03, -12.97
     json.dump({"side_m": SIDE, "px": PX, "centre_utm": CENTRE, "utm_zone": "19S", "turn_deg": TURN,
                "date": "2024-08-15", "tiles": TILES, "lonlat_centre": [lon, lat]},
-              open(OUT / "plain.json", "w"), indent=1)
+              (OUT / "plain.json").open("w"), indent=1)
     print("wrote", OUT / "plain.jpg", "river px", int(river.sum()))
 
 

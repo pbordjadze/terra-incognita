@@ -12,15 +12,21 @@ the pair's distance apart on the screen in any direction (also as a share of the
 and of the ground's slide across the screen (points a second a second), both per second so they
 read the same at 30 and 60 fps.
 """
-import csv, math, sys
+import csv
+import math
+import sys
+
 sys.path.insert(0, __import__('os').path.dirname(__file__))
-from lamp_in_clip import screen, xyz, R1, W, H  # noqa: E402
+import itertools
+
+from lamp_in_clip import R1, H, W, screen, xyz
 
 args = sys.argv[1:]
 path = args[0]
 opt = lambda k, d: float(args[args.index(k) + 1]) if k in args else d
 fps = opt('--fps', 60.0)
-rows = list(csv.DictReader(open(path)))
+with open(path) as f:
+    rows = list(csv.DictReader(f))
 n = len(rows)
 lo, hi = int(opt('--from', n / fps - opt('--last', 40.0)) * fps), int(opt('--to', n / fps) * fps)
 shares, spreads, out, low = [], [], 0, 0
@@ -50,7 +56,7 @@ shares.sort()
 spreads.sort()
 def jerk(series):
     s = [v for k, v in series if lo <= k < hi]
-    return max((abs(b - a) * fps for a, b in zip(s, s[1:])), default=0.0)
+    return max((abs(b - a) * fps for a, b in itertools.pairwise(s)), default=0.0)
 zoom_rate = max((abs(v) for k, v in zr if lo <= k < hi), default=0.0)
 pan_rate = max((v for k, v in pv if lo <= k < hi), default=0.0)
 inside = sum(1 for s in shares if 0.4 <= s <= 0.6) / max(1, len(shares))

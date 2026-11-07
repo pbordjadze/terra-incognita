@@ -17,18 +17,22 @@ this shows what a whole minute sounds like.
                  clicks (a sample-to-sample step far above the sound round it, i.e. a discontinuity),
                  and the tones held over each quarter second as note names (a melody, or a drone).
 """
-import json, sys, wave
+import json
+import sys
+import wave
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    plan, out = json.load(open(args[0])), Path(args[1])
-    w = wave.open(str(out / 'audio.wav'))
-    R = w.getframerate()
-    x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
-    x = x.reshape(-1, w.getnchannels()).mean(axis=1)
+    plan, out = json.loads(Path(args[0]).read_text()), Path(args[1])
+    with wave.open(str(out / 'audio.wav')) as w:
+        R = w.getframerate()
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
+        x = x.reshape(-1, w.getnchannels()).mean(axis=1)
     # the spectrogram
     n, hop = 4096, 480
     win = np.hanning(n).astype(np.float32)

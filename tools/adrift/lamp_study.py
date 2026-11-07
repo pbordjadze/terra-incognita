@@ -14,6 +14,7 @@ stacked, before over after. Run the plans first:
     adrift-check play adrift/crates/adrift-core/src/look/plans/seven-lamps.json <dir>        (and -night)
 """
 import sys
+
 from PIL import Image
 
 

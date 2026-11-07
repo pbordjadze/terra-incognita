@@ -186,7 +186,7 @@ def get(params: dict, tries: int = 8) -> dict:
 # (Wikipedia's plain text drops the IPA itself and leaves "( or ; Ancient Greek: …)"): not words to read
 # aloud. One that says something ("(DPRK)", "(crown land)") stays.
 ASIDE = re.compile(r"""^\s*(?:or\b|;|,|/|:|$)|\bpronounced\b|\bpronunciation\b|\blisten\b|\bromani[sz]ed\b|\blit\.|\btransl(?:it)?\.|
-    /[^/\s][^/]*/|\[[^\]]*[ˈˌː][^\]]*\]|\b[A-Z]{2,}-[a-zA-Z]|\b(?:[A-Z][a-z]+\s){0,3}[A-Z][a-z]+:\s""", re.X)
+    /[^/\s][^/]*/|\[[^\]]*[ˈˌː][^\]]*\]|\b[A-Z]{2,}-[a-zA-Z]|\b(?:[A-Z][a-z]+\s){0,3}[A-Z][a-z]+:\s""", re.VERBOSE)
 PAREN = re.compile(r'\s*\(([^()]*)\)')
 SENTENCE_END = re.compile(r'(?<=[.!?…])["”’)]?\s')
 
@@ -287,7 +287,7 @@ def fetch(titles: list[str], refresh: bool = False) -> tuple[dict[str, dict], li
 def build(keys: dict[str, str], out: Path, what: str, refresh: bool = False) -> list[str]:
     titles = sorted(set(keys.values()))
     print(f'{what}: {len(keys)} keys, {len(titles)} articles', file=sys.stderr)
-    found, missing = fetch(titles, refresh)
+    found, _missing = fetch(titles, refresh)
     articles = {}
     for key, title in sorted(keys.items()):
         if title in found:

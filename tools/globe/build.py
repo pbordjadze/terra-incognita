@@ -30,8 +30,14 @@ coast's it crosses zero on the line and stays sharp however close the camera. (I
 the nearest line changes side, far from any line: the shader tells those jumps from lines by their
 steepness.)
 """
-import json, shutil, sys, urllib.request, zipfile
+import itertools
+import json
+import shutil
+import sys
+import urllib.request
+import zipfile
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
@@ -102,7 +108,7 @@ def stroke(draw, features, size, keep=lambda p: True):
         for ln in lines(f['geometry']):
             pts = [xy(*pt, size) for pt in ln]
             seg = [pts[0]]
-            for a, b in zip(pts, pts[1:]):
+            for a, b in itertools.pairwise(pts):
                 if abs(a[0] - b[0]) > size[0] / 2:      # crossing the antimeridian
                     if len(seg) > 1:
                         draw.line(seg, fill=255, width=1)
@@ -137,7 +143,7 @@ def signed_lines(features, size, keep=lambda p: True, spacing=0.1, reach=10.0):
             continue
         for ln in lines(f['geometry']):
             p = np.array([xy(*pt, size) for pt in ln], np.float64)
-            for a, b in zip(p[:-1], p[1:]):
+            for a, b in itertools.pairwise(p):
                 d = b - a
                 n = np.hypot(*d)
                 if n == 0 or abs(d[0]) > size[0] / 2:      # crossing the antimeridian

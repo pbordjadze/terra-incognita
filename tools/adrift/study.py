@@ -16,16 +16,25 @@ random eddy wander, held at the coast by Globe/geo.png; a stand-in for Truth's r
 how a real wake bunches and spreads. The silver drifter is such a walk from another seed, standing in
 for a real track. Reads only this machine.
 """
-import argparse, json, math, subprocess, sys
+import argparse
+import json
+import math
+import subprocess
+import sys
+
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'metal'))
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools' / 'globe'))
-import preview                                          # layout, rotation, reading: GlobeView's own
-import layers                                           # the View's rotation columns, as the Metal layers pass them
+import itertools
+
+import layers  # the View's rotation columns, as the Metal layers pass them
+import preview  # layout, rotation, reading: GlobeView's own
+
 SPEC = json.loads((ROOT / 'adrift' / 'crates' / 'adrift-core' / 'src' / 'look' / 'palette.json').read_text())
 FONTS = ROOT / 'Globe' / 'fonts'
 BASE = ROOT / 'build' / 'adrift' / 'base'
@@ -94,7 +103,7 @@ class Sea:
         n = len(seeds)
         p = np.repeat(np.array([[lon, lat]], np.float64), n, 0)
         out = [p.copy()]
-        steps = int(round(days / dt))
+        steps = round(days / dt)
         sd = math.sqrt(2 * eddy * dt * 86400)
         for i in range(steps):
             (uv, _) = self.current(month, p[:, 0], p[:, 1])
@@ -104,7 +113,7 @@ class Sea:
             q[:, 1] += np.degrees(d[:, 1] / EARTH)
             held = self.land(q[:, 0], q[:, 1])
             p = np.where(held[:, None], p, q)
-            if (i + 1) % int(round(1 / dt)) == 0:
+            if (i + 1) % round(1 / dt) == 0:
                 out.append(p.copy())
         return np.stack(out)
 
@@ -148,12 +157,12 @@ class Canvas:
 
     def text(self, x, y, s, size_pt, px, ink, halo, halo_a, font='LibertinusSerif-Regular', anchor='ms', tracking=0.0):
         """Words with their halo drawn in, 1.5 reading points each side (Terra's rule), through PIL."""
-        f = ImageFont.truetype(str(FONTS / f'{font}.otf'), int(round(size_pt * px)))
+        f = ImageFont.truetype(str(FONTS / f'{font}.otf'), round(size_pt * px))
         layer = Image.new('L', (self.w, self.h), 0)
         d = ImageDraw.Draw(layer)
         d.text((x, y), s, font=f, fill=255, anchor=anchor)
         ink_a = np.asarray(layer, np.float32) / 255.0
-        hw = int(round(1.5 * px))
+        hw = round(1.5 * px)
         halo_a_map = np.asarray(layer.filter(__import__('PIL.ImageFilter', fromlist=['MaxFilter']).MaxFilter(2 * hw + 1)), np.float32) / 255.0
         halo_a_map = np.asarray(Image.fromarray((halo_a_map * 255).astype(np.uint8)).filter(__import__('PIL.ImageFilter', fromlist=['GaussianBlur']).GaussianBlur(0.6)), np.float32) / 255.0
         for a, c, k in ((halo_a_map, halo, halo_a), (ink_a, ink, 1.0)):
@@ -266,11 +275,11 @@ def draw_silver(cv, cam, style, path):
         c, a = col(style, colour)
         if a <= 0:
             continue
-        for (x0, y0, z0), (x1, y1, z1) in zip(pts[:-1], pts[1:]):
+        for (x0, y0, z0), (x1, y1, z1) in itertools.pairwise(pts):
             if min(z0, z1) < 0.3:
                 continue
             cv.line(x0, y0, x1, y1, width, c, a)
-    x, y, z = pts[-1]
+    x, y, _z = pts[-1]
     c, a = col(style, 'silver')
     cv.disc(x, y, w * 1.6, c, a)
     c, a = col(style, 'silver_edge')
@@ -296,7 +305,7 @@ def base_for(device, at, style):
     path = BASE / name
     if not path.exists():
         BASE.mkdir(parents=True, exist_ok=True)
-        (w, h), px = SIZES[device]
+        (_w, _h), px = SIZES[device]
         subprocess.run([sys.executable, str(ROOT / 'tools' / 'metal' / 'metal.py'), 'shot', 'globe+ocean', str(path),
                         '--device', device, f'--at={at}', '--scale', str(px), '--style', style, '--month', '10'], check=True)
     return Image.open(path)
@@ -313,14 +322,14 @@ def write_scene(path, kind, device, at, style, cam, base, floats, wake, maybes, 
     fill it, and everything the look draws, in degrees."""
     r0, r1, r2 = layers.columns(lon, lat)
     foot = cam.h - (20 if min(cam.w, cam.h) >= 700 else 34) - 150 + 44
-    json.dump({
+    Path(path).write_text(json.dumps({
         'base': str(base), 'frame': [cam.w * cam.px, cam.h * cam.px, cam.px, cam.reading],
         'disc': [cam.cx, cam.cy, cam.R, cam.zoom], 'rot': [list(r0), list(r1), list(r2)],
         'time': [12.0, 9, 10, 0.45], 'tone': [1.0, 1.0, 12.0, 0.0], 'night': style == 'night',
         'floats': floats, 'wake': wake, 'maybes': maybes, 'maybes_bloom': 1.0 if kind in ('held', 'all') else 0.0,
         'silver': silver, 'silver_rise': 1.0 if kind in ('held', 'all') else 0.0,
         'date': '14 October', 'credits': 'Currents: NOAA Global Drifter Program  ·  Land: NASA Blue Marble  ·  Sea floor: GEBCO',
-        'foot': foot}, open(path, 'w'))
+        'foot': foot}))
     print(path)
 
 

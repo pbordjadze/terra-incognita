@@ -11,7 +11,9 @@ absolute times, `expect`s it fails on). They run on the real globe: land in them
 Sizes are points on a phone (393 x 852, the check's default at three pixels a point). Floats are
 numbered from 1 in the order listed; a put float takes the next number.
 """
-import json, math, os
+import json
+import math
+import os
 
 OUT = os.path.join(os.path.dirname(__file__), "../../adrift/crates/adrift-core/src/touch/plans")
 W, H = 393.0, 852.0
@@ -216,7 +218,6 @@ plan("date-tap", "Tap the date to pause, tap again to play", [
     ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), shot(0.15, "paused"), expect(0.2, saw=["Pause"], playing=False),
     ev(0.5, "down", xy=date_xy()), ev(0.6, "up", xy=date_xy()), expect(0.7, saw=["Play"], playing=True),
 ], day=9800.0)
-three = lambda t, fx: [ev(t, "down" if fx is None else "move", i, xy=px(0.3 + 0.15 * i + (fx or 0), 0.6)) for i in range(3)]
 plan("undo-gestures", "Undo by three-finger swipe, by shake, by the keyboard: one touch at a time", [
     ev(0.0, "down", at=SEA), ev(0.5, "up", at=SEA), expect(0.6, floats=1),
     *[ev(1.0 + 0.02 * i, "down", i, xy=px(0.3 + 0.15 * i, 0.6)) for i in range(3)],

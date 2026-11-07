@@ -26,8 +26,10 @@ BIN="$ROOT/toys/target/release/$TOY-check"
 python3 "$ROOT/tools/kit/shell_text.py" "$OUT" > /dev/null 2>&1 || true
 python3 "$ROOT/tools/toys/newcomer/touches.py" "$PLAN" "$OUT" "$PPP" || true
 # the pictures, in time order: the shell's text drawn in where there was any
-for f in $(ls "$OUT"/*.png 2> /dev/null | grep -v '\.shell\.png$' | grep -v '\.stretch\.png$'); do
+for f in "$OUT"/*.png; do
+  case "$f" in *.shell.png | *.stretch.png) continue ;; esac
+  [ -f "$f" ] || continue
   s="${f%.png}.shell.png"; [ -f "$s" ] && echo "$s" || echo "$f"
 done
-[ -d "$OUT/film" ] && echo "film: $(ls "$OUT/film" | wc -l) frames in $OUT/film (every frame a PNG)"
+[ -d "$OUT/film" ] && echo "film: $(find "$OUT/film" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ') frames in $OUT/film (every frame a PNG)"
 exit 0

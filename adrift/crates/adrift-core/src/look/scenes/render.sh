@@ -7,7 +7,8 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 out="$(mkdir -p "$1" && cd "$1" && pwd)"; shift
 cd "$here/../../../../.."   # adrift/
-names=("$@"); [ ${#names[@]} -eq 0 ] && names=($(cd "$here" && ls *.json | sed 's/\.json$//'))
+names=("$@")
+if [ ${#names[@]} -eq 0 ]; then for f in "$here"/*.json; do names+=("$(basename "$f" .json)"); done; fi
 for n in "${names[@]}"; do
   cargo run -q --release -p adrift-check -- render "$here/$n.json" "$out/$n.png" --size 1179x2556 --ppp 3
 done

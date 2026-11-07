@@ -13,8 +13,15 @@ each 2160 x 1080, equirectangular over the coast sheet's land and sea:
                      down, a dot on land, a ring on the sea (where the sea's rules could take it)
 The paths are the rules' own, a quarter day a step; only the drawing is for looking.
 """
-import json, os, subprocess, sys, tempfile, colorsys
+import colorsys
+import itertools
+import json
+import os
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -50,7 +57,7 @@ def xy(p):
 
 def line(d, pts, rgba, width):
     seg = []
-    for a, b in zip(pts, pts[1:]):
+    for a, b in itertools.pairwise(pts):
         if abs(b[0] - a[0]) > 180:          # across the date line: break
             if len(seg) > 1:
                 d.line(seg, fill=rgba, width=width, joint='curve')

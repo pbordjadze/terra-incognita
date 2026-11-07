@@ -8,8 +8,10 @@ Coordinates: the screen in points, y down; the globe's centre and radius come fr
 GlobeView's `place`. --select names a country (globe.json); its locator red is drawn at full strength.
 Labels are drawn here with PIL in the app's fonts, roughly where the app's label layer puts them.
 """
-import argparse, json
+import argparse
+import json
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -564,7 +566,7 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=(),
         key = (face['font'], face['size'])
         if key not in fonts:
             path = next(G / 'fonts' / (face['font'] + ext) for ext in ('.otf', '.ttf') if (G / 'fonts' / (face['font'] + ext)).exists())
-            fonts[key] = ImageFont.truetype(str(path), int(round(face['size'] * k * scale)))
+            fonts[key] = ImageFont.truetype(str(path), round(face['size'] * k * scale))
         return fonts[key]
 
     def tier(r):
@@ -616,9 +618,9 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=(),
             xx = x
             for ch, cw in zip(text, widths):
                 if passes == 'halo':
-                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=int(round(halo)), stroke_fill=col(ground))
+                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=round(halo), stroke_fill=col(ground))
                 elif passes == 'silhouette':
-                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=int(round(2.2 * k * scale)), stroke_fill=col(ground))
+                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=round(2.2 * k * scale), stroke_fill=col(ground))
                 else:
                     draw.text((xx, ty), ch, font=f, fill=col(ink))
                 xx += cw + spacing
@@ -692,7 +694,7 @@ def persian_caption(img, w, h, scale, selected):
     else:
         title, eyebrow, text = 'The whole world', 'The globe', 'Spin it, pinch it, tap a country.'
     f = G / 'fonts'
-    S = lambda v: int(round(v * scale))
+    S = lambda v: round(v * scale)
     tf = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), S(22))
     cap = TYPE['styles']['persian']['caption']
     ef = ImageFont.truetype(str(f / (cap['eyebrow']['font'] + '.otf')), S(cap['eyebrow']['size']))

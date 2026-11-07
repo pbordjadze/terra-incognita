@@ -5,8 +5,12 @@ its entry here, or writes icon.png by its own tool; the name and the final icon 
 
     python3 tools/toys/icon.py [<toy> ...]      # every toy's when none is named
 """
-import math, random, sys
+import itertools
+import math
+import random
+import sys
 from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -274,7 +278,7 @@ def taste():
     img = Image.new('RGBA', (N, N), (16, 17, 24, 255))
     d = ImageDraw.Draw(img)
     path = [(250, 820), (330, 700), (300, 610), (420, 560), (520, 520)]
-    for a, b in zip(path, path[1:]):
+    for a, b in itertools.pairwise(path):
         d.line([a, b], fill=(150, 120, 200, 255), width=10)
     glow(img, path[2:3], 30, (230, 120, 255, 160), 40)
     star = []

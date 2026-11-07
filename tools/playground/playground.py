@@ -732,7 +732,7 @@ def content_hash(pairs):
     """sha256 of "<path> <sha256>\\n" for each file, in byte order of the POSIX path."""
     h = hashlib.sha256()
     for path, digest in sorted(pairs, key=lambda p: p[0].encode('utf-8')):
-        h.update(f'{path} {digest}\n'.encode('utf-8'))
+        h.update(f'{path} {digest}\n'.encode())
     return h.hexdigest()
 
 
@@ -1078,7 +1078,7 @@ class R2:
     def request(self, method, key, body=b'', extra=None, attempts=3):
         path = f'/{self.bucket}/{key}'
         for attempt in range(1, attempts + 1):
-            amz_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+            amz_date = datetime.datetime.now(datetime.UTC).strftime('%Y%m%dT%H%M%SZ')
             payload = hashlib.sha256(body).hexdigest()
             signed = {'host': self.host, 'x-amz-content-sha256': payload, 'x-amz-date': amz_date}
             auth, _, _ = sigv4(method, path, {}, signed, payload, self.key_id, self.secret, self.region, 's3', amz_date)
@@ -1257,7 +1257,7 @@ def publish_into(args):
     gone = set()
     if not args.ids and existing.is_file():
         gone = missing_packs(parse_catalog(existing.read_text(encoding='utf-8'), display(existing)))
-    catalog, results, restored, withdrawn = publish_dir(packs, into, now_eastern(), args.dry_run, gone)
+    _catalog, results, restored, withdrawn = publish_dir(packs, into, now_eastern(), args.dry_run, gone)
     describe(results)
     changed = [r for r in results if r.changed]
     base = (args.public_url or '').rstrip('/')

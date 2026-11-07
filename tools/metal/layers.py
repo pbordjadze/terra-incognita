@@ -12,18 +12,24 @@ draws a layer's web twin in headless Chromium, takes the uniforms its WebGL prog
 the pixels it wrote, draws the Metal with those uniforms, and reports how far apart the two are
 (build/metal/twin/: the twin, the Metal and their difference, side by side).
 """
-import json, math, re, struct, subprocess, sys, tempfile, time
+import json
+import math
+import re
+import struct
+import subprocess
+import sys
+import tempfile
+import time
 from pathlib import Path
 
-import numpy as np
-
 import metal
+import numpy as np
 
 ROOT = metal.ROOT
 APP = ROOT / 'App' / 'TerraIncognita'
 GLOBE = ROOT / 'Globe'
 sys.path.insert(0, str(ROOT / 'tools' / 'globe'))
-import preview  # noqa: E402
+import preview
 
 SIZES = {'phone': (402, 874), 'ipad': (1032, 1376)}
 VIEWS = {'earth': (15, 8, 1), 'atlantic': (-35, 35, 1), 'namib': (12, -18, 2.2), 'descent': (12, -20, 3.4),
@@ -95,7 +101,9 @@ class Globe:
         w, h = cam['width'], cam['height']
         R = cam['radius']
         reading = preview.reading(w, h)
-        smooth = lambda a, b, x: (lambda t: t * t * (3 - 2 * t))(min(max((x - a) / (b - a), 0), 1))
+        def smooth(a, b, x):
+            t = min(max((x - a) / (b - a), 0), 1)
+            return t * t * (3 - 2 * t)
         ring = (1 - smooth(1.25, 1.7, cam['zoom'])) * (0 if ground else 1)
         m = preview.rotation(cam['lon'], cam['lat'])                  # world from view, by rows
         top, bottom, left, right = preview.safe_insets(w, h)
@@ -135,7 +143,9 @@ class Clouds:
             x ^= x >> 16; y ^= y >> 16; z ^= z >> 16
             x = (x + y * z) & M; y = (y + z * x) & M; z = (z + x * y) & M
             return x / 4294967295, y / 4294967295, z / 4294967295
-        smooth = lambda a, b, x: (lambda t: t * t * (3 - 2 * t))(min(max((x - a) / (b - a), 0), 1))
+        def smooth(a, b, x):
+            t = min(max((x - a) / (b - a), 0), 1)
+            return t * t * (3 - 2 * t)
         out = []
         for k in range(10):
             hemi = 1 if k < 5 else -1
@@ -215,7 +225,7 @@ LAYERS = {'globe': Globe(), 'ocean': Ocean(), 'clouds': Clouds()}
 def fields(shader):
     """The uniforms' floats by name (`time.z`), from the shader's own struct of float4s."""
     src = Path(shader).read_text()
-    struct = re.search(r'struct\s+\w*Uniforms\s*\{(.*?)\};', src, re.S).group(1)
+    struct = re.search(r'struct\s+\w*Uniforms\s*\{(.*?)\};', src, re.DOTALL).group(1)
     names = []
     for m in re.finditer(r'float4\s+([^;]+);', re.sub(r'//[^\n]*', '', struct)):
         for part in m.group(1).split(','):
@@ -287,7 +297,7 @@ def cmd_twin(o):
            'height': cam['height'], 'scale': scale, 'camera': cam, 'hold': hold, 'draw': layer.draw, 'out': str(stem)}
     with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as f:
         json.dump(job, f)
-    r = subprocess.run(['node', str(metal.HERE / 'twin.cjs'), f.name], capture_output=True, text=True)
+    r = subprocess.run(['node', str(metal.HERE / 'twin.cjs'), f.name], capture_output=True, text=True, check=False)
     Path(f.name).unlink()
     if r.returncode:
         print(r.stderr, file=sys.stderr)

@@ -20,6 +20,7 @@ and simplified for the scale it is drawn at, in tools/plates/data/.
     39.9675-39.9780, 39.9780-39.9885 and 39.9885-39.9985
 """
 import io
+import itertools
 import json
 import os
 import shutil
@@ -28,7 +29,15 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 import shapefile
-from shapely.geometry import LineString, MultiPolygon, Point, Polygon, box, mapping, shape
+from shapely.geometry import (
+    LineString,
+    MultiPolygon,
+    Point,
+    Polygon,
+    box,
+    mapping,
+    shape,
+)
 from shapely.geometry.polygon import orient
 
 SRC = sys.argv[1]
@@ -43,7 +52,7 @@ BOXES = {
 
 def read_shp(zipname):
     z = zipfile.ZipFile(os.path.join(SRC, zipname))
-    base = [n for n in z.namelist() if n.endswith('.shp')][0][:-4]
+    base = next(n for n in z.namelist() if n.endswith('.shp'))[:-4]
     r = shapefile.Reader(shp=io.BytesIO(z.read(base + '.shp')), shx=io.BytesIO(z.read(base + '.shx')),
                          dbf=io.BytesIO(z.read(base + '.dbf')), encoding='latin-1')
     names = [f[0] for f in r.fields[1:]]
@@ -66,7 +75,7 @@ def rounded(geom, digits):
         return [walk(y) for y in x]
 
     def ring_area(r):
-        return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(r, r[1:])) / 2
+        return sum(a[0] * b[1] - b[0] * a[1] for a, b in itertools.pairwise(r)) / 2
 
     def fix_polygon(rings):
         # rounding can collapse a small ring or turn it over: drop the collapsed, re-turn the rest
@@ -125,7 +134,7 @@ for f in ('countries-50m.json', 'land-50m.json'):
 for level, tol, digits, minpop in (('america', 0.04, 3, 1_500_000), ('ohio', 0.005, 4, 40_000)):
     write(f'{level}-lakes', clipped('ne_10m_lakes.zip', level, tol, props=lambda p: {'name': p.get('name') or ''}), digits)
     write(f'{level}-rivers', clipped('ne_10m_rivers_lake_centerlines.zip', level, tol,
-                                     keep=lambda p: level == 'ohio' or (p.get('scalerank') or 9) <= 6,
+                                     keep=lambda p, level=level: level == 'ohio' or (p.get('scalerank') or 9) <= 6,
                                      props=lambda p: {'name': p.get('name') or ''}), digits)
     write(f'{level}-states', clipped('ne_10m_admin_1_states_provinces_lakes.zip', level, tol,
                                      keep=lambda p: p.get('adm0_a3') in ('USA', 'CAN', 'MEX'),

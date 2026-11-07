@@ -14,7 +14,8 @@ fi
 rustup target add wasm32-unknown-unknown > /dev/null 2>&1 || true
 # naga for tools/adrift/wgsl_check.sh, and wasm-bindgen for tools/adrift/web-build.sh (R6: both were
 # missing on a fresh container; a few minutes of compiling the first time, nothing after)
-command -v naga > /dev/null || cargo install -q naga-cli > /dev/null 2>&1 || echo "naga-cli: install failed (wgsl_check.sh needs it)"
+command -v naga > /dev/null || cargo install -q naga-cli --version 30.0.1 --locked > /dev/null 2>&1 || echo "naga-cli: install failed (wgsl_check.sh needs it)"
 command -v wasm-bindgen > /dev/null || cargo install -q wasm-bindgen-cli --version 0.2.130 > /dev/null 2>&1 || echo "wasm-bindgen-cli: install failed (web-build.sh needs it)"
-echo "lavapipe: $(ls /usr/share/vulkan/icd.d/lvp_icd* 2>/dev/null | head -1)"
+lvp=(/usr/share/vulkan/icd.d/lvp_icd*)
+echo "lavapipe: ${lvp[0]}"
 echo "rust: $(rustc --version)"

@@ -8,7 +8,10 @@ mono, 4 GB; only the probes are fetched) and prints, for each probe, how much of
 humpback song's band (150-2000 Hz) against the band below it (ships, wind), and how tonal it is. The
 best probe is the one to listen to; recordings.py cuts the clip the toy uses.
 """
-import sys, urllib.request, numpy as np
+import sys
+import urllib.request
+
+import numpy as np
 
 BASE = "https://pacific-sound-16khz.s3.amazonaws.com"
 RATE, HEADER = 16000, 332

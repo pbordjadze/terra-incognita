@@ -9,7 +9,8 @@ them for either side: chunky one-colour pieces, as a wooden set. Never hand-edit
 """
 import sys
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, ImageChops, ImageFilter
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[3]
 FONT = sys.argv[1] if len(sys.argv) > 1 else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
@@ -38,7 +39,7 @@ def cell(ch):
 def main():
     out = Image.new('RGBA', (CELL * 6, CELL), (0, 0, 0, 255))
     for i, ch in enumerate(GLYPHS):
-        s, l = cell(ch)
+        s, _l = cell(ch)
         rim = ImageChops.subtract(s, s.filter(ImageFilter.MinFilter(9)))
         shadow = s.filter(ImageFilter.GaussianBlur(7))
         out.paste(Image.merge('RGBA', (s, rim, shadow, Image.new('L', (CELL, CELL), 255))), (i * CELL, 0))

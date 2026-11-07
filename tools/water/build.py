@@ -10,13 +10,18 @@ merges chains without kept tributaries, simplifies to 0.006°, and rounds to 0.0
 Never invents a downstream connection. Source checksums/settings go in the manifest;
 constituent IDs go in reach-audit.json beside the external source files.
 """
-import sys,json,hashlib,math
-from pathlib import Path
+import hashlib
+import json
+import math
+import sys
 from collections import defaultdict
-import shapefile
-from shapely.geometry import LineString
+from pathlib import Path
+
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+import shapefile
+from PIL import Image
+from shapely.geometry import LineString
+
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'Water'
 FIELDS=['HYRIV_ID','NEXT_DOWN','MAIN_RIV','LENGTH_KM','DIST_DN_KM','UPLAND_SKM','ENDORHEIC','ORD_STRA']
@@ -119,7 +124,8 @@ def terrain():
             x+=dx;y+=dy
             out.append((x*topo['transform']['scale'][0]+topo['transform']['translate'][0],y*topo['transform']['scale'][1]+topo['transform']['translate'][1]))
         return out if i>=0 else out[::-1]
-    from shapely.geometry import Polygon,box as rect
+    from shapely.geometry import Polygon
+    from shapely.geometry import box as rect
     def decode(rings):
         result=[]
         for aa in rings:

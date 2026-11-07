@@ -11,7 +11,9 @@ Main always runs everything, whatever its head commit's message says: a branch's
 main with a fast-forward merge must not narrow the release run. `[build-only]` and
 `[playground-check]` are read by ci.yml itself.
 """
-import os, re, sys
+import os
+import re
+import sys
 
 # The stage at rest at each (the ground's month, the clouds' drift and the sea's motion held): what
 # tools/metal/metal.py's `shot` draws at the same names, so the two can be set side by side.

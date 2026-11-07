@@ -5,11 +5,13 @@ tester sees where its finger really landed and a miss is told from a fault. try.
 
     python3 tools/toys/newcomer/touches.py <plan.json> <out-dir> <ppp>
 """
-import json, sys
+import json
+import sys
 from pathlib import Path
+
 from PIL import Image, ImageDraw
 
-plan = json.load(open(sys.argv[1])); out = Path(sys.argv[2]); k = float(sys.argv[3])
+plan = json.loads(Path(sys.argv[1]).read_text()); out = Path(sys.argv[2]); k = float(sys.argv[3])
 shots = [(s, f'{s:g}') if not isinstance(s, dict) else (s['t'], s.get('name', f"{s['t']:g}")) for s in plan.get('shots', [])]
 
 def pts(e):

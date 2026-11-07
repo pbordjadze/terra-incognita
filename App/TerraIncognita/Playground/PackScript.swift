@@ -165,7 +165,7 @@ final class PackScript {
             "pack": ["id": pack.id, "revision": pack.revision, "origin": pack.origin.rawValue] as [String: Any],
             "settings": settingsPayload(settings),
             "focus": front,
-            "entry": ["by": entry.by, "lon": entry.lon, "lat": entry.lat, "zoom": entry.zoom] as [String: Any],
+            "entry": ["by": entry.by, "lon": entry.lon, "lat": entry.lat, "zoom": entry.zoom] as [String: Any]
         ]
         if let camera { b["camera"] = camera.payload }
         return b

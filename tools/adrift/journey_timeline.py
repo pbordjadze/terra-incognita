@@ -4,14 +4,18 @@ span (share of the width), and whether a lamp is off the frame.
 
     python3 tools/adrift/journey_timeline.py <journey.csv> [--every SECONDS] [--fps 60]
 """
-import csv, math, sys
+import csv
+import math
+import sys
+
 sys.path.insert(0, __import__('os').path.dirname(__file__))
-from lamp_in_clip import screen, W, H  # noqa: E402
+from lamp_in_clip import H, W, screen
 
 a = sys.argv[1:]
 opt = lambda k, d: float(a[a.index(k) + 1]) if k in a else d
 fps, every = opt('--fps', 60.0), opt('--every', 2.0)
-rows = list(csv.DictReader(open(a[0])))
+with open(a[0]) as f:
+    rows = list(csv.DictReader(f))
 for k in range(0, len(rows), int(every * fps)):
     r = rows[k]
     ps = [tuple(map(float, x.split(':')[1:])) for x in r['lamps'].split()]

@@ -14,11 +14,18 @@ as Metal takes them; a vector or matrix constructor becomes a call that converts
 a comparison among a vector's elements gives Metal's 1 for true, not clang's -1. Line numbers are kept, so an
 error names the .metal file's own line.
 """
-import argparse, hashlib, json, os, re, subprocess, sys, tempfile
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 try:
-    import numpy as np                                  # (drawing needs it; `check` needs only clang)
+    import numpy as np  # (drawing needs it; `check` needs only clang)
 except ImportError:
     np = None
 
@@ -43,7 +50,7 @@ TOKEN = re.compile(r'''
   | (?P<ident>[A-Za-z_]\w*)
   | (?P<space>\s+)
   | (?P<op><<=|>>=|<<|>>|<=|>=|==|!=|&&|\|\||->|::|\+\+|--|[-+*/%&|^]=|\[\[|\]\]|.)
-''', re.S | re.M | re.X)
+''', re.DOTALL | re.MULTILINE | re.VERBOSE)
 
 
 def tokens(src):
@@ -135,13 +142,13 @@ def rewrite(src):
 
 # ---- entry points: the fragment and kernel functions, and their bindings
 
-ENTRY = re.compile(r'\b(fragment|kernel)\s+([\w:<>, ]+?)\s+(\w+)\s*\(', re.S)
+ENTRY = re.compile(r'\b(fragment|kernel)\s+([\w:<>, ]+?)\s+(\w+)\s*\(', re.DOTALL)
 
 
 def entries(src):
     """Each entry point: (kind, name, [(type, name, attribute)])."""
     found = []
-    clean = re.sub(r'//[^\n]*|/\*.*?\*/', lambda m: ' ' * len(m.group()), src, flags=re.S)
+    clean = re.sub(r'//[^\n]*|/\*.*?\*/', lambda m: ' ' * len(m.group()), src, flags=re.DOTALL)
     for m in ENTRY.finditer(clean):
         toks = tokens(clean[m.end() - 1:])
         close = _close(toks, 0)
@@ -150,7 +157,7 @@ def entries(src):
             text = ''.join(t for _, t in arg).strip()
             attr = re.search(r'\[\[\s*(.*?)\s*\]\]', text)
             decl = re.sub(r'\[\[.*?\]\]', '', text).strip()
-            pm = re.match(r'(.*?)([&*]?)\s*(\w+)$', decl, re.S)
+            pm = re.match(r'(.*?)([&*]?)\s*(\w+)$', decl, re.DOTALL)
             ptype, ref, pname = pm.group(1).strip(), pm.group(2), pm.group(3)
             if ptype.endswith(('&', '*')):
                 ptype, ref = ptype[:-1].strip(), ptype[-1]
@@ -160,7 +167,7 @@ def entries(src):
 
 
 def _stage_member(src, struct):
-    m = re.search(r'struct\s+' + struct + r'\s*\{(.*?)\};', src, re.S)
+    m = re.search(r'struct\s+' + struct + r'\s*\{(.*?)\};', src, re.DOTALL)
     if m:
         pm = re.search(r'(\w+)\s*\[\[\s*position\s*\]\]', m.group(1))
         if pm:
@@ -218,7 +225,7 @@ def compile_check(path, warnings=False):
         f.write(translate(path))
     try:
         cmd = [CXX, *FLAGS, '-fsyntax-only', *([] if warnings else ['-w']), f.name]
-        r = subprocess.run(cmd, capture_output=True, text=True)
+        r = subprocess.run(cmd, capture_output=True, text=True, check=False)
         return r.returncode == 0, r.stderr
     finally:
         os.unlink(f.name)
@@ -243,7 +250,7 @@ def build(path, function, defines=()):
         src = BUILD / f'{Path(path).stem}-{function}-{key}.cpp'
         src.write_text(cpp)
         cmd = [CXX, *flags, '-O2', '-w', str(src), '-x', 'c++', str(RUNTIME), '-o', str(exe), '-lpthread', '-lm']
-        r = subprocess.run(cmd, capture_output=True, text=True)
+        r = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if r.returncode:
             raise RuntimeError(f'{path}: {function} did not build\n{r.stderr}')
     return exe
@@ -287,7 +294,7 @@ class Texture:
     def _half(self, a):
         # a 2x2 box, as a blit encoder's generateMipmaps; an odd edge keeps its last texel
         a = a.astype(np.float32)
-        d, h, w, _ = a.shape
+        _d, h, w, _ = a.shape
         a = a[:, :max(h // 2, 1) * 2 if h > 1 else 1, :max(w // 2, 1) * 2 if w > 1 else 1]
         if h > 1:
             a = (a[:, 0::2] + a[:, 1::2]) / 2
@@ -390,7 +397,7 @@ def run(path, function, size, buffers=(), textures=(), threads=None, grid=None, 
         result = tmp / 'out'
         job.append(f'output {result} {output if output is not None else -1}')
         (tmp / 'job').write_text('\n'.join(job) + '\n')
-        r = subprocess.run([str(exe), str(tmp / 'job')], capture_output=True, text=True)
+        r = subprocess.run([str(exe), str(tmp / 'job')], capture_output=True, text=True, check=False)
         if r.returncode:
             raise RuntimeError(f'{path}: {function} failed\n{r.stderr}')
         if grid:

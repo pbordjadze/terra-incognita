@@ -8,7 +8,10 @@ the file of each shot whose name holds one of them (any case), and fails if a na
 The UI tests' attachments are named by their manifest (`56-old-maps-early_0_<uuid>.png` is
 `56-old-maps-early`); the simulator's shots by their file (`sim-stage-descent.png` is `stage-descent`).
 """
-import json, re, signal, sys
+import json
+import re
+import signal
+import sys
 from pathlib import Path
 
 

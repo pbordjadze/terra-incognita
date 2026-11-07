@@ -28,10 +28,13 @@ and adrift/data/weather.json:
                 space, linear in time): their mean displacement and their spread (the RMS distance
                 of each path's end from the paths' mean end), km
 """
-import json, sys, urllib.request
+import json
+import sys
+import urllib.request
 from pathlib import Path
-import numpy as np
+
 import netCDF4
+import numpy as np
 from sheets import OUT, months, regrid, save, tile
 
 PSL = 'https://downloads.psl.noaa.gov/Datasets/'
@@ -105,12 +108,12 @@ def main():
                     a = au[:, rows, :]
                     sd = a.std(0) + 1e-6
                     ce = []
-                    for d in range(0, 40):
+                    for d in range(40):
                         b = np.roll(a, -d, axis=2)
                         ce.append(float(((a * b).mean(0) / (sd * np.roll(sd, -d, axis=1))).mean()))
                     corr_e.setdefault(b0, []).append(ce)
                     cn = []
-                    for d in range(0, 12):
+                    for d in range(12):
                         r2 = rows[(rows + d) < nlat]
                         a1, a2 = u[sel][:, r2, :] - u[sel][:, r2, :].mean(0), u[sel][:, r2 + d, :] - u[sel][:, r2 + d, :].mean(0)
                         cn.append(float(((a1 * a2).mean(0) / (a1.std(0) * a2.std(0) + 1e-6)).mean()))
@@ -178,7 +181,7 @@ def main():
                 east = np.zeros_like(plon)
                 north = np.zeros_like(plon)
                 for s in range(DAYS * 4):
-                    def vel(i, frac, lo, la):
+                    def vel(i, frac, lo, la, u=u, v=v):
                         uu = bilinear(u[i], lat, lo, la) * (1 - frac) + bilinear(u[i + 1], lat, lo, la) * frac
                         vv = bilinear(v[i], lat, lo, la) * (1 - frac) + bilinear(v[i + 1], lat, lo, la) * frac
                         return uu, vv

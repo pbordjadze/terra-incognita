@@ -14,6 +14,7 @@ import math
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -166,7 +167,7 @@ def draw_plate(canvas, L, imgs, k, c, opacity, t, S, feather=0, names=1):
         part = img.transform((cw, ch), Image.AFFINE, data, resample=Image.BILINEAR, fillcolor=(0, 0, 0, 0))
         alpha = opacity * fade * (names if spec['file'].split('/')[-1] == 'labels.png' else 1)
         if alpha < 1:
-            part.putalpha(part.getchannel('A').point(lambda v: int(v * alpha)))
+            part.putalpha(part.getchannel('A').point(lambda v, alpha=alpha: int(v * alpha)))
         if feather > 0:
             x0, y0 = (0 - cx) * z, (0 - cy) * z
             mask = feather_mask((cw, ch), (x0, y0, x0 + W * z, y0 + H * z), feather * W * z)
@@ -234,7 +235,7 @@ def main():
     a = ap.parse_args()
     sw, sh = map(int, a.screen.split('x'))
     folder = os.path.join(ROOT, 'Atlas', a.look)
-    plates = json.load(open(os.path.join(folder, 'plates.json')))['plates']
+    plates = json.loads(Path(os.path.join(folder, 'plates.json')).read_text())['plates']
     L = Ladder(plates, sw, sh)
     imgs = Images(folder)
     shots, duration = film(L)

@@ -75,6 +75,7 @@ The sheet has no text and needs no globe data. The full PNG stays at the supplie
 tools/globe/ornament-sheet.jpg is a copy at most 1600 px wide, JPEG quality 85.
 """
 import argparse
+import itertools
 from pathlib import Path
 
 import numpy as np
@@ -402,7 +403,7 @@ def braid():
     black = np.zeros(drawing.image.size[::-1], bool)
     for sign in (-1, 1):
         points = np.column_stack((nodes, strand_y(nodes, sign)))
-        for start, end in zip(points[:-1], points[1:]):
+        for start, end in itertools.pairwise(points):
             black |= distance_squared(x % period, y, start, end) <= (stroke / 2) ** 2
     for crossing, centre in enumerate(np.arange(period / 4, width, period / 2)):
         sign = (-1, 1)[crossing % 2]
@@ -558,7 +559,7 @@ def headpiece():
                             ((103, 47), (66, 54), (56, 38)),
                             ((57, 63), (18, 58), (0, 56)))
             corner = np.concatenate((corner, [(0, 0)]))
-            def reflect(points):
+            def reflect(points, flip_x=flip_x, flip_y=flip_y):
                 return np.asarray(points) * (-1 if flip_x else 1, -1 if flip_y else 1) + (
                     width if flip_x else 0, height if flip_y else 0)
             reserved |= polygon_mask(drawing.image.size, reflect(corner))

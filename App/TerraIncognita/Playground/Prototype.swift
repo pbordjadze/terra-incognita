@@ -20,7 +20,7 @@ struct Prototype: Identifiable {
         let lat: Double
         let label: String
         let looks: [GlobeMarker.SpriteLook]
-        var path: GlobeMarker.Path? = nil
+        var path: GlobeMarker.Path?
         var breathes = false
     }
 

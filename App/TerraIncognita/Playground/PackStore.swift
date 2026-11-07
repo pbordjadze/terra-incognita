@@ -436,8 +436,8 @@ final class PackStore {
 
     private func rebuildSources() {
         var all: [URL] = []
-        for url in bundledSources + addedSources + sessionSources {
-            if !all.contains(where: { $0.absoluteString == url.absoluteString }) { all.append(url) }
+        for url in bundledSources + addedSources + sessionSources where !all.contains(where: { $0.absoluteString == url.absoluteString }) {
+            all.append(url)
         }
         sources = all
     }
@@ -707,7 +707,8 @@ final class PackStore {
         if let remote = remotes[id] {
             if remote.entry.runtime > Self.runtime {
                 if selection(id) == nil {
-                    throw PackError("“\(remote.entry.title)” needs a newer build of the app (it uses runtime \(remote.entry.runtime); this one has \(Self.runtime)).")
+                    throw PackError("“\(remote.entry.title)” needs a newer build of the app "
+                        + "(it uses runtime \(remote.entry.runtime); this one has \(Self.runtime)).")
                 }
             } else if await wantsDownload(remote.entry) {
                 do {

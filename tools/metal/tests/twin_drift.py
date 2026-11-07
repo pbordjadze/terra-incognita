@@ -6,13 +6,13 @@ tolerances in layers.py are changed, or a shader's look moves a long way.
 
     python3 tools/metal/tests/twin_drift.py
 """
-import json, subprocess, sys, tempfile
+import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-import metal  # noqa: E402
-import layers  # noqa: E402
+import layers
 
 DRIFTS = {
     'ocean': [

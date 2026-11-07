@@ -13,7 +13,9 @@ ocean in the right month.
 Rebuild, never hand-edit. Prints any stretch the ship would have to cover faster than 450 km a day,
 which is a date to look at.
 """
-import json, math, re
+import itertools
+import json
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,7 +54,7 @@ CALLS = [
 def day(s):
     y, m, d = map(int, s.split('-'))
     import datetime
-    return (datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds() / DAY
+    return (datetime.datetime(y, m, d, tzinfo=datetime.UTC) - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)).total_seconds() / DAY
 
 def km(a, b):
     la, lb = math.radians(a[1]), math.radians(b[1]); dl = math.radians(b[0] - a[0])
@@ -77,7 +79,7 @@ def main():
             print(f"dropped {p.get('name', p['kind'])} on the same day as station {cleaned[-1].get('name')}")
             continue
         cleaned.append(p)
-    for a, b in zip(cleaned, cleaned[1:]):
+    for a, b in itertools.pairwise(cleaned):
         dd = max(0.5, b['d'] - a['d']); v = km((a['lon'], a['lat']), (b['lon'], b['lat'])) / dd
         if v > 450:
             print(f"fast: {a.get('name', a['kind'])} -> {b.get('name', b['kind'])}: {v:.0f} km/day over {dd:.1f} days")

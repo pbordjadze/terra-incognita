@@ -22,7 +22,7 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import playground as pg  # noqa: E402
+import playground as pg
 
 ROOT = pg.ROOT
 PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 24
@@ -291,7 +291,7 @@ class Validate(TempCase):
         self.assertEqual(self.errors(rep), [])
         self.assertEqual(len(self.warnings(rep)), 1)
         self.assertIn('keep that view sparse', self.warnings(rep)[0])
-        trace = lambda m: (m['doorway']['look'].pop('minZoom'), m['doorway']['look'].update(every=11, **{'for': 1.4}))  # noqa: E731
+        trace = lambda m: (m['doorway']['look'].pop('minZoom'), m['doorway']['look'].update(every=11, **{'for': 1.4}))
         shutil.rmtree(self.tmp / 'demo-pack')
         self.assertEqual(self.mutate(trace).items, [])
         shutil.rmtree(self.tmp / 'demo-pack')
@@ -450,17 +450,7 @@ class Validate(TempCase):
         self.assertTrue(any(e.startswith('fetch()') for e in errors), errors)
 
     def test_the_same_words_in_strings_comments_and_names_are_fine(self):
-        text = '\n'.join([
-            "// we never fetch() anything: no XMLHttpRequest, no import()",
-            '/* new WebSocket("x"); import x from "y"; */',
-            "var s = \"fetch(this) and import('x')\";",
-            "var t = `no fetch() ${ ({ a: 1 }).a } here, nor XMLHttpRequest ${ `nested fetch()` }`;",
-            "var cache = { fetch: function () {}, import: 1 };",
-            "cache.fetch('k'); prefetch(1); fetchData(2); var important = 1; cache.import(3);",
-            "var re = /fetch\\(/g, re2 = /[\"'/]/, half = 4 / 2 / 1;",
-            "var q = 'it\\'s fine: fetch(x)';",
-            "function f() { return /import\\(/.test(s); }",
-        ])
+        text = "// we never fetch() anything: no XMLHttpRequest, no import()\n/* new WebSocket(\"x\"); import x from \"y\"; */\nvar s = \"fetch(this) and import('x')\";\nvar t = `no fetch() ${ ({ a: 1 }).a } here, nor XMLHttpRequest ${ `nested fetch()` }`;\nvar cache = { fetch: function () {}, import: 1 };\ncache.fetch('k'); prefetch(1); fetchData(2); var important = 1; cache.import(3);\nvar re = /fetch\\(/g, re2 = /[\"'/]/, half = 4 / 2 / 1;\nvar q = 'it\\'s fine: fetch(x)';\nfunction f() { return /import\\(/.test(s); }"
         errors, warnings = self.scan(text)
         self.assertEqual(errors, [])
         self.assertEqual(warnings, [])
@@ -770,7 +760,7 @@ class New(TempCase):
         self.assertIn(json.dumps(title), main)
         self.assertEqual(findings(folder).items, [])
         if shutil.which('node'):
-            done = subprocess.run(['node', '--check', str(folder / 'main.js')], capture_output=True, text=True)
+            done = subprocess.run(['node', '--check', str(folder / 'main.js')], capture_output=True, text=True, check=False)
             self.assertEqual(done.returncode, 0, done.stderr)
 
     def test_refusals(self):
@@ -913,7 +903,7 @@ class Publishing(TempCase):
         n = len(self.bucket.puts)
         (self.src / 'demo-pack' / 'main.js').write_text(MAIN_JS + '// new\n')
         summary = self.tmp / 'summary.md'
-        code, out, err = self.publish('--summary', str(summary))
+        code, _out, err = self.publish('--summary', str(summary))
         self.assertEqual(code, 0, err)
         new = self.bucket.puts[n:]
         self.assertEqual(new[-1], 'catalog.json')
@@ -947,7 +937,7 @@ class Publishing(TempCase):
 
     def test_missing_environment_is_one_clear_line(self):
         for argv in ((), ('--dry-run',)):
-            code, out, err = self.publish(*argv, env={})
+            code, _out, err = self.publish(*argv, env={})
             self.assertEqual(code, 2)
             for name in pg.R2_VARS:
                 self.assertIn(name, err)
@@ -974,7 +964,7 @@ class Publishing(TempCase):
     def test_retire_in_the_bucket(self):
         self.publish()
         puts = len(self.bucket.puts)
-        code, out, err = run('retire', 'second-pack', env=self.env)
+        code, _out, err = run('retire', 'second-pack', env=self.env)
         self.assertEqual(code, 0, err)
         self.assertEqual(self.bucket.puts[puts:], ['catalog.json'])                 # the catalog only
         by_id = {e['id']: e for e in json.loads(self.bucket.objects['catalog.json'][0])['packs']}
@@ -1152,7 +1142,7 @@ class BranchPublishing(TempCase):
         self.assertEqual(code, 2)
         self.assertIn('go with --into', err)
         (self.src / 'second-pack' / 'prototype.json').write_text('{}')
-        code, out, err = run('publish', '--into', str(self.into), env={})
+        code, _out, err = run('publish', '--into', str(self.into), env={})
         self.assertEqual(code, 2)
         self.assertIn('nothing was packed', err)
         self.assertEqual(list(self.into.iterdir()), [])
@@ -1164,7 +1154,7 @@ class BranchPublishing(TempCase):
         (self.src / 'demo-pack' / 'notes.txt').write_bytes(crlf)
 
         def git(*args):
-            done = subprocess.run(['git', '-C', str(self.into), *args], capture_output=True, text=True,
+            done = subprocess.run(['git', '-C', str(self.into), *args], capture_output=True, text=True, check=False,
                                   env=dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1'))
             self.assertEqual(done.returncode, 0, done.stderr)
             return done.stdout
@@ -1173,7 +1163,7 @@ class BranchPublishing(TempCase):
         self.publish()
         git('add', '-A')
         git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', self.message.read_text())
-        blob = subprocess.run(['git', '-C', str(self.into), 'show', 'HEAD:packs/demo-pack/r1/notes.txt'], capture_output=True).stdout
+        blob = subprocess.run(['git', '-C', str(self.into), 'show', 'HEAD:packs/demo-pack/r1/notes.txt'], capture_output=True, check=False).stdout
         self.assertEqual(blob, crlf)
         self.assertEqual(git('log', '--format=%s'), 'Publish packs: demo-pack r1, second-pack r1\n')
 
@@ -1184,7 +1174,7 @@ class RemotePacksScript(TempCase):
         if json.loads((pack / 'prototype.json').read_text()).get('runtime') != pg.RUNTIME:
             self.skipTest('hello-pack is not a runtime-3 pack yet')
         out = self.tmp / 'remote'
-        done = subprocess.run(['bash', str(ROOT / 'ci/remote_packs.sh'), str(out)], capture_output=True, text=True, cwd=self.tmp)
+        done = subprocess.run(['bash', str(ROOT / 'ci/remote_packs.sh'), str(out)], capture_output=True, text=True, check=False, cwd=self.tmp)
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         catalog = json.loads((out / 'catalog.json').read_text())
         entry = next(e for e in catalog['packs'] if e['id'] == 'hello-pack')

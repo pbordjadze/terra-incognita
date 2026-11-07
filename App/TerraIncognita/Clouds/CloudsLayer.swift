@@ -381,7 +381,6 @@ struct CloudsLook {
     }
 }
 
-
 /// The GPU's timings and the frames it has in hand, written by Metal's completion handlers (any
 /// thread) and read by the main one.
 nonisolated final class CloudsGPU: @unchecked Sendable {

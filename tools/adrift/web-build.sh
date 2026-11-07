@@ -24,7 +24,7 @@ if command -v wasm-opt > /dev/null 2>&1; then wasm-opt -O3 -o "$OUT/adrift_web_b
 cp crates/adrift-web/index.html "$OUT/index.html"
 python3 "$ROOT/tools/adrift/assets.py" "$OUT/assets" > /dev/null
 du -sh "$OUT" | cut -f1 | xargs echo "web build in $OUT:"
-ls -l "$OUT/adrift_web_bg.wasm" | awk '{print "wasm", $5, "bytes"}'
+echo "wasm $(wc -c < "$OUT/adrift_web_bg.wasm" | tr -d ' ') bytes"
 if [ "$ARTIFACT" = 1 ]; then
   python3 "$ROOT/tools/kit/artifact.py" "$OUT"
   node "$ROOT/tools/kit/webgpu_shot.cjs" "$OUT" "$(dirname "$OUT")/web-shot.png" --size 390x844 --dpr 1 --wait 30
