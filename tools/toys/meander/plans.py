@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Meander's stroke plans (toys/meander/plans/push.json, ipad.json, and the several fingers' two.json,
-share.json, five.json): a finger's push as raw
+share.json, rub.json, hand.json): a finger's push as raw
 down/move/up events (the check's drag has only two ends), a slightly wavy stroke as a hand draws it.
 
     python3 tools/toys/meander/plans.py
@@ -64,13 +64,22 @@ plans = {
         "film": {"from": 0, "to": 14, "every": 0.1, "fingers": True},
         "audio": True,
     },
-    "five": {
-        "_": "Five fingers down at once, each sweeping across the river at its own height for 2.5 s: the frame's cost with many fingers, and whether the river stays whole. Written by tools/toys/meander/plans.py.",
+    "rub": {
+        "_": "Five fingers down at once, each sweeping across the valley at its own height for 2.5 s, some left, some right, as a hand rubs: the frame's cost with many fingers, and whether the river stays whole. Written by tools/toys/meander/plans.py.",
         "size": [1179, 2556], "ppp": 3, "seconds": 14, "fps": 60,
         "events": [e for k, (y, x0, x1) in enumerate([(150, 330, 120), (300, 340, 120), (450, 60, 300), (600, 380, 150), (760, 60, 320)])
                    for e in stroke(1.0 + 0.05 * k, 2.5, [[x0, y], [(x0 + x1) / 2, y + 20], [x1, y + 10]], n=150, ident=k + 1)],
         "shots": [{"t": 0.9, "name": "before"}] + [{"t": round(1.3 + 0.2 * i, 2), "name": f"down{i}"} for i in range(11)] + [{"t": 6, "name": "6s"}, {"t": 12, "name": "12s"}],
         "film": {"from": 0, "to": 12, "every": 0.1, "fingers": True},
+    },
+    "hand": {
+        "_": "A hand's five fingertips land on the river at five places and push the same way (to the right) together for a little over a second, then lift: five pushed bends at once. Written by tools/toys/meander/plans.py.",
+        "size": [1179, 2556], "ppp": 3, "seconds": 16, "fps": 30,
+        "events": [e for k, (x, y, dx) in enumerate([(121, 150, 100), (242, 300, 110), (77, 450, 120), (191, 600, 110), (128, 760, 90)])
+                   for e in stroke(1.0 + 0.04 * k, 1.2, [[x, y], [x + dx * 0.5, y + 6], [x + dx, y + 4]], n=36, ident=k + 1)],
+        "shots": [{"t": 0.9, "name": "before"}, {"t": 1.7, "name": "pushing"}, {"t": 2.6, "name": "pushed"}, {"t": 6, "name": "6s"}, {"t": 12, "name": "12s"}],
+        "film": {"from": 0, "to": 14, "every": 0.1, "fingers": True},
+        "audio": True,
     },
 }
 for name, p in plans.items():

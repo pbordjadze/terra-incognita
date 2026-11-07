@@ -44,3 +44,9 @@ before reading the tools:
 - Pinch-like gestures don't zoom or pan: there is no camera to move; four or five fingers on a phone just push four
   or five places. Nothing a single finger does today changes.
 - Frame rate holds with five fingers down (the deposit grid's changed rows grow with more pushed river; measure it).
+- Round 1 (Nov 7): a push per finger (each its own reach, kick, rising ticks panned to it, one note and one haptic at
+  most every 70 ms; a tap by another finger stays a tap); kicks made close together merge so many fingers cost about
+  what one does; the deposit grid sent by changed 40-cell tiles (it had been the whole 3 MB a frame: the river spans
+  every row). The kit's check films the fingers (`film.fingers`) and times a frame with its touches. Critic: "no": two
+  thumbs work (each carries its own reach, both bends grow, a lake at ~6.5 s), but five fingers swept across gather
+  every strand and pull the river into a straight string; two fingers on one reach draw it straight between them.

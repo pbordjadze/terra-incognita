@@ -130,6 +130,8 @@ struct Hand {
     travel: f64,
     gained: f64,
     ticks: i32,
+    /// The node of the river this finger holds (once it has met the river).
+    hook: Option<usize>,
 }
 
 struct Ripple {
@@ -373,7 +375,7 @@ impl Toy for Meander {
             toy_kit::Phase::Down => {
                 // every finger is a push of its own (a stale one with the same id is replaced)
                 self.hands.retain(|h| h.id != e.id);
-                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0 });
+                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0, hook: None });
             }
             toy_kit::Phase::Move => {
                 let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
@@ -383,7 +385,9 @@ impl Toy for Meander {
                 h.at = w;
                 // the finger is a brush about a fingertip wide: whatever river it passes through is
                 // carried along, as a string is through wet sand
-                let gained = self.river.push(w, d, BRUSH_PT / s);
+                let mut hook = h.hook;
+                let gained = self.river.push(w, d, BRUSH_PT / s, &mut hook);
+                self.hands[k].hook = hook;
                 if gained.abs() > 1.0 {
                     self.pushed = self.t;
                 }
