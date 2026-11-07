@@ -21,24 +21,27 @@ Salt Flat's six (row 244) in the history of this file before row 255.
   the next half by what they see and half by what they remember (12 s), so the town settles within
   about 40 s of a cut (a test holds it); the long roads pulled back on screen; tapping a car (its way)
   dropped for the road's tap.
-- R3 (Nov 7, 00:55; R2 critic "no", weakest (more): closing the bridge didn't feel like relief: the cars
+- R3 (Nov 7, 00:42; R2 critic "no", weakest (more): closing the bridge didn't feel like relief: the cars
   stranded by the cut stayed red in one bunched queue, read as a new jam): a car's light is now how long
   its whole way takes right now (the roads it came by, the one it's on and the quickest way on, at their
   speeds now), not what it has suffered, so the town cools within about 15 s of the cut (the test holds
   it); the invitation shows from the first frame; a pinned road lights every road it could join; the long
   roads wholly on the iPhone's screen.
-- R4 (Nov 7, 01:20; R3 critic "no", weakest (polish): the payoff late and nothing tying it to his road;
+- R4 (Nov 7, 00:50; R3 critic "no", weakest (polish): the payoff late and nothing tying it to his road;
   then: tapped roads crossing with no junction, the "?" card over the roads): a road the reader drew wears
   the light of the cars on it, white while it helps and red once the crowd it brought slows every way, so
   the bridge reddens first and the town after it; a new road meets every road it crosses at a junction;
   the "?" card hangs from the top, its lines shorter; the info mark's ghost gives back a road it closes.
-- R5 (Nov 7, 01:40; R4 critic "no", weakest (polish): building wasn't the first natural touch: the
+- R5 (Nov 7, 00:55; R4 critic "no", weakest (polish): building wasn't the first natural touch: the
   tester tapped the invitation's ring and the water and never built; then: the whole sky warmed with the
   cars ("me, or night falling?"), the marks read as dead): while the invitation shows, any touch on it
   (a shore's ring, the dotted road, the water, a drag along it) builds the road it shows; the sky and the
   lake keep one warm light, so only the cars and the reader's roads change colour.
-- R6 (Nov 7, 02:05; R5 critic "no", weakest (more): undoing the bridge still not a clear win: cut early,
+- R6 (Nov 7, 01:00; R5 critic "no", weakest (more): undoing the bridge still not a clear win: cut early,
   the cars herded onto one loop and stayed orange about 12 s while the jammed street drained): the town's
   clock runs 1.7 times the screen's (every rule the same, sooner: the jam after the bridge in about 6 s,
   the relief after a cut in 6–9 s); a car's light is slow to redden and quick to cool, so the few seconds
   a closed road's cars take to go round don't flash red.
+- Final (Nov 7, 01:10; R6 critic "no", weakest (more): a second new road makes the town white again, so
+  "more roads fix it" can be learned; then: a tap on a drawn road does nothing; the "i" ghost's slash and
+  return read as a glitch). Six rounds were the limit: shipped as jam-build, the point first in HANDOFF.

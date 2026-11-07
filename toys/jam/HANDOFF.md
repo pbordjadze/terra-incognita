@@ -43,6 +43,12 @@ MSL, ~140 MB peak) pass on Linux.
 
 ## What I'd do next
 
+0. The last critic's weakest point (R6, "more"): a second road (another bridge, a road up the middle)
+   makes the town white again, so a player who keeps going may learn "more roads fix it". Real networks
+   don't punish every new road, and a road from the way in to the way out is a true improvement, but a
+   drawn road is too generous: four lanes at the top speed, so it never fills. Make drawn roads narrow
+   streets like the town's own (`Kind::Built`'s lanes and speed), retune so the bridge still hurts, and
+   let a tap on a drawn road do something (it only pins now; the tester expected it to go).
 1. Feel it on a phone: whether the drag and the slash are forgiving under a finger, the frame rate with
    ~110 cars and their glows, the sound (untuned for a town).
 2. The paradox's size is a quarter, set by the numbers in `town.rs`; steeper streets or slower long roads
