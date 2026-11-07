@@ -1,4 +1,30 @@
-# Frost: handoff (Nov 6, 2026; row 242 over row 218's)
+# Frost: handoff (Nov 7, 2026; row 254, sound, over row 242's)
+
+Row 254 answered "very good, just a little more musicality now": the glass is an instrument
+(`SOUND.md` is the intent, written first; `src/sound.rs` the voices; the hooks in `lib.rs`).
+
+- One scale: D major pentatonic over two octaves by height (`sound::step_at`, `note`), the foot lowest.
+- A touch strikes the glass (`Note::Strike`, from the probe at touch-down): modal phasors; damped by
+  the ice under it (a probe 0.45 iced counts as frosted: ferns leave gaps). A new strike lets older
+  rings down (`Glass::duck`), so a run of taps reads as notes.
+- The moving finger: the probe now runs every frame of a melt, before the frame's warmth (ice ahead
+  of the finger), driving a sizzle and snaps; the wet glass sings at the height's note while it moves,
+  and swells and lets go while it rests, with drips rising from it (`next_drip`).
+- The answer (`regrow`): the notes the stroke crossed, once each, in stroke order, an octave up, rung
+  by the seeds as they start (`Pending.step`); a tap's: a rising arpeggio. The frame's creep and
+  healing holes chime softly, no closer than 1.5 s (`last_chime`).
+- A shake: fourteen notes falling down the scale under a soft rush (`Note::Rush`, the synth's `cascade`).
+- The crackle is a sparse bed now (−43 dBFS RMS idle; touches about −25).
+
+Checks: `cargo test -p frost` (pitch by height, frost damping, no step at the onset, levels); `listen.json`, outside `plans/` so CI does not shadow-run its 13 touches, the
+plan (37 s, sound) and `tools/toys/frost/evidence.sh` (film, strips, `listen.py --measure`
+numbers) for a critic (`tools/toys/frost/CRITIC.md`). The kit's check rendered sound a frame early
+(fixed in check.rs). Unjudged on a phone: the speaker's low end (D4 is 294 Hz), the timbre.
+
+Next, if reworked: the hold (critics 4–5: make it evolve, not one held note); the bright noise under
+the shake's cascade; whether a fast real finger floods notes.
+
+# Frost: row 242's handoff (Nov 6, 2026)
 
 Row 242 answered the owner's "it just keeps filling in". What a finger does now lasts:
 

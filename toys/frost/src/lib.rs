@@ -137,6 +137,11 @@ struct Slot {
 struct Pending {
     at: [f64; 2],
     after: f64,
+    /// Its ping as it starts (loudness, 0 for none) and the scale's steps above the height's note.
+    chime: f32,
+    lift: i32,
+    /// Or the scale's step it rings, whatever its height.
+    step: Option<i32>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -173,6 +178,9 @@ struct Finger {
     mode: Mode,
     /// How much of the glass round it was ice when it was set down.
     ice: f64,
+    /// Where it was last frame, for its speed (points a second, smoothed).
+    last: [f64; 2],
+    speed: f64,
 }
 
 pub struct Frost {
@@ -219,6 +227,12 @@ pub struct Frost {
     /// The melts healing, and when the next of their edges is seeded.
     marks: Vec<Mark>,
     next_renew: f64,
+    /// When the frame or a healing hole last chimed.
+    last_chime: f64,
+    /// A resting finger's drips: the next one's time, how many so far, one to play.
+    next_drip: f64,
+    drips: usize,
+    drip: Option<(i32, f64)>,
     /// A shake's clearing: since when, from where.
     sweep: Option<(f64, [f64; 2])>,
     sweep_asked: bool,
@@ -287,16 +301,23 @@ impl Frost {
 
     /// A crystal at `at` (points): the finger's warmth melts the glass there, then a seed freezes at
     /// its middle, at a lattice angle of its own.
-    fn start(&mut self, at: [f64; 2], after: f64) {
+    /// It rings as it starts: `chime` loud (0: silent), `lift` steps above its height's note.
+    fn start(&mut self, at: [f64; 2], after: f64, chime: f32, lift: i32) {
         if self.on_glass(at) {
-            self.pending.push(Pending { at, after });
+            self.pending.push(Pending { at, after, chime, lift, step: None });
         }
+    }
+
+    /// Where on the pane a point is, as the sound has it: its note and its pan.
+    fn voice_at(&self, p: [f64; 2], lift: i32) -> (f32, f32) {
+        let f = sound::note(sound::step_at(p[1] / self.pane[1].max(1.0)) + lift);
+        (f, (p[0] / self.pane[0].max(1.0) * 2.0 - 1.0) as f32 * 0.7)
     }
 
     /// A point just inside a melt's edge (`inset` points in), at random: the print's edge wanders with
     /// the angle as frost.wgsl's melt_radius has it, and a point deeper inside another part of the
     /// stroke is not on its edge.
-    fn edge_point(&mut self, path: &[[f64; 3]], inset: f64) -> Option<[f64; 2]> {
+    fn edge_point(&mut self, path: &[[f64; 3]], inset: f64) -> Option<([f64; 2], usize)> {
         let wob = |a: f64, r: f64| r * (1.0 + 0.16 * (3.0 * a + 1.7).sin() + 0.10 * (5.0 * a + 3.4).sin() + 0.07 * (8.0 * a + 5.27).sin());
         for _ in 0..10 {
             let k = ((self.rand() * path.len() as f64) as usize).min(path.len() - 1);
@@ -309,7 +330,7 @@ impl Frost {
             let p = [c[0] + d * a.cos(), c[1] + d * a.sin()];
             let deepest = path.iter().map(|q| wob((p[1] - q[1]).atan2(p[0] - q[0]), q[2]) - (p[0] - q[0]).hypot(p[1] - q[1])).fold(f64::MIN, f64::max);
             if deepest <= inset + 1.5 {
-                return Some(p);
+                return Some((p, k));
             }
         }
         None
@@ -321,17 +342,51 @@ impl Frost {
         let path: Vec<[f64; 3]> = f.path.iter().zip(&f.radii).map(|(p, r)| [p[0], p[1], *r]).collect();
         let len: f64 = f.path.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).sum();
         let n = ((len + f.radius * 4.0) / 16.0).clamp(6.0, 18.0) as usize;
-        let mut i = 0;
+        let mut seeds = Vec::new();
         for _ in 0..n * 2 {
-            if i == n {
+            if seeds.len() == n {
                 break;
             }
             if let Some(p) = self.edge_point(&path, 1.0) {
-                // (a beat first: the clear wet glass, then the lace creeping in from its rim; on dry
-                // glass there is nothing to see in the meantime, so at once)
-                let beat = if f.ice < 0.05 { 0.05 } else { 0.6 };
-                self.start(p, t + beat + 0.07 * i as f64);
-                i += 1;
+                seeds.push(p);
+            }
+        }
+        // in the order the stroke was drawn, so the window answers the gesture as it was made: each
+        // seed a ping an octave over the stroke's note there, the phrase fading as it goes
+        seeds.sort_by_key(|s| s.1);
+        // the answer: the notes the stroke crossed, each once, in the order it crossed them, an octave
+        // up; a tap's (one note) rises through the chord from it. Each rings with the seed nearest
+        // its place in the phrase; the other seeds grow silently.
+        let h = self.pane[1].max(1.0);
+        let mut phrase: Vec<i32> = Vec::new();
+        for p in &f.path {
+            let st = sound::step_at(p[1] / h);
+            if phrase.last() != Some(&st) {
+                phrase.push(st);
+            }
+        }
+        if phrase.len() > 7 {
+            let n = phrase.len();
+            phrase = (0..7).map(|i| phrase[i * (n - 1) / 6]).collect();
+        }
+        if phrase.len() == 1 {
+            let s0 = phrase[0];
+            phrase = vec![s0, s0 + 2, s0 + 4];
+        }
+        let beat = if f.ice < 0.05 { 0.05 } else { 0.6 };
+        let gap = 0.08;
+        let (n, m) = (seeds.len(), phrase.len());
+        let mut j = 0;
+        for (i, (p, _)) in seeds.iter().enumerate() {
+            // (a beat first: the clear wet glass, then the lace creeping in from its rim; on dry
+            // glass there is nothing to see in the meantime, so at once)
+            let after = t + beat + gap * i as f64;
+            if j < m && i * m >= j * n {
+                let fade = 1.0 - 0.45 * j as f32 / m as f32;
+                self.pending.push(Pending { at: *p, after, chime: 0.11 * fade, lift: 5, step: Some(phrase[j] + 5) });
+                j += 1;
+            } else {
+                self.start(*p, after, 0.0, 0);
             }
         }
         self.marks.push(Mark { path, radius: f.radius, born: t });
@@ -352,8 +407,9 @@ impl Frost {
         let path = std::mem::take(&mut self.marks[i].path);
         let p = self.edge_point(&path, inset);
         self.marks[i].path = path;
-        if let Some(p) = p {
-            self.start(p, t);
+        if let Some((p, _)) = p {
+            // (a healing hole chimes now and then, faintly)
+            self.start(p, t, 0.035, 5);
         }
     }
 
@@ -392,7 +448,8 @@ impl Frost {
             }
         };
         let now = self.time;
-        self.pending.push(Pending { at, after: now });
+        // (the frost coming in from the frame chimes softly, low)
+        self.pending.push(Pending { at, after: now, chime: 0.05, lift: 0, step: None });
     }
 
     fn live(&self) -> usize {
@@ -519,6 +576,10 @@ impl Toy for Frost {
             creep_from: 0.0,
             marks: Vec::new(),
             next_renew: 0.0,
+            last_chime: -10.0,
+            next_drip: 0.0,
+            drips: 0,
+            drip: None,
             sweep: None,
             sweep_asked: false,
         })
@@ -549,6 +610,8 @@ impl Toy for Frost {
                         lifted: false,
                         mode: Mode::Undecided,
                         ice: 0.0,
+                        last: p,
+                        speed: 0.0,
                     });
                 }
             }
@@ -592,6 +655,8 @@ impl Toy for Frost {
                 self.marks.clear();
                 self.finger = None;
                 self.crept = CREEP_MAX;
+                self.crackle.play(sound::Note::Rush);
+                self.crackle.touch(0.0, 0.0, 0.0, 0.0, 0.0);
             }
         }
         let mut sweep_r = None;
@@ -611,7 +676,7 @@ impl Toy for Frost {
         if self.crept == 0 && since > 0.6 {
             self.crept = 1;
             self.next_creep = t + CREEP_S;
-            self.pending.push(Pending { at: [FRAME + 1.5, self.pane[1] - FRAME - 1.5], after: t });
+            self.pending.push(Pending { at: [FRAME + 1.5, self.pane[1] - FRAME - 1.5], after: t, chime: 0.05, lift: 0, step: None });
         } else if self.crept > 0 && self.crept < CREEP_MAX && t > self.next_creep {
             self.crept += 1;
             let r = self.rand();
@@ -644,7 +709,8 @@ impl Toy for Frost {
                     f.radii.resize(f.path.len(), r);
                     let last = f.radii.len() - 1;
                     f.radii[last] = f.radii[last].max(r);
-                    op.kind |= OP_MELT;
+                    op.kind |= OP_MELT | OP_PROBE;
+                    op._d = [f.at[0] as f32, f.at[1] as f32];
                     op.radius = r as f32;
                 }
             }
@@ -672,6 +738,28 @@ impl Toy for Frost {
         // one new crystal a frame (each needs its own op)
         if let Some(i) = self.pending.iter().position(|p| p.after <= t) {
             let p = self.pending.remove(i);
+            // (the frame's and the healing holes' chimes no closer than a second and a half apart)
+            let quiet = p.step.is_none() && t - self.last_chime < 1.5;
+            if p.chime > 0.0 && !quiet {
+                if p.step.is_none() {
+                    self.last_chime = t;
+                }
+                let (_, pan) = self.voice_at(p.at, p.lift);
+                let f = if let Some(st) = p.step {
+                    sound::note(st)
+                } else {
+                    // (round the height's note, now one, now another of its neighbours)
+                    let r = self.rand();
+                    let st = sound::step_at(p.at[1] / self.pane[1].max(1.0)) + p.lift + if r < 0.3 { 1 } else if r < 0.5 { 2 } else { 0 };
+                    sound::note(st)
+                };
+                // (a little louder, a little brighter or not, so no two pings are the same)
+                let k = 0.75 + 0.5 * self.rand() as f32;
+                self.crackle.play(sound::Note::Ping { f, pan, amp: p.chime * k });
+                if std::env::var("FROST_LOG").is_ok() {
+                    eprintln!("t {t:.2} ping {f:.0} amp {:.3} at {:?}", p.chime * k, p.at);
+                }
+            }
             // a free grid, or the one whose tips have stalled longest (it stops where it is)
             let k = (0..SLOTS).find(|&k| !self.slots[k].live).unwrap_or_else(|| (0..SLOTS).min_by(|&a, &b| self.slots[a].advanced.total_cmp(&self.slots[b].advanced)).unwrap());
             let angle = self.rand() * std::f64::consts::FRAC_PI_3;
@@ -698,6 +786,12 @@ impl Toy for Frost {
             let mut cp = enc.begin_compute_pass(&Default::default());
             // the warm fingertip first (every live crystal's cells there, the pane's claim and ice),
             // then the new grid; each writes binding 2, so once a parity
+            // (what is under the finger is read before this frame's warmth reaches it)
+            if o.kind & OP_PROBE != 0 {
+                cp.set_bind_group(0, &self.binds[0], &[]);
+                cp.set_pipeline(&self.probe);
+                cp.dispatch_workgroups(1, 1, 1);
+            }
             for p in 0..2 {
                 cp.set_bind_group(0, &self.binds[p], &[]);
                 cp.set_pipeline(&self.melt_cells);
@@ -710,10 +804,6 @@ impl Toy for Frost {
             if o.kind & OP_MELT != 0 {
                 cp.set_pipeline(&self.melt_pane);
                 cp.dispatch_workgroups(span(o.at[0], o.to[0]).div_ceil(8), span(o.at[1], o.to[1]).div_ceil(8), 1);
-            }
-            if o.kind & OP_PROBE != 0 {
-                cp.set_pipeline(&self.probe);
-                cp.dispatch_workgroups(1, 1, 1);
             }
             if o.kind & OP_CLEAR != 0 {
                 cp.set_pipeline(&self.clear);
@@ -749,18 +839,66 @@ impl Toy for Frost {
         let _ = gpu.device.poll(wgpu::PollType::Wait);
         let counts: Vec<u32> = bytemuck::cast_slice(&slice.get_mapped_range()).to_vec();
         self.readback.unmap();
+        let mut strike = None;
+        let mut touch = (0.0, 0.0, 0.0, 0.0, 0.0);
+        let [pw, ph] = self.pane;
         if let Some(f) = &mut self.finger {
+            let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
             if f.mode == Mode::Undecided {
                 // (on dry glass a lifted print has nothing to show while it waits: its stars come at once)
-                let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
                 let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
                 f.ice = ice;
                 f.mode = Mode::Melt;
+                strike = Some((f.at, ice));
                 if std::env::var("FROST_LOG").is_ok() {
                     eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
                 }
+            } else if dt > 0.0 {
+                // the finger's way this frame: the ice it melts (ahead of it, as it goes; round it,
+                // as a resting melt widens over frost), and the glass singing as it moves
+                let v = (f.at[0] - f.last[0]).hypot(f.at[1] - f.last[1]) / dt;
+                f.speed += (v - f.speed) * (1.0 - (-dt / 0.08).exp());
+                let rest = ((t - f.rest_since) / MELT_S).clamp(0.0, 1.0);
+                let moving = (f.speed / 260.0).min(1.0);
+                let widening = if rest < 1.0 && f.radius < MELT_MAX { f.ice * 0.5 } else { 0.0 };
+                let sizzle = (ice * (0.35 + 0.65 * moving)).max(widening);
+                let snaps = ice * f.speed * 0.12;
+                let step = sound::step_at(f.at[1] / ph.max(1.0));
+                let mut sing = ((f.speed - 25.0) / 300.0).clamp(0.0, 1.0) * (1.0 - 0.5 * ice);
+                // resting, the glass swells to its note as the melt widens, then lets it go (no
+                // drone); and the melt drips, slow soft notes rising from it, for as long as it stays
+                let held = t - f.rest_since;
+                if f.speed < 30.0 {
+                    let a = (held / 0.4).clamp(0.0, 1.0);
+                    let swell = a * a * (3.0 - 2.0 * a) * (-(held - MELT_S).max(0.0) / 1.5).exp();
+                    sing = sing.max(0.75 * swell);
+                    if held > 0.35 && t > self.next_drip {
+                        const DRIP: [i32; 6] = [2, 4, 5, 4, 7, 5];
+                        let k = self.drips % DRIP.len();
+                        self.drips += 1;
+                        let r = (self.drips as f64 * 0.618).fract();
+                        self.next_drip = t + 0.5 + 0.3 * r;
+                        self.drip = Some((step + DRIP[k], (f.at[0] / pw.max(1.0) * 2.0 - 1.0) * 0.7));
+                    }
+                } else {
+                    self.drips = 0;
+                }
+                let pan = (f.at[0] / pw.max(1.0) * 2.0 - 1.0) * 0.7;
+                touch = (sizzle as f32, snaps as f32, sound::note(step), sing as f32, pan as f32);
             }
+            f.last = f.at;
         }
+        if let Some((st, pan)) = self.drip.take() {
+            self.crackle.play(sound::Note::Ping { f: sound::note(st), pan: pan as f32, amp: 0.05 });
+        }
+        if let Some((at, ice)) = strike {
+            // the glass struck: bare glass rings, frost damps it
+            let (f, pan) = self.voice_at(at, 0);
+            // (ferns leave gaps: a probe 0.45 iced is a frosted pane)
+            let damp = (ice / 0.45).clamp(0.0, 1.0);
+            self.crackle.play(sound::Note::Strike { f, pan, amp: 0.22, damp: (damp * damp * (3.0 - 2.0 * damp)) as f32 });
+        }
+        self.crackle.touch(touch.0, touch.1, touch.2, touch.3, touch.4);
         let mut frozen_now = 0.0;
         let mut pan_w = 0.0;
         for k in 0..SLOTS {
@@ -788,10 +926,11 @@ impl Toy for Frost {
         if std::env::var("FROST_LOG").is_ok() {
             eprintln!("t {t:.2} live {} frozen {frozen_now}", self.live());
         }
-        // the crackle: as many clicks as cells freezing, softened (a fern's run is a rush, a plate's
+        // the crackle: sparse ticks as cells freeze, under the glass's notes (round 1 of row 254: a full
+        // bed of it buried them), softened (a fern's run is a rush, a plate's
         // slow spread a scatter)
         let per_s = if dt > 0.0 { frozen_now / dt } else { 0.0 };
-        let clicks = (per_s.sqrt() * 2.2).min(260.0);
+        let clicks = (per_s.sqrt() * 0.7).min(60.0);
         let pan = if frozen_now > 0.0 { pan_w / frozen_now } else { 0.0 };
         self.crackle.set(clicks as f32, pan as f32);
         // and in the hand: a light tick for every so much new ice, never faster than 14 a second
