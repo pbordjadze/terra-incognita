@@ -75,7 +75,8 @@ while IFS= read -r f; do
   if cmp -s "$WORK/each/$f" "$WORK/all/$f"; then files_same=$((files_same + 1)); else echo "DIFFERENT: $f"; status=1; fi
 done < <(cd "$WORK/each" && find . \( -name '*.png' -o -name '*.csv' \) | sort)
 extra=$(comm -13 <(cd "$WORK/each" && find . -type f -not -name '*.mp4' | sort) <(cd "$WORK/all" && find . -type f -not -name '*.mp4' | sort))
-# shellcheck disable=SC2001 # a prefix on every line, which ${var//} cannot write
+# (sed: a prefix on every line, which ${var//} cannot write)
+# shellcheck disable=SC2001
 if [ -n "$extra" ]; then echo "DIFFERENT: only play-all wrote:"; echo "$extra" | sed 's/^/     /'; status=1; fi
 mp4s=$(cd "$WORK/each" && find . -name '*.mp4' | wc -l); mp4s_all=$(cd "$WORK/all" && find . -name '*.mp4' | wc -l)
 
