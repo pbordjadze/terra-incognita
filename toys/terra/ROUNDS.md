@@ -56,3 +56,63 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   a pinch out inside a globe toy goes home once the toy's globe is whole or will go no farther. Unjudged from
   Linux: the frame rate while a scene runs in its window during the dive (the toy is updated and drawn every
   frame from the touch), touch, sound.
+- Scale, round 1 (Nov 7, 2026, ET; painting-company row 258, discovery through scale): the world's rivers on the
+  kit's globe (HydroSHEDS' HydroRIVERS, every reach of 300 km2 upstream or more; `Globe::with_rivers`, toy-kit
+  `globe/rivers.rs`, built by `tools/toys/terra/rivers.py`): a river shows once its catchment is large for the
+  ground a point covers, so from afar the great rivers alone and each pinch finds their tributaries and theirs,
+  denser the lower it goes; streamed in 5-degree tiles as the camera comes close. Pinched close to a scene's light
+  (zoom 2.4), the light becomes a window onto the toy itself, growing with the zoom; let go well grown, the
+  descent carries on into the toy; inside a scene two fingers pinch it back into its light and the Earth rises.
+  The kit's coast, magnified past its raster, is smoothed (it stepped). Plans `descent`, `descent-meander`,
+  `descent-murmuration`; films by `tools/toys/terra/descent.sh`; the critic's brief
+  `tools/toys/newcomer/SCALE_CRITIC.md`. Critic (fresh): weakest, going into a toy is still an iris, not a
+  descent (a flat dark disc grows over a map that barely zooms; inside, a side-on view); kept: "a ton of rivers
+  there" really happens; India and the Himalaya quiet. Newcomer: tapped lights, never pinched (the depth not
+  found unprompted).
+- Scale, round 2 (Nov 7; row 258; weakest of round 1: an iris, not a descent): a scene is the glass at the Earth's
+  closest (zoom 40, was 9), so its window grows at about the ground's pace with the rivers coming up round it; the
+  window's edge an uneven dissolve, clean as it becomes the glass; the Earth falls into the scene's own light as its
+  window grows (the starlings' dusk, the salt flat's night), so the window's sky meets a ground as dark as itself; a
+  pinch out of a scene rises straight up over its place; rivers give way to lakes and the sea; the "?" card says
+  to pinch. Plan `descent-salt`. Critic (fresh): weakest, still a porthole: the toy is drawn the size of a country
+  (the flock, the river as wide as the Andes), the ground stops falling at the hand-off; kept: the rivers, India,
+  night falling over the Great Basin, coming out over the same place.
+- Scale, round 3 (Nov 7; row 258; weakest of round 2: a porthole, the toy far larger than its land): a toy seen from
+  above says where it lies (the kit's `Toy::seen_from_above`: its place, metres a point, turn, and a sheet of its ground),
+  and Terra comes down onto it at its true scale: Meander's 22 km Sentinel-2 sheet laid on the Earth at its place and
+  turn (the kit's `globe/sheet.rs`), the toy's live river lying in it, growing exactly as the ground does, the camera
+  turning to the sheet's 29 degrees, until at zoom ~2300 the toy is the glass and the hand-off is exact; out, it
+  shrinks back into its ground. The hand reaches that deep only over such a toy. Critic (fresh): "the first true
+  descent" (Meander's river growing with the ground until it fills the glass); weakest, the last pinches go over a
+  blank ground and the toy arrives as a shape with an edge (a postcard on a tablecloth; the starlings and the salt
+  flat still discs).
+- Scale, round 4 (Nov 7; row 258; weakest of round 3: a blank ground, then the toy as a shape): real ground under
+  each scene, Terra's own (`tools/toys/terra/region.py`): 200 km of Sentinel-2 at ~100 m round the Rio Beni,
+  Bonneville and Ham Wall, and 20 km at 10 m under the last two, laid by the kit's sheets (several now, the coarse
+  under the fine); a sheet gives way to the map's sea; by night or a dusk it takes the night's tones (white salt by
+  moonlight, as the Salt Flat's own crust); the Salt Flat seen from above too (`Jam::seen_from_above`), down to zoom
+  ~108,000 where its cars are their true size. Critic (fresh): weakest, the scale just before each toy still empty
+  or patched (the salt flat a dark slate for seconds, Meander's sheet a quilt with seams and the map's rivers
+  stopping at it, the starlings' flock larger than Ireland); kept: the rivers, India, Meander alive in its ground,
+  night with Salt Lake City's lights, out over the same place.
+- Scale, round 5 (Nov 7; row 258; weakest of round 4: the scale before the toy empty or patched): a sheet is placed
+  from the screen's own pixels close in (exact to the millimetre, where the globe's f32 longitude steps by most of a
+  metre); its colour ripens with the depth (the month's ground's broad colour with the satellite's detail while a
+  point covers a kilometre, its own by 50 m), so it comes in as more of the same ground; the map's rivers drawn over
+  the sheets, giving way as they ripen; the regions' scenes blended with feathered weights (no seams); the
+  starlings' window opens at the scale of the Levels' fields (zoom 40 to 1500); a first finger inside a scene waits
+  a tenth of a second, so a pinch out never reaches the toy. Critic (fresh): weakest, the salt flat's night descent
+  dark for seconds (the Salt Flat has since become Shortcut, a town at Stuttgart, on main: row 255; its descent from
+  above withdrawn), Murmuration still a dusk disc, a close second. Newcomer (second): tapped lights, never pinched.
+- Scale, round 6 (Nov 7; row 258; the last): on main the Salt Flat had become Shortcut, a town at Stuttgart (row
+  255), so its descent from above, its Bonneville sheets and the drawn crust came out; only the scene light nearest
+  the middle opens, and only at its own zoom (Shortcut's had opened over Europe on the way to Ham Wall); the
+  starlings' dusk falls by the zoom from 6 to 60, so it is evening over the Levels before their window opens.
+  Rebased onto wgpu 30 and the linters (row 252). Critic (fresh), the last verdict: weakest, Murmuration still a
+  porthole (a dusk disc over the Somerset fields, its flock seen side-on and far larger than its land, then a cut
+  to the reed bed), the same note six rounds running, not polish; kept: the rivers denser at every pinch, India's
+  quiet, Meander's true descent, night over England on the way to Murmuration, out over the same place, almost no
+  chrome. Ship as is: no. Released at six rounds. Next: Murmuration's own arrival from above (its flock at its
+  true size over the reeds, the eye tipping to the horizon as it comes down), in Murmuration itself; a newcomer
+  who pinches (two of two tapped and never pinched). Before the release: two fingers inside a scene stay the
+  toy's unless they close in (Meander takes several fingers, row 253; plan `meander-two`, strict).

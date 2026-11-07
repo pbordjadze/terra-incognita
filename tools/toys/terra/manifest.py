@@ -11,11 +11,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 HELD = ['whales', 'murmuration', 'mold', 'fireflies', 'bell', 'swell', 'jam', 'meander', 'frost']
-NOTE = ("Every file the toys Terra holds load (their manifests merged: no name differs), by the names their code "
+NOTE = ("Terra's own data (its rivers) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code "
         "uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Written by "
         "tools/toys/terra/manifest.py; never hand-edit.")
 
-files = {}
+# Terra's own data, beside the toys': the world's rivers (tools/toys/terra/rivers.py) and the ground round
+# the scenes it holds (tools/toys/terra/region.py); row 258
+OWN = {'rivers.bin': 'toys/terra/data/rivers.bin'}
+OWN.update({f'{n}.jpg': f'toys/terra/data/{n}.jpg' for n in ['beni', 'hamwall', 'hamwall-near']})
+files = dict(OWN)
 for toy in HELD:
     for name, src in json.loads((ROOT / 'toys' / toy / 'manifest.json').read_text())['files'].items():
         if files.get(name, src) != src:

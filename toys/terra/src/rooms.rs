@@ -38,6 +38,8 @@ pub trait Room {
     fn set_camera(&mut self, cam: Camera) -> bool;
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]>;
     fn anchors(&self) -> Vec<(String, [f64; 2])>;
+    /// Where the toy lies, when its picture is the ground seen from above (`Toy::seen_from_above`).
+    fn seen_from_above(&self) -> Option<toy_kit::Above>;
 }
 
 pub struct Inside<T: Toy> {
@@ -111,6 +113,9 @@ pub fn saved_camera(saved: &str) -> Option<Camera> {
 }
 
 impl<T: Toy> Room for Inside<T> {
+    fn seen_from_above(&self) -> Option<toy_kit::Above> {
+        self.toy.seen_from_above(&self.ctx)
+    }
     fn pointer(&mut self, e: PointerEvent) {
         self.toy.pointer(&mut self.ctx, e);
     }

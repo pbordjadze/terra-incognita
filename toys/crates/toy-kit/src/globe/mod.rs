@@ -7,6 +7,8 @@
 //! `globe.view()` on the CPU to place things (`disc.project(&camera, lonlat)`).
 
 pub mod ground;
+pub mod rivers;
+pub mod sheet;
 
 use crate::assets::Assets;
 use crate::gpu::{Gpu, Textures, View, ViewUniform, VIEW_WGSL};
@@ -53,6 +55,11 @@ pub struct Globe {
     pub seconds: f64,
     /// The hand: on by default; a toy that reads fingers itself turns it off.
     pub hand: Hand,
+    /// The world's rivers over the ground, shown by the scale ([`Globe::with_rivers`]; None: none).
+    pub rivers: Option<rivers::Rivers>,
+    /// Pictures of the ground laid at their true places over the ground and its rivers, the first lowest
+    /// ([`Globe::set_sheets`]).
+    pub sheets: Vec<sheet::SheetPass>,
     width: u32,
     height: u32,
     ppp: f64,
@@ -103,10 +110,55 @@ impl Globe {
             night: 0.0,
             seconds: 0.0,
             hand: Hand::default(),
+            rivers: None,
+            sheets: Vec::new(),
             width,
             height,
             ppp,
         })
+    }
+
+    /// The world's rivers over the ground (`rivers.bin` in the toy's data): from afar the great rivers,
+    /// closer more and more of their tributaries (`rivers`).
+    pub fn with_rivers(&mut self, gpu: &Gpu, assets: &dyn Assets) -> anyhow::Result<()> {
+        crate::step("the globe's rivers");
+        self.rivers = Some(rivers::Rivers::new(
+            gpu,
+            &self.view_layout,
+            assets,
+            &self.textures,
+        )?);
+        Ok(())
+    }
+
+    /// Lays pictures of the ground at their places (`Toy::seen_from_above`'s sheet, a wider one under it), the
+    /// first lowest, or takes them away (empty). A sheet already laid is kept as it is (its picture loaded
+    /// once).
+    pub fn set_sheets(
+        &mut self,
+        gpu: &Gpu,
+        assets: &dyn Assets,
+        sheets: &[crate::Sheet],
+    ) -> anyhow::Result<()> {
+        if self.sheets.len() == sheets.len()
+            && self.sheets.iter().zip(sheets).all(|(p, s)| &p.sheet == s)
+        {
+            return Ok(());
+        }
+        let mut old = std::mem::take(&mut self.sheets);
+        for s in sheets {
+            match old.iter().position(|p| &p.sheet == s) {
+                Some(i) => self.sheets.push(old.remove(i)),
+                None => self.sheets.push(sheet::SheetPass::new(
+                    gpu,
+                    &self.view_layout,
+                    assets,
+                    &self.textures,
+                    s.clone(),
+                )?),
+            }
+        }
+        Ok(())
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -183,6 +235,10 @@ impl Globe {
         }
         let disc = self.disc();
         self.camera = self.hand.coast(self.camera, disc, dt);
+        let view = self.view();
+        if let Some(r) = self.rivers.as_mut() {
+            r.update(gpu, &view, t);
+        }
     }
 
     /// A finger for the hand (drag turns, pinch zooms, a flick carries on). Says whether it took it.
@@ -211,16 +267,27 @@ impl Globe {
 
     /// Writes the view uniform (call once a frame before drawing anything that reads it).
     pub fn upload(&self, gpu: &Gpu) {
-        gpu.queue.write_buffer(
-            &self.view_buf,
-            0,
-            bytemuck::bytes_of(&self.view().uniform()),
-        );
+        let view = self.view();
+        gpu.queue
+            .write_buffer(&self.view_buf, 0, bytemuck::bytes_of(&view.uniform()));
+        if let Some(r) = &self.rivers {
+            r.mask(gpu, &view, &self.view_bind);
+        }
+        for s in &self.sheets {
+            s.upload(gpu, &view);
+        }
     }
 
     /// The ground, filling the target (it clears nothing: it draws every pixel).
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>) {
         self.ground.draw(rp, &self.view_bind);
+        // (the sheets under the rivers: from afar a sheet is more of the same ground, its rivers the map's)
+        for s in &self.sheets {
+            s.draw(rp, &self.view_bind);
+        }
+        if let Some(r) = &self.rivers {
+            r.lay(rp, &self.view_bind);
+        }
     }
 }
 

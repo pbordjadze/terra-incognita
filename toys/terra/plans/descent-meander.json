@@ -1,0 +1,245 @@
+{
+ "_": "From the whole Earth down the Amazon's rivers onto Meander, the Rio Beni's floodplain, at its true scale (painting-company row 258): over the Beni, pinch after pinch; the great rivers, their tributaries and theirs; then the floodplain's own satellite picture sharpening out of the month's ground at its place, and in it the toy's river, live, growing exactly as the ground does until it is the glass. Inside, two pinches out take it back down to a speck in its ground and the Earth whole.",
+ "restore": "{\"camera\":{\"lon\":-67.0475,\"lat\":-12.9631,\"zoom\":1.4,\"roll\":0.0}}",
+ "seconds": 32,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.3,
+   "pinch": [
+    {
+     "lonlat": [
+      -77.36298280861756,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -56.73201719138244,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 2.1,
+   "pinch": [
+    {
+     "lonlat": [
+      -71.01499338792983,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -63.08000661207017,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 3.9,
+   "pinch": [
+    {
+     "lonlat": [
+      -68.57345899535763,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -65.52154100464237,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 5.7,
+   "pinch": [
+    {
+     "lonlat": [
+      -67.63440730590678,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -66.46059269409322,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 7.5,
+   "pinch": [
+    {
+     "lonlat": [
+      -67.27323357919491,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -66.82176642080509,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 9.3,
+   "pinch": [
+    {
+     "lonlat": [
+      -67.13432060738266,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -66.96067939261734,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 11.1,
+   "pinch": [
+    {
+     "lonlat": [
+      -67.08089254130103,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -67.01410745869897,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 12.9,
+   "pinch": [
+    {
+     "lonlat": [
+      -67.06034328511578,
+      -12.9631
+     ]
+    },
+    {
+     "lonlat": [
+      -67.03465671488422,
+      -12.9631
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.2
+  },
+  {
+   "t": 24.0,
+   "pinch": [
+    [
+     110,
+     426
+    ],
+    [
+     283,
+     426
+    ]
+   ],
+   "to": 0.35,
+   "for": 1.2
+  },
+  {
+   "t": 25.8,
+   "pinch": [
+    [
+     110,
+     426
+    ],
+    [
+     283,
+     426
+    ]
+   ],
+   "to": 0.3,
+   "for": 1.2
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.2,
+   "name": "earth"
+  },
+  {
+   "t": 2.0,
+   "name": "continent"
+  },
+  {
+   "t": 3.8,
+   "name": "basin"
+  },
+  {
+   "t": 5.6,
+   "name": "region"
+  },
+  {
+   "t": 7.4,
+   "name": "sheet"
+  },
+  {
+   "t": 9.2,
+   "name": "plain"
+  },
+  {
+   "t": 11.0,
+   "name": "closer"
+  },
+  {
+   "t": 12.8,
+   "name": "closest"
+  },
+  {
+   "t": 17.0,
+   "name": "inside"
+  },
+  {
+   "t": 24.9,
+   "name": "squeezed"
+  },
+  {
+   "t": 26.5,
+   "name": "out"
+  },
+  {
+   "t": 31.5,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 32,
+  "every": 0.1
+ }
+}

@@ -1,0 +1,172 @@
+{
+ "_": "Discovery through scale (painting-company row 258): over India and the Himalaya, a pinch in, again and again, from the whole Earth to as close as the globe goes, a rest there, then pinched back out to the whole Earth. Filmed. The 13-inch iPad's own (its fingers at its middle).",
+ "restore": "{\"camera\": {\"lon\": 82.0, \"lat\": 25.5, \"zoom\": 1.0, \"roll\": 0.0}}",
+ "seconds": 21,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.3,
+   "pinch": [
+    {
+     "lonlat": [
+      72.59186366413715,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      91.40813633586285,
+      25.5
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.4
+  },
+  {
+   "t": 3.6,
+   "pinch": [
+    {
+     "lonlat": [
+      78.38148602466813,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      85.61851397533187,
+      25.5
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.4
+  },
+  {
+   "t": 5.7,
+   "pinch": [
+    {
+     "lonlat": [
+      80.6082638556416,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      83.3917361443584,
+      25.5
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.4
+  },
+  {
+   "t": 7.8,
+   "pinch": [
+    {
+     "lonlat": [
+      81.46471686755446,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      82.53528313244554,
+      25.5
+     ]
+    }
+   ],
+   "to": 2.6,
+   "for": 1.4
+  },
+  {
+   "t": 12.5,
+   "pinch": [
+    {
+     "lonlat": [
+      81.61305245715403,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      82.38694754284597,
+      25.5
+     ]
+    }
+   ],
+   "to": 0.3,
+   "for": 1.2
+  },
+  {
+   "t": 14.3,
+   "pinch": [
+    {
+     "lonlat": [
+      80.71017485718009,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      83.28982514281991,
+      25.5
+     ]
+    }
+   ],
+   "to": 0.3,
+   "for": 1.2
+  },
+  {
+   "t": 16.1,
+   "pinch": [
+    {
+     "lonlat": [
+      77.70058285726698,
+      25.5
+     ]
+    },
+    {
+     "lonlat": [
+      86.29941714273302,
+      25.5
+     ]
+    }
+   ],
+   "to": 0.35,
+   "for": 1.2
+  }
+ ],
+ "shots": [
+  {
+   "t": 1.0,
+   "name": "earth"
+  },
+  {
+   "t": 3.4,
+   "name": "continent"
+  },
+  {
+   "t": 5.5,
+   "name": "region"
+  },
+  {
+   "t": 7.6,
+   "name": "close"
+  },
+  {
+   "t": 11.0,
+   "name": "closest"
+  },
+  {
+   "t": 20.5,
+   "name": "out"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 21,
+  "every": 0.1
+ }
+}

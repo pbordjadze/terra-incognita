@@ -1,0 +1,15 @@
+{
+ "_": "Meander inside Terra takes several fingers (painting-company row 253): in through its light, then two fingers drawn side by side across the river, each pushing its own reach; they never close in, so they are the toy's, not a pinch out of it (row 258).",
+ "seconds": 14,
+ "fps": 20,
+ "strict_taps": true,
+ "events": [
+  { "t": 1.0, "tap": "meander" },
+  { "t": 9.0, "down": [140, 380], "id": 11 }, { "t": 9.02, "down": [250, 380], "id": 12 },
+  { "t": 9.2, "move": [150, 430], "id": 11 }, { "t": 9.2, "move": [260, 430], "id": 12 },
+  { "t": 9.4, "move": [160, 480], "id": 11 }, { "t": 9.4, "move": [270, 480], "id": 12 },
+  { "t": 9.6, "move": [170, 530], "id": 11 }, { "t": 9.6, "move": [280, 530], "id": 12 },
+  { "t": 9.8, "up": [170, 530], "id": 11 }, { "t": 9.8, "up": [280, 530], "id": 12 }
+ ],
+ "shots": [{ "t": 8.8, "name": "inside" }, { "t": 10.2, "name": "pushed" }, { "t": 13.5, "name": "after" }]
+}

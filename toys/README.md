@@ -46,6 +46,14 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     (`globe::wgsl(own)` prepends it and the shared helpers to a pass's WGSL; `globe.view_bind()` is
     its group 0). Copied from adrift-core on Nov 2, 2026 so neither breaks the other: change the kit
     here, for every toy, compatibly (every toy builds in CI when the kit changes).
+  - Discovery through scale (painting-company row 258), all opt-in, so a toy without them is as it was:
+    `globe.with_rivers()` lays the world's rivers (HydroSHEDS, `rivers.bin` from
+    `tools/toys/terra/rivers.py`), more of them the closer the camera, streamed in tiles
+    (`globe/rivers.rs`); `globe.set_sheets()` lays satellite pictures of the ground at their true place,
+    size and turn, their colour ripening from the map's light key to their own as the camera comes down
+    (`globe/sheet.rs`); and `Toy::seen_from_above` lets a toy whose picture is the ground from straight
+    above (Meander) say where it lies, so a globe holding it (Terra) comes down onto it at its true scale
+    and hands over exactly.
   - The globe's hand is Adrift's gestures (drag over the poles, two-finger twist and anchored pinch,
     fling, Home by over-pinch or three fingers up): a globe toy calls `globe.set_home()` once its
     opening camera is set, and lets its own camera wait while `globe.hand.busy()`.

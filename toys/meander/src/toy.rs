@@ -11,6 +11,10 @@ use toy_kit::{Ctx, PointerEvent, Toy};
 
 /// The sheet: metres a side (plain.json), and the deposit grid's cells a side.
 const SIDE: f64 = 22000.0;
+/// The sheet's middle (its UTM 19S centre 711800 E, 8566130 N in plain.json, as longitude and latitude) and
+/// its turn, degrees: its up is this far east of north (tools/toys/meander/build.py's TURN).
+const SHEET_LONLAT: (f64, f64) = (-67.0475, -12.9631);
+const TURN: f64 = 29.0;
 const NG: usize = 880;
 /// The deposit grid's upload tiles: TILE cells square, TILES a side.
 const TILE: usize = 40;
@@ -951,6 +955,35 @@ impl Toy for Meander {
                 path,
             }],
         ))
+    }
+
+    fn seen_from_above(&self, ctx: &Ctx) -> Option<toy_kit::Above> {
+        // the floodplain seen from straight above at its true scale (painting-company row 258): where the
+        // screen's middle lies on the Earth, from the sheet's middle (its UTM centre, plain.json) and where the
+        // view sits in the turned sheet (metres right and down of its middle)
+        let (s, c) = self.view(ctx);
+        let t = TURN.to_radians();
+        let e = c[0] * t.cos() - c[1] * t.sin();
+        let n = -c[0] * t.sin() - c[1] * t.cos();
+        let (lon0, lat0) = SHEET_LONLAT;
+        let r = 6_371_000.0;
+        let centre = [
+            lon0 + (e / (r * lat0.to_radians().cos())).to_degrees(),
+            lat0 + (n / r).to_degrees(),
+        ];
+        let sheet = toy_kit::Sheet {
+            image: "plain.jpg".into(),
+            centre: [lon0, lat0],
+            side_m: SIDE,
+            turn: TURN,
+            lift: [0.06, 1.18, 1.15],
+        };
+        Some(toy_kit::Above {
+            centre,
+            metres_per_point: 1.0 / s,
+            turn: TURN,
+            sheet: Some(sheet),
+        })
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
