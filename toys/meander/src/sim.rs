@@ -273,9 +273,25 @@ impl River {
             self.erase_crossed();
         }
         if moved > 0.05 {
-            self.kicks.push((at, self.year, (l / 500.0).min(0.5) * moved));
+            self.kick(at, (l / 500.0).min(0.5) * moved);
         }
         self.length() - before
+    }
+
+    /// Loosens the ground round `at` (a push or a tap). A kick close by and only just made takes this one
+    /// in (their weighted place, their strengths added), so several fingers moving every frame keep the
+    /// list, and the step's cost, about as short as one finger's.
+    pub fn kick(&mut self, at: [f64; 2], strength: f64) {
+        let year = self.year;
+        if let Some(k) = self.kicks.iter_mut().rev().take(16).find(|k| year - k.1 < 2.0 && dist(k.0, at) < KICK_R * 0.25) {
+            let s = k.2 + strength;
+            if s > 0.0 {
+                k.0 = [(k.0[0] * k.2 + at[0] * strength) / s, (k.0[1] * k.2 + at[1] * strength) / s];
+            }
+            k.2 = s;
+            return;
+        }
+        self.kicks.push((at, year, strength));
     }
 
     /// The distance from `at` to the channel's centreline, m.

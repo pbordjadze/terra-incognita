@@ -25,3 +25,22 @@ and a rubber-band pull makes the river a puppet; push the bank and let the river
 - Round 5: a cut loop dark at once; the cut a pulse of light running along the water; point-bar sand. Critic: "ok, close":
   hairline scroll bars read as scratches; pale discs on the channel (the neck glow, which sat on the land between reaches).
 - Round 6: no neck glow, scroll bars almost gone, banks a shade darker, the water a little clear over them.
+
+## Row 253 (Nov 7, 2026): multitouch
+
+Paul on meander-build-169, on his phone: "Meander is incredible—just needs multitouch." What it should feel like, written
+before reading the tools:
+- Every finger is a push of its own, from the frame it lands to the frame it lifts: two thumbs pushing two bends apart
+  each carry their own reach of river, and neither waits for the other or steals its grip. A finger landing while
+  another is moving doesn't jerk, reset or cancel the first.
+- Two fingers on the same reach share it without tearing it: each moves the nodes nearest it; the river between them
+  stretches, never kinks or crosses itself.
+- Each push leaves its own kick, so two pushed bends each swell and each cut their own lake; the calm that holds the
+  rest of the river back holds while any finger is down or freshly lifted, and the river's cuts there still come
+  ~1.5 s after the lift.
+- A tap of one finger while another pushes is still a tap (a nudge and a ring), not part of the push.
+- Sound and touch stay readable with many fingers: the rising ticks are per finger (or shared, never a stutter of
+  doubled notes), and the haptic doesn't buzz continuously.
+- Pinch-like gestures don't zoom or pan: there is no camera to move; four or five fingers on a phone just push four
+  or five places. Nothing a single finger does today changes.
+- Frame rate holds with five fingers down (the deposit grid's changed rows grow with more pushed river; measure it).

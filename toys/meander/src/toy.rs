@@ -12,6 +12,9 @@ use toy_kit::{Ctx, PointerEvent, Toy};
 /// The sheet: metres a side (plain.json), and the deposit grid's cells a side.
 const SIDE: f64 = 22000.0;
 const NG: usize = 880;
+/// The deposit grid's upload tiles: TILE cells square, TILES a side.
+const TILE: usize = 40;
+const TILES: usize = NG / TILE;
 const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
 /// The clock while nothing on screen is about to happen, years a second.
@@ -139,9 +142,11 @@ pub struct Meander {
     river: River,
     /// The year each cell last had the river in it (NEVER if it never has).
     dep: Vec<f32>,
-    /// The same as the texture's half floats (year, 1), and the rows changed since the last upload.
+    /// The same as the texture's half floats (year, 1), and the tiles (TILE cells square) whose half
+    /// floats changed since the last upload: the river covers a sliver of each row, and a half float
+    /// holds a year to a year or so, so most frames change a few tiles, not the 3 MB grid.
     half: Vec<u16>,
-    dirty: (usize, usize),
+    dirty: Vec<bool>,
     epoch: f64,
     dep_tex: wgpu::Texture,
     _plain: Texture,
@@ -155,11 +160,13 @@ pub struct Meander {
     dep_view: wgpu::TextureView,
     uni: wgpu::Buffer,
     painter: Painter,
-    /// The finger in the river: its id, where it was last (m), how far it has gone (points), the river's
-    /// length gained since it touched, and the ticks struck for that.
-    hand: Option<Hand>,
+    /// The fingers in the river, each a push of its own: its id, where it was last (m), how far it has
+    /// gone (points), the river's length gained since it touched, and the ticks struck for that.
+    hands: Vec<Hand>,
     /// When a finger last pushed the river (s).
     pushed: f64,
+    /// When a tick last sounded (s): with several fingers pushing, one note and one tap at a time.
+    ticked: f64,
     /// When the river was last laid (it swells from a thread to its width).
     laid: f64,
     ripples: Vec<Ripple>,
@@ -243,9 +250,12 @@ impl Meander {
                     if dx * dx + dy * dy <= r * r {
                         let c = yy as usize * NG + xx as usize;
                         self.dep[c] = y;
-                        self.half[c * 2] = f16(y);
-                        self.half[c * 2 + 1] = 0x3c00;
-                        self.dirty = (self.dirty.0.min(yy as usize), self.dirty.1.max(yy as usize + 1));
+                        let h = f16(y);
+                        if self.half[c * 2] != h || self.half[c * 2 + 1] != 0x3c00 {
+                            self.half[c * 2] = h;
+                            self.half[c * 2 + 1] = 0x3c00;
+                            self.dirty[(yy as usize / TILE) * TILES + xx as usize / TILE] = true;
+                        }
                     }
                 }
             }
@@ -309,7 +319,7 @@ impl Toy for Meander {
             river: River::new(Vec::new(), 7),
             dep: vec![NEVER; NG * NG],
             half: vec![0; NG * NG * 2],
-            dirty: (0, NG),
+            dirty: vec![true; TILES * TILES],
             epoch: 0.0,
             dep_tex,
             _plain: plain,
@@ -321,7 +331,8 @@ impl Toy for Meander {
             dep_view,
             uni,
             painter,
-            hand: None,
+            hands: Vec::new(),
+            ticked: -100.0,
             pushed: -100.0,
             laid: -10.0,
             ripples: Vec::new(),
@@ -360,15 +371,13 @@ impl Toy for Meander {
         let (s, _) = self.view(ctx);
         match e.phase {
             toy_kit::Phase::Down => {
-                if self.hand.is_none() {
-                    self.hand = Some(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0 });
-                }
+                // every finger is a push of its own (a stale one with the same id is replaced)
+                self.hands.retain(|h| h.id != e.id);
+                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0 });
             }
             toy_kit::Phase::Move => {
-                let Some(h) = &mut self.hand else { return };
-                if h.id != e.id {
-                    return;
-                }
+                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
+                let h = &mut self.hands[k];
                 let d = [w[0] - h.at[0], w[1] - h.at[1]];
                 h.travel += dist(w, h.at) * s;
                 h.at = w;
@@ -378,26 +387,32 @@ impl Toy for Meander {
                 if gained.abs() > 1.0 {
                     self.pushed = self.t;
                 }
-                let h = self.hand.as_mut().unwrap();
+                let h = &mut self.hands[k];
                 h.gained += gained.max(0.0);
-                // the river stretching: a rising tick every few hundred metres it gains
+                // the river stretching: a rising tick every few hundred metres this finger gains it, heard
+                // where the finger is; with several fingers, a note at most every 70 ms, so they don't stutter
+                let mut strike = None;
                 while h.gained > (h.ticks + 1) as f64 * TICK_M && h.ticks < 24 {
                     h.ticks += 1;
-                    let f = toy_kit::sound::pentatonic(392.0, h.ticks - 1);
-                    self.bells.strike(Note { freq: f, amp: 0.07, decay: 0.35, pan: 0.0, bright: 0.8 });
-                    ctx.haptic();
+                    strike = Some(h.ticks);
+                }
+                if let Some(n) = strike {
+                    if self.t - self.ticked > 0.07 {
+                        self.ticked = self.t;
+                        let f = toy_kit::sound::pentatonic(392.0, n - 1);
+                        let pan = ((e.x / ctx.points()[0].max(1.0)) * 2.0 - 1.0).clamp(-1.0, 1.0) as f32 * 0.5;
+                        self.bells.strike(Note { freq: f, amp: 0.07, decay: 0.35, pan, bright: 0.8 });
+                        ctx.haptic();
+                    }
                 }
             }
             toy_kit::Phase::Up | toy_kit::Phase::Cancel => {
-                let Some(h) = self.hand.take() else { return };
-                if h.id != e.id {
-                    self.hand = Some(h);
-                    return;
-                }
-                if h.travel < 12.0 {
+                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
+                let h = self.hands.remove(k);
+                if h.travel < 12.0 && e.phase == toy_kit::Phase::Up {
                     // a touch: the nearest bank nudged toward the finger and loosened, so a bend starts there
                     self.river.nudge(w, W * 1.2);
-                    self.river.kicks.push((w, self.river.year, 1.2));
+                    self.river.kick(w, 1.2);
                     self.ripples.push(Ripple { at: w, t: self.t, strong: false });
                     if self.river.distance(w) < W * 6.0 {
                         self.bells.strike(Note { freq: 196.0, amp: 0.08, decay: 0.8, pan: 0.0, bright: 0.4 });
@@ -439,7 +454,7 @@ impl Toy for Meander {
                     self.half[c * 2] = f16(*d);
                 }
             }
-            self.dirty = (0, NG);
+            self.dirty.fill(true);
         }
         self.stamp();
         // a neck cut: a flash where it broke, a soft low note, a tap in the hand
@@ -479,15 +494,34 @@ impl Toy for Meander {
         // the deposits, as half floats: only the rows the river touched since the last frame
         // ((year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
         // nearby and g a soft edge)
-        if self.dirty.1 > self.dirty.0 {
-            let (r0, r1) = self.dirty;
-            gpu.queue.write_texture(
-                wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: r0 as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
-                bytemuck::cast_slice(&self.half[r0 * NG * 2..r1 * NG * 2]),
-                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: None },
-                wgpu::Extent3d { width: NG as u32, height: (r1 - r0) as u32, depth_or_array_layers: 1 },
-            );
-            self.dirty = (NG, 0);
+        // each run of changed tiles along a band of tiles is one copy, read in place from the grid
+        let mut sent = 0usize;
+        for ty in 0..TILES {
+            let mut tx = 0;
+            while tx < TILES {
+                if !self.dirty[ty * TILES + tx] {
+                    tx += 1;
+                    continue;
+                }
+                let t0 = tx;
+                while tx < TILES && self.dirty[ty * TILES + tx] {
+                    self.dirty[ty * TILES + tx] = false;
+                    tx += 1;
+                }
+                let (x0, y0, w, h) = (t0 * TILE, ty * TILE, (tx - t0) * TILE, TILE);
+                let start = (y0 * NG + x0) * 2;
+                let end = ((y0 + h - 1) * NG + x0 + w) * 2;
+                gpu.queue.write_texture(
+                    wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d { x: x0 as u32, y: y0 as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                    bytemuck::cast_slice(&self.half[start..end]),
+                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: Some(h as u32) },
+                    wgpu::Extent3d { width: w as u32, height: h as u32, depth_or_array_layers: 1 },
+                );
+                sent += w * h * 4;
+            }
+        }
+        if sent > 0 && std::env::var("MEANDER_UPLOAD").is_ok() {
+            eprintln!("upload {sent} t {:.2}", self.t);
         }
         let wpx = (W * s * ppp) as f32; // the channel's width in pixels
         let u = Uni {
