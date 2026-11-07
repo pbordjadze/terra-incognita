@@ -6,7 +6,7 @@ street and then a long slow road; on the right the long road first and then a na
 takes whatever way looks quickest right now; a road slows as it fills. Draw (or tap, then tap) from road to
 road to build one; slash across a road to close it (a barrier); tap a closed road to open it; tap the
 water and it ripples; shake for the town's own roads. The obvious bridge across the lake makes every trip
-about a quarter slower and the town goes from white to red; closing it cools it within about 15 s. Nothing
+about a quarter slower and the town goes from white to red; closing it cools it within about 10 s. Nothing
 in the code mentions bridges. `EXPERIENCE.md` is the plan as first written; ROUNDS.md a line a round;
 SOURCES.md what is real and drawn. Salt Flat is whole in `main`'s history before row 255's merge; the
 Nagoya ring at 3032c9a.
@@ -26,7 +26,8 @@ Terra's door (now "Shortcut" over Stuttgart, its little window a town round a la
   (over a fifth slower with the bridge, back when it is cut) and `the_town_settles_after_a_cut`.
 - `src/lib.rs`: the gestures and the drawing. A car's light is `Town::way` (how long its whole way takes
   at the roads' speeds now: the roads it came by, the one it is on, the quickest way on) against the
-  untouched town's mean, eased; white, warm white, orange, red at about a quarter slower. Roads, cars,
+  untouched town's mean, eased (slow to redden, quick to cool); white, warm white, orange, red at about a
+  quarter slower. The town's clock runs `PACE` (1.7) times the screen's. Roads, cars,
   windows, lamps, barriers, the pin and the invitation (a road of light drawing itself across the lake
   until the first change) with `paint`; the ground and the lake (with a tap's ripple) a `backdrop`. The
   reader's edits are kept as a list and replayed on restore or a change of screen proportions. A road the

@@ -31,8 +31,8 @@ whole in `main`'s history before row 255 replaced it with this.)
   Davidson's function, 1966) and of Braess's own increasing link costs.
 - Every lane carries at most the same `C` cars a second whatever its speed limit, as highway capacity
   manuals put a lane's capacity at roughly 1,800–2,200 cars an hour fairly independent of its free speed
-  (Transportation Research Board, *Highway Capacity Manual*). Here `C` is 1.6 cars a second: the toy's
-  time runs about ten times fast, and a town of four roads stands for a city.
+  (Transportation Research Board, *Highway Capacity Manual*). Here `C` is 1.6 cars a second of the town's clock, which runs 1.7 times the screen's (`PACE` in
+  `lib.rs`): the toy's time runs fast, and a town of four roads stands for a city.
 - Cars keep a gap of 7 points a lane nose to nose and queue at a road's end when there is no room on
   the next.
 - **Drawn:** the numbers. The narrow streets: two lanes, 200 points a second free. The long roads round:
