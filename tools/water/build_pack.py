@@ -22,6 +22,7 @@ names), and writes:
 
 Never hand-edit those files; change this script and run it again. No network is used.
 """
+import itertools
 import json
 import math
 import sys
@@ -109,7 +110,7 @@ def network():
         lines.append([[round(p[0], 3), round(p[1], 3)] for p, _ in kept])
         lod.append(''.join(str(lv) for _, lv in kept))
         # the nearest-line grid: every cell a kept segment's box touches (core.js reads it as built)
-        for (a, _), (b, _) in zip(kept, kept[1:]):
+        for (a, _), (b, _) in itertools.pairwise(kept):
             for gx in range(math.floor(min(a[0], b[0]) / CELL), math.floor(max(a[0], b[0]) / CELL) + 1):
                 for gy in range(math.floor(min(a[1], b[1]) / CELL), math.floor(max(a[1], b[1]) / CELL) + 1):
                     ids = cells.setdefault(str((gx + 500) * 1000 + gy + 500), [])

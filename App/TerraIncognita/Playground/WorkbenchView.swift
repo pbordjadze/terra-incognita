@@ -172,7 +172,8 @@ struct WorkbenchView: View {
         } header: {
             Text("Packs")
         } footer: {
-            Text("Sources are checked only while the workbench is open; the globe itself never uses the network. A downloaded revision is kept with the one before it.")
+            Text("Sources are checked only while the workbench is open; the globe itself never uses the network. "
+                 + "A downloaded revision is kept with the one before it.")
         }
     }
 

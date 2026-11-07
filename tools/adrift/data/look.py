@@ -12,8 +12,11 @@ Writes, each 1440 x 720 over the coast sheet's land and sea:
 A sheet is read exactly as the app will (the manifest's `files` says where, `sheets` how), so
 what is drawn is what the rules see; the drawing itself is only for looking.
 """
-import json, struct, sys
+import json
+import struct
+import sys
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -131,10 +134,10 @@ def main():
     d = ImageDraw.Draw(pic)
     raw = (ROOT / m['files']['drifters.bin']).read_bytes()
     assert raw[:4] == b'ADRF'
-    version, count = struct.unpack_from('<II', raw, 4)
+    _version, count = struct.unpack_from('<II', raw, 4)
     p, runs, points = 12, 0, 0
     for _ in range(count):
-        id_, day0, n, flags = struct.unpack_from('<QfHH', raw, p)
+        _id, _day0, n, _flags = struct.unpack_from('<QfHH', raw, p)
         p += 16
         xy = np.frombuffer(raw, '<i2', 2 * n, p).reshape(n, 2) / 180.0
         p += 4 * n

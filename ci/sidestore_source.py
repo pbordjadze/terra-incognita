@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 # Builds listed per app; the ipa jobs keep this many releases of each (their `tail -n +6`).
 KEEP = 5
@@ -19,7 +20,7 @@ KEEP = 5
 icon_base = sys.argv[1].rstrip("/")
 repo = os.environ["GITHUB_REPOSITORY"]
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-spec = json.load(open(os.path.join(root, "ci", "sidestore_apps.json")))
+spec = json.loads(Path(os.path.join(root, "ci", "sidestore_apps.json")).read_text())
 
 releases = json.loads(subprocess.run(
     ["gh", "api", f"repos/{repo}/releases?per_page=100"], check=True, capture_output=True, text=True).stdout)

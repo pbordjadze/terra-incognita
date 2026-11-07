@@ -5,9 +5,12 @@ its time.
 
     python3 tools/toys/newcomer/sheet.py <out-dir> <sheet.png> [columns]
 """
-import sys, re
+import re
+import sys
 from pathlib import Path
+
 from PIL import Image, ImageDraw
+
 out = Path(sys.argv[1]); cols = int(sys.argv[3]) if len(sys.argv) > 3 else 8
 fs = sorted([f for f in out.glob('*.png') if '.shell' not in f.name and '.stretch' not in f.name],
             key=lambda f: (int(re.sub(r'\D', '', f.stem) or 0)))

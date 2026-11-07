@@ -11,9 +11,10 @@ levels (dBFS, both channels averaged) say whether a tap went quiet, and by how m
 silence holds. Used through rounds 1-3 to hear the toy without a speaker.
 """
 import sys
+
+import matplotlib
 import numpy as np
 from scipy.io import wavfile
-import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

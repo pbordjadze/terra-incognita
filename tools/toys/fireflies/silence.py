@@ -9,7 +9,9 @@ Silent is below -60 dBFS over a 50 ms window. Exits 1 when the longest silent st
 --from (default 3 s, the field's first unsynchronised seconds) is longer than --max-silence
 (default 8 s). Balance is (R - L) / (R + L) of the windows' RMS: 0 centred, -1 all left.
 """
-import argparse, sys, wave
+import argparse
+import sys
+import wave
 
 import numpy as np
 
@@ -20,9 +22,9 @@ def main():
     ap.add_argument('--from', dest='start', type=float, default=3.0)
     ap.add_argument('--max-silence', type=float, default=8.0)
     a = ap.parse_args()
-    w = wave.open(a.wav)
-    rate, ch, n = w.getframerate(), w.getnchannels(), w.getnframes()
-    x = np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float64).reshape(-1, ch) / 32768.0
+    with wave.open(a.wav) as w:
+        rate, ch, n = w.getframerate(), w.getnchannels(), w.getnframes()
+        x = np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float64).reshape(-1, ch) / 32768.0
     win = int(rate * 0.05)
     k = len(x) // win
     seg = x[: k * win].reshape(k, win, ch)

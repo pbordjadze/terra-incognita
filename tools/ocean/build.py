@@ -37,8 +37,10 @@ Each month's quarter-degree means are averaged into half-degree cells (a cell is
 of its four is), after a Gaussian of a quarter of a degree, which takes the grid's speckle out of
 the quiet gyres and leaves the jets (the Gulf Stream is about a degree wide).
 """
-import sys, urllib.request
+import sys
+import urllib.request
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -75,7 +77,7 @@ def read(path):
         a = f.variables[name][:].astype(np.float32)            # (month, lon, lat ascending)
         a = np.transpose(a, (0, 2, 1))[:, ::-1, :]               # (month, lat descending, lon)
         full = np.full((12, 720, 1440), np.nan, np.float32)
-        top = int(round((89.875 - lat.max()) / 0.25))
+        top = round((89.875 - lat.max()) / 0.25)
         full[:, top:top + a.shape[1], :] = a
         out.append(full)
     f.close()

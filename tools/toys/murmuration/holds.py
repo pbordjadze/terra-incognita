@@ -11,7 +11,10 @@ at the horizon flatters an empty sky, the birds near you: those whose wingspan i
 on the glass (fewer than --near is a frame with little flock round you); the worst moments by that. Needs
 the toy's check built (cargo, from toys/); MURMURATION_COUNT makes the toy print its counts.
 """
-import os, subprocess, sys, statistics
+import os
+import statistics
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -34,7 +37,7 @@ def main():
     if size: cmd += ['--size', size]
     if ppp: cmd += ['--ppp', ppp]
     env = dict(os.environ, MURMURATION_COUNT='1')
-    run = subprocess.run(cmd, cwd=ROOT / 'toys', env=env, capture_output=True, text=True)
+    run = subprocess.run(cmd, cwd=ROOT / 'toys', env=env, capture_output=True, text=True, check=False)
     if run.returncode:
         sys.exit(run.stderr)
     frames = {}

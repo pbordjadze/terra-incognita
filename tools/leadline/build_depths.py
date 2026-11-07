@@ -12,6 +12,7 @@ Rebuild, never hand-edit. The grid is coarse: the lead finds the depth of a cell
 """
 import base64
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 
@@ -29,10 +30,10 @@ def main():
     out = ROOT / 'Prototypes' / 'lead-line' / 'depths.js'
     out.parent.mkdir(parents=True, exist_ok=True)
     text = base64.b64encode(steps.tobytes()).decode('ascii')
-    out.write_text('/* The sea\'s depth in a grid of %d x %d cells, the mean depth in it in steps of 50 m (0: land or\n'
+    out.write_text(f'/* The sea\'s depth in a grid of {W} x {H} cells, the mean depth in it in steps of 50 m (0: land or\n'
                    '   shallower than 25 m), from the globe\'s own terrain (GEBCO, through tools/globe/build.py and\n'
                    '   tools/leadline/build_depths.py). Row 0 is the north (lat 90), column 0 the west (lon -180). */\n'
-                   'window.DEPTHS = { width: %d, height: %d, metresPerStep: 50, data: "%s" };\n' % (W, H, W, H, text))
+                   f'window.DEPTHS = {{ width: {W}, height: {H}, metresPerStep: 50, data: "{text}" }};\n')
     sea = steps[steps > 0]
     print(f'{out}: {out.stat().st_size // 1024} KB; deepest {int(steps.max()) * 50} m; mean of the sea {int(sea.mean()) * 50} m')
 

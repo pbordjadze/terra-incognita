@@ -20,6 +20,7 @@ globe's maps), RGB:
 Never hand-edit the output; rebuild it.
 """
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 
@@ -74,7 +75,7 @@ def main():
     fine = (geo[..., 0] - 128.0) / 8.0
     coarse = (geo[..., 1] - 128.0) * 2.0
     d = np.where(np.abs(coarse) > 14.0, coarse, fine)          # geo pixels, land positive
-    gh, gw = d.shape
+    _gh, gw = d.shape
     k = gw // W
     land_geo = d > -4.0 * (gw / 4096)                            # about 40 km of slack
     land = land_geo.reshape(H, k, W, k).any(axis=(1, 3))

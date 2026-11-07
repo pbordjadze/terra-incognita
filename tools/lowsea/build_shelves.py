@@ -10,11 +10,13 @@ than 200 m), public domain. A faint grain and a paler rim where the old shore me
 
 Rebuild, never hand-edit. Prints each picture's bounds for data.js.
 """
+import itertools
 import sys
 from pathlib import Path
+
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
 import shapefile
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'Prototypes' / 'low-sea'
@@ -44,7 +46,7 @@ def rasterise(sf, bounds, size):
         if bb[2] < west or bb[0] > east or bb[3] < south or bb[1] > north:
             continue
         parts = list(shape.parts) + [len(shape.points)]
-        for a, b in zip(parts, parts[1:]):
+        for a, b in itertools.pairwise(parts):
             ring = [px(x, y) for x, y in shape.points[a:b]]
             if len(ring) > 2:
                 d.polygon(ring, fill=255)
@@ -55,7 +57,7 @@ def main(ne):
     deep_sf = shapefile.Reader(str(Path(ne) / 'ne_10m_bathymetry_K_200' / 'ne_10m_bathymetry_K_200.shp'))
     for name, bounds in REGIONS:
         west, south, east, north = bounds
-        size = (int(round((east - west) / PX)), int(round((north - south) / PX)))
+        size = (round((east - west) / PX), round((north - south) / PX))
         land = rasterise(land_sf, bounds, size)
         deep = rasterise(deep_sf, bounds, size)
         # (the bathymetry layer's polygons have holes drawn as separate rings here, so a ring inside a

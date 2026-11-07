@@ -58,9 +58,7 @@ def glint():
             along = dx * ux + dy * uy
             across = abs(-dx * uy + dy * ux)
             half = width / 2
-            if abs(along) <= reach * SIZE and across <= half:
-                a = max(a, 0.92)
-            elif abs(along) <= reach * SIZE + half and math.hypot(max(0, abs(along) - reach * SIZE), across) <= half:
+            if abs(along) <= reach * SIZE and across <= half or abs(along) <= reach * SIZE + half and math.hypot(max(0, abs(along) - reach * SIZE), across) <= half:
                 a = max(a, 0.92)
         return a
 

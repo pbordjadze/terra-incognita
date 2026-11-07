@@ -11,7 +11,8 @@ are placed along it every ~110 km, alternating sides. The named places are the n
 Rebuild, never hand-edit. The ways are drawn, not records of any one vine's travels; the years are
 the record's earliest evidence at or near the place, rounded.
 """
-import json, math
+import json
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -18,11 +18,14 @@ Out, adrift/data/drifters.bin, little-endian:
       was on at the first point), then n x (i16 lon, i16 lat) in 1/180 degree (about 600 m)
 and `drifters.json` beside it (count, points, the years, the coverage reached), for the record.
 """
-import json, struct, sys
+import json
+import struct
+import sys
 from pathlib import Path
+
 import numpy as np
-import tracks
 import sheets
+import tracks
 from sheets import OUT
 
 BUDGET = 4_000_000
@@ -58,7 +61,6 @@ def choose(all_runs):
     """Greedy by new coverage within the budget (lazy: a run's gain only falls as others are chosen)."""
     count = np.zeros((180 // CELL) * (360 // CELL), np.int32)
     gains = np.array([len(c) for c in all_runs], float)
-    order = np.argsort(-gains)
     chosen, spent = [], 12
     import heapq
     heap = [(-g, i) for i, g in enumerate(gains)]
@@ -101,7 +103,6 @@ def main():
             f.write(struct.pack('<QfHH', id_, float(day0), len(lon), 1 if drogued else 0))
             f.write(np.stack([x, y], -1).astype('<i2').tobytes())
             points += len(lon)
-    sea = count > 0
     record = {'runs': len(chosen), 'points': points, 'bytes': spent, 'years': years,
               'drifters': len({rs[i][0] for i in chosen}),
               'cell_degrees': CELL, 'cover': COVER,

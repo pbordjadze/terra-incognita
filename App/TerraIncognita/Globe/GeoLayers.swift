@@ -434,7 +434,7 @@ final class GeoLayerView: UIView {
         let colour = ink ?? layer.color ?? UIColor(red: 0.231, green: 0.29, blue: 0.329, alpha: 1)
         var attributes: [NSAttributedString.Key: Any] = [
             NSAttributedString.Key(kCTFontAttributeName as String): ctFont,
-            NSAttributedString.Key(kCTForegroundColorAttributeName as String): colour.cgColor,
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): colour.cgColor
         ]
         if face == "caps" { attributes[NSAttributedString.Key(kCTKernAttributeName as String)] = points * 0.08 }
         let text = NSAttributedString(string: shown, attributes: attributes)
@@ -647,7 +647,9 @@ final class GeoLayerView: UIView {
             }
         }
         let width = min(200, max(4, number(options["width"]) ?? 28)), height = min(200, max(4, number(options["height"]) ?? 28))
-        let shift = (options["offset"] as? [Any]).flatMap { a in a.count == 2 ? number(a[0]).flatMap { x in number(a[1]).map { CGVector(dx: min(200, max(-200, x)), dy: min(200, max(-200, $0))) } } : nil } ?? .zero
+        let shift = (options["offset"] as? [Any]).flatMap { a in
+            a.count == 2 ? number(a[0]).flatMap { x in number(a[1]).map { CGVector(dx: min(200, max(-200, x)), dy: min(200, max(-200, $0))) } } : nil
+        } ?? .zero
         return Layer(id: id, style: style, shapes: shapes, color: (options["color"] as? String).flatMap { UIColor(hex: $0) },
                      minZoom: number(options["minZoom"]) ?? 0, maxZoom: number(options["maxZoom"]) ?? .infinity,
                      font: (options["font"] as? String) ?? "regular", size: min(40, max(10, number(options["size"]) ?? 15)),

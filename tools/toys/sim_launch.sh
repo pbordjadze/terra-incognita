@@ -71,7 +71,9 @@ export SIMCTL_CHILD_RUST_BACKTRACE=1
 # iOS text a Linux shot lacks; a toy without origins keeps showing its rules)
 export SIMCTL_CHILD_TOY_OPEN=rules,origins SIMCTL_CHILD_TOY_OPEN_AFTER=30 SIMCTL_CHILD_TOY_OPEN_EVERY=30
 xcrun simctl io "$UDID" screenshot /dev/null > /dev/null 2>&1 || true     # (the warm-up)
-before="$(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true)"
+# shellcheck disable=SC2010 # ls -t lists the crash reports newest first; their names are the system's own
+reports() { ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" || true; }
+before="$(reports | wc -l | tr -d ' ')"
 xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --stderr="$OUT/stderr.txt" "$UDID" "$BUNDLE"
 alive=1
 # (by the clock, not by passes: on a busy hosted Mac a pass of this loop took 5 s, not 1)
@@ -88,7 +90,7 @@ done
 [ "$alive" = 1 ] && [ "$WAIT" -ge 63 ] && { xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>> "$OUT/screenshots.txt" || echo "no origins.png" >> "$OUT/screenshots.txt"; }
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
 [ -n "$DATA" ] && cp "$DATA/Documents/toy-log.txt" "$OUT/toy-log.txt" 2> /dev/null || true
-ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" | head -n $(( $(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true) - before )) |
+reports | head -n $(( $(reports | wc -l) - before )) |
   while read -r f; do cp ~/Library/Logs/DiagnosticReports/"$f" "$OUT/"; echo "crash report: $f"; done || true
 xcrun simctl terminate "$UDID" "$BUNDLE" 2> /dev/null || true
 echo "== toy-log.txt"; cat "$OUT/toy-log.txt" 2> /dev/null || echo "(none)"

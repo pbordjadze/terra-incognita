@@ -12,18 +12,22 @@ over seconds: chords transpose into each other, a beat and a half folds like a b
 click-free cut and the beat-exact chop are measured sample by sample in screw's own tests, deck.rs;
 this shows what a whole minute sounds like.
 """
-import json, sys, wave
+import json
+import sys
+import wave
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    plan, out = json.load(open(args[0])), Path(args[1])
-    w = wave.open(str(out / 'audio.wav'))
-    R = w.getframerate()
-    x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
-    x = x.reshape(-1, w.getnchannels()).mean(axis=1)
+    plan, out = json.loads(Path(args[0]).read_text()), Path(args[1])
+    with wave.open(str(out / 'audio.wav')) as w:
+        R = w.getframerate()
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
+        x = x.reshape(-1, w.getnchannels()).mean(axis=1)
     # the spectrogram
     n, hop = 4096, 480
     win = np.hanning(n).astype(np.float32)

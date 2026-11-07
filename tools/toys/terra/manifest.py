@@ -5,7 +5,8 @@ or two toys naming one file differently).
 
     python3 tools/toys/terra/manifest.py [--check]
 """
-import json, sys
+import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]

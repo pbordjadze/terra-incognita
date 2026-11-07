@@ -36,12 +36,15 @@ sqrt(2 K dt) metres on each axis (2 K t is a variance, so the 30-day cloud of a 
 a root-mean-square radius of sqrt(4 K t) over both axes). Typical K is a few thousand m^2/s: in 30
 days a float wanders about 100-200 km from where the mean current alone would carry it.
 """
-import json, sys, urllib.request
+import json
+import sys
+import urllib.request
 from pathlib import Path
-import numpy as np
+
 import netCDF4
-from scipy import ndimage
+import numpy as np
 import tracks
+from scipy import ndimage
 from sheets import OUT, save, tile
 
 ERDDAP = 'https://erddap.aoml.noaa.gov/gdp/erddap/griddap/'
@@ -74,7 +77,7 @@ def grid(path, names):
         a = np.array(f.variables[n][:], dtype=np.float64)
         a = np.moveaxis(a, -1, -2)[..., ::-1, :]                     # (..., lat descending, lon)
         full = np.full(a.shape[:-2] + (720, 1440), np.nan)
-        top = int(round((89.875 - lat.max()) / 0.25))
+        top = round((89.875 - lat.max()) / 0.25)
         full[..., top:top + a.shape[-2], :] = a
         out.append(full)
     f.close()
@@ -185,7 +188,7 @@ def main():
     var = fetch(cache, 'drifter_currentvariance.nc',
                 f'{ERDDAP}drifter_currentvariance.nc?Up2bar{Q2},Vp2bar{Q2},N{Q2}')
     U, V = grid(means, ['U', 'V'])
-    Up2, Vp2, N = grid(var, ['Up2bar', 'Vp2bar', 'N'])
+    Up2, Vp2, _N = grid(var, ['Up2bar', 'Vp2bar', 'N'])
     df = tracks.load(cache, years)
     up, vp = residuals(df, U, V)
     print(f'{np.isfinite(up).sum() / 4:.0f} drogued drifter-days with a residual; '

@@ -29,7 +29,11 @@ the toy's own, written as a track of four places a day that the toy follows (src
 must keep 25 km from the globe's own coast (Globe/geo.png) and the wander is shrunk until it does, so
 a whale never swims ashore.
 """
-import json, math, os, sys
+import json
+import math
+import os
+import sys
+
 import numpy as np
 from PIL import Image
 
@@ -163,7 +167,8 @@ def main():
         "whales": {n: {"route": [list(p) for p in sorted(w["route"])], "sings": w["sings"], "track": days[n]} for n, w in WHALES.items()},
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    json.dump(out, open(OUT, "w"), separators=(",", ":"))
+    with open(OUT, "w") as f:
+        json.dump(out, f, separators=(",", ":"))
     print(f"routes.json written; {bad} places too near the coast")
     return 1 if bad else 0
 
