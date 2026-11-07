@@ -174,6 +174,8 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | UI tests | the playground (plain launch, every prototype listed, a native and a pack together, the bundled pack, remote revisions), clouds, ocean, quiet | `App/TerraIncognitaUITests/`, helpers `PlaygroundSupport.swift`; `ci/encounter_tests.sh` | CI `apple` (`[test Class]`, `[playground-check]`) |
 | Simulator shots | the playground, the globe at places and by night, the stage at places | `ci/sim_shots.sh` | CI `apple` (by hand, `[shots]`) |
 | Exploratory QA | an agent using the app through Maestro | `qa-explore.yml`, `ci/qa/` (synced from painting-company) | on request |
+| Linters | rustfmt and clippy `-D warnings` (host, iOS, wasm32), ruff, shellcheck, actionlint, SwiftLint, each stock but for the rules loosened with reasons in `ruff.toml`, `.swiftlint.yml`, `.github/actionlint.yaml` | `bash ci/lint.sh [rust\|python\|shell\|actions\|swift\|fix]` (pinned tools: `tools/requirements.txt` in `.venv`) | `lint.yml`, first in every workflow |
+| Same pictures | every toy's plans and Adrift's scenes played in two checkouts, compared pixel for pixel: a dependency bump changes nothing on screen | `python3 tools/toys/same_pictures.py play <checkout> <out>`, `compare <a> <b>` | by hand (Linux, Mesa's Vulkan) |
 
 ## CI and delivery
 
@@ -182,6 +184,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Narrowing tags | what a branch push runs (`[build-only]`, `[shots]`, `[test Class]`, `[playground-check]`, `[ipa]`) | `ci/fast.py` (first line of the commit message) |
 | Report | waits for a commit's CI report and unpacks it; finds a screenshot by name | `CI_BRANCH=<b> ci/fetch.sh <sha> <dir>`, `python3 ci/shots.py <dir> <name>` |
 | Simulators | the iPhone and iPad simulators wanted | `ci/simulators.sh` |
+| Versions | Rust (`rust-toolchain.toml`, installed by `ci/rust.sh`), Xcode (`ci/xcode.sh`), crates (`Cargo.toml` + `Cargo.lock`), actions, Python (`tools/requirements.txt`); Dependabot's weekly grouped bumps | CLAUDE.md › Staying current; `.github/dependabot.yml` |
 | Packs | pack, publish to the `packs` branch, retire (main's publish retires a pack deleted from `Prototypes/`), list | `python3 tools/playground/playground.py pack \| publish \| retire \| list`; `packs.yml` |
 | Remote revision fixture | a hello-pack revision with other words, for `RemotePackTests` | `ci/remote_packs.sh <out>` |
 | SideStore | the source JSON for `build-<n>` IPAs | `ci/sidestore_source.py`; `ci.yml` › `ipa` |
