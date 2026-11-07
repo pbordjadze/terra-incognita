@@ -1,0 +1,126 @@
+Application, 0x10605d040, pid: 18905, label: 'Terra Incognita' <App element pid: 18905>
+  Window (Main), 0x10605f480, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4343382016.3>
+    Other, 0x10605ee40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4388452736.5>
+      Other, 0x10605e080, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4387325184.7>
+        Other, 0x10605e800, {{-1032.0, -1376.0}, {3096.0, 4128.0}}, identifier: 'PopoverDismissRegion', label: 'dismiss popup' <AX element pid: 18905, elementOrHash.elementID: 4438447744.241>
+        Other, 0x10605df40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4343417344.9>
+          Other, 0x10605cb40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4416084704.10>
+            Image, 0x10605ebc0, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 18905, elementOrHash.elementID: 4343300096.11>
+            Other, 0x10605fd40, {{575.0, 8.0}, {285.0, 44.0}}, label: 'Active prototype: Clouds clear where you look, and 1 more running' <AX element pid: 18905, elementOrHash.elementID: 4654185632.123>
+              Button, 0x10605fe80, {{816.0, 8.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'End Clouds clear where you look' <AX element pid: 18905, elementOrHash.elementID: 4654185792.124>
+              StaticText, 0x10605d900, {{587.0, 21.0}, {201.0, 18.0}}, identifier: 'activePrototype', label: 'Clouds clear where you look' <AX element pid: 18905, elementOrHash.elementID: 4654185312.125>
+              StaticText, 0x10605fc00, {{794.0, 21.0}, {16.0, 18.0}}, identifier: 'otherPrototypes', label: 'and 1 more running' <AX element pid: 18905, elementOrHash.elementID: 4654181152.234>
+            Switch, 0x10605e940, {{870.0, 8.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 18905, elementOrHash.elementID: 4416083104.14>
+            Button, 0x10605fac0, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 18905, elementOrHash.elementID: 4416083264.15>
+            StaticText, 0x10605ca00, {{24.0, 1239.0}, {216.5, 81.0}}, label: 'THE GLOBE, The whole world, Spin it, pinch it, tap a country.' <AX element pid: 18905, elementOrHash.elementID: 4654170592.233>
+              StaticText, 0x10605f980, {{24.0, 1239.0}, {87.5, 15.0}}, label: 'THE GLOBE' <AX element pid: 18905, elementOrHash.elementID: 4654182432.235>
+              StaticText, 0x10605ef80, {{24.0, 1260.0}, {216.5, 34.5}}, label: 'The whole world' <AX element pid: 18905, elementOrHash.elementID: 4654181952.236>
+              StaticText, 0x10605f840, {{24.0, 1300.5}, {204.5, 19.5}}, label: 'Spin it, pinch it, tap a country.' <AX element pid: 18905, elementOrHash.elementID: 4654184992.237>
+    Other, 0x10605da40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4388444416.238>
+      Other, 0x10605d7c0, {{-1032.0, -1376.0}, {3096.0, 4128.0}}, identifier: 'PopoverDismissRegion', label: 'dismiss popup' <AX element pid: 18905, elementOrHash.elementID: 4438456704.239>
+      Other, 0x10605f0c0, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4438293504.240>
+        Button, 0x10605d2c0, {{466.0, 354.0}, {100.0, 24.0}}, label: 'Sheet Grabber', value: Half screen <AX element pid: 18905, elementOrHash.elementID: 4438432640.242>
+        Image, 0x10605ed00, {{76.0, 208.0}, {880.0, 960.0}} <AX element pid: 18905, elementOrHash.elementID: 4438292224.243>
+        Other, 0x10605f340, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4388326912.244>
+          Other, 0x10605ea80, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4343394304.245>
+            Other, 0x10605f700, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4639665408.246>
+              Other, 0x10605e580, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4388333056.247>
+                NavigationBar, 0x10605de00, {{226.0, 368.0}, {580.0, 54.0}}, identifier: 'Workbench' <AX element pid: 18905, elementOrHash.elementID: 4413649664.248>
+                  StaticText, 0x10605f200, {{470.5, 379.5}, {91.0, 21.0}}, label: 'Workbench' <AX element pid: 18905, elementOrHash.elementID: 4345164288.251>
+                  Other, 0x10605e300, {{726.0, 372.0}, {66.0, 36.0}} <AX element pid: 18905, elementOrHash.elementID: 4640083712.252>
+                    Other, 0x10605dcc0, {{726.0, 372.0}, {66.0, 36.0}} <AX element pid: 18905, elementOrHash.elementID: 4639655328.255>
+                      Button, 0x10605e440, {{726.0, 372.0}, {66.0, 36.0}}, identifier: 'workbenchClose', label: 'Done' <AX element pid: 18905, elementOrHash.elementID: 4639659328.257>
+                Other, 0x1128faf80, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4344910656.249>
+                  Other, 0x1128fb200, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4388328448.253>
+                    Other, 0x1128fbac0, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4343392256.256>
+                      Other, 0x1128fa6c0, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4639665568.258>
+                        CollectionView, 0x1128f9e00, {{226.0, 358.0}, {580.0, 660.0}}, identifier: 'workbenchList' <AX element pid: 18905, elementOrHash.elementID: 4413165056.259>
+                          Other, 0x1128f8c80, {{210.0, -898.0}, {612.0, 1440.5}} <AX element pid: 18905, elementOrHash.elementID: 4438369024.260>
+                          Other, 0x1128f9180, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4344919616.261>
+                            Other, 0x1128fbe80, {{226.0, 358.0}, {580.0, 104.0}} <AX element pid: 18905, elementOrHash.elementID: 4344358976.277>
+                          Other, 0x1128f9a40, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4344918720.262>
+                          Cell, 0x1128fb0c0, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4640082432.263>
+                            Other, 0x1128f9cc0, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4438370304.278>
+                              Other, 0x1128f8780, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4344916928.295>
+                            Other, 0x107630000, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4344918272.279>
+                              Other, 0x107630140, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4343306240.296>
+                                Other, 0x107630280, {{242.0, 457.0}, {548.0, 68.0}} <AX element pid: 18905, elementOrHash.elementID: 4639656768.309>
+                                  Button, 0x1076303c0, {{242.0, 457.0}, {548.0, 68.0}}, identifier: 'prototype_plain', label: 'The plain globe, End all 2 running' <AX element pid: 18905, elementOrHash.elementID: 4639664288.317>
+                                    StaticText, 0x107630500, {{262.0, 472.0}, {121.5, 20.5}}, label: 'The plain globe' <AX element pid: 18905, elementOrHash.elementID: 4639660128.326>
+                                    StaticText, 0x107630640, {{262.0, 495.5}, {94.5, 14.5}}, label: 'End all 2 running' <AX element pid: 18905, elementOrHash.elementID: 4639655968.327>
+                          Other, 0x107630780, {{210.0, 542.5}, {612.0, 474.0}} <AX element pid: 18905, elementOrHash.elementID: 4438371584.264>
+                          Cell, 0x1076308c0, {{242.0, 542.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4343427584.265>
+                            Other, 0x107630a00, {{242.0, 542.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4438374784.280>
+                            Other, 0x107630b40, {{242.0, 542.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4344359424.281>
+                              Other, 0x107630c80, {{242.0, 542.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4640869376.297>
+                                Other, 0x107630dc0, {{242.0, 542.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4654184832.310>
+                                  StaticText, 0x107630f00, {{242.0, 542.5}, {548.0, 40.5}}, label: 'Prototypes' <AX element pid: 18905, elementOrHash.elementID: 4654181792.318>
+                          Cell, 0x107631040, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4640091392.266>
+                            Other, 0x107631180, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4438365184.282>
+                              Other, 0x1076312c0, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344905728.298>
+                            Other, 0x107631400, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344917376.283>
+                              Other, 0x107631540, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4343309312.299>
+                                Other, 0x107631680, {{242.0, 583.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4654180512.311>
+                                  Button, 0x1076317c0, {{242.0, 583.0}, {548.0, 109.0}}, identifier: 'prototype_quiet-names', label: 'Names on demand, Almost no names: the one or two greatest things in view, and what you touch near, for a while. Countries last., Native · on the globe · running behind, Active', Selected <AX element pid: 18905, elementOrHash.elementID: 4654173632.319>
+                                    StaticText, 0x107631900, {{262.0, 598.0}, {148.5, 20.5}}, label: 'Names on demand' <AX element pid: 18905, elementOrHash.elementID: 4654171872.328>
+                                    Image, 0x107631a40, {{753.5, 601.0}, {14.5, 14.5}}, identifier: 'checkmark', label: 'Active', Selected <AX element pid: 18905, elementOrHash.elementID: 4654176672.329>
+                                    StaticText, 0x107631b80, {{262.0, 621.5}, {457.0, 38.0}}, label: 'Almost no names: the one or two greatest things in view, and what you touch near, for a while. Countries last.' <AX element pid: 18905, elementOrHash.elementID: 4654180352.330>
+                                    StaticText, 0x107631cc0, {{262.0, 662.5}, {212.5, 14.5}}, label: 'Native · on the globe · running behind' <AX element pid: 18905, elementOrHash.elementID: 4654174112.331>
+                          Cell, 0x107631e00, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4640092672.267>
+                            Other, 0x107631f40, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4438366464.284>
+                              Other, 0x107632080, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344361664.300>
+                            Other, 0x1076321c0, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344909312.285>
+                              Other, 0x107632300, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4343310848.301>
+                                Other, 0x107632440, {{242.0, 692.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4654184672.312>
+                                  Button, 0x107632580, {{242.0, 692.0}, {548.0, 109.0}}, identifier: 'prototype_quiet-clouds', label: 'Clouds clear where you look, The clouds gather toward the globe's rim zoomed out and the screen's edges close in, and clear where you look., Native · on the globe · in front, Active', Selected <AX element pid: 18905, elementOrHash.elementID: 4654170912.320>
+                                    StaticText, 0x1076326c0, {{262.0, 707.0}, {223.0, 20.5}}, label: 'Clouds clear where you look' <AX element pid: 18905, elementOrHash.elementID: 4654184192.332>
+                                    Image, 0x107632800, {{753.5, 710.0}, {14.5, 14.5}}, identifier: 'checkmark', label: 'Active', Selected <AX element pid: 18905, elementOrHash.elementID: 4654180672.333>
+                                    StaticText, 0x107632940, {{262.0, 730.5}, {426.5, 38.0}}, label: 'The clouds gather toward the globe's rim zoomed out and the screen's edges close in, and clear where you look.' <AX element pid: 18905, elementOrHash.elementID: 4654182592.334>
+                                    StaticText, 0x107632a80, {{262.0, 771.5}, {168.0, 14.5}}, label: 'Native · on the globe · in front' <AX element pid: 18905, elementOrHash.elementID: 4654172192.335>
+                          Other, 0x107632bc0, {{262.0, 691.0}, {508.0, 1.0}} <AX element pid: 18905, elementOrHash.elementID: 4653309440.268>
+                          Cell, 0x107632d00, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4640093952.269>
+                            Other, 0x107632e40, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4438372864.286>
+                              Other, 0x107632f80, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344362112.302>
+                            Other, 0x1076330c0, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4344362560.287>
+                              Other, 0x107633200, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4343312384.303>
+                                Other, 0x107633340, {{242.0, 801.0}, {548.0, 109.0}} <AX element pid: 18905, elementOrHash.elementID: 4654186272.313>
+                                  Button, 0x107633480, {{242.0, 801.0}, {548.0, 109.0}}, identifier: 'prototype_night', label: 'The Earth at night, The ground dark, with the lights of its cities and roads as satellites see them., Native · on the globe' <AX element pid: 18905, elementOrHash.elementID: 4654171712.321>
+                                    StaticText, 0x1076335c0, {{262.0, 816.0}, {141.5, 20.5}}, label: 'The Earth at night' <AX element pid: 18905, elementOrHash.elementID: 4654173152.336>
+                                    StaticText, 0x107633700, {{262.0, 839.5}, {456.5, 38.0}}, label: 'The ground dark, with the lights of its cities and roads as satellites see them.' <AX element pid: 18905, elementOrHash.elementID: 4654183552.337>
+                                    StaticText, 0x107633840, {{262.0, 880.5}, {117.5, 14.5}}, label: 'Native · on the globe' <AX element pid: 18905, elementOrHash.elementID: 4654176512.338>
+                          Other, 0x107633980, {{262.0, 800.0}, {508.0, 1.0}} <AX element pid: 18905, elementOrHash.elementID: 4653304960.270>
+                          Cell, 0x107633ac0, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4343426304.271>
+                            Other, 0x107633c00, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4438360064.288>
+                              Other, 0x107633d40, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4344359872.304>
+                            Other, 0x107633e80, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4344360768.289>
+                              Other, 0x1128fc000, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4640866304.305>
+                                Other, 0x1128fc140, {{242.0, 910.0}, {548.0, 89.0}} <AX element pid: 18905, elementOrHash.elementID: 4654185472.314>
+                                  Button, 0x1128fc280, {{242.0, 910.0}, {548.0, 89.0}}, identifier: 'prototype_quiet-frame', label: 'The quiet frame, Nothing at the foot until a country is chosen; then one line., Native · on the globe' <AX element pid: 18905, elementOrHash.elementID: 4654175712.322>
+                                    StaticText, 0x1128fc3c0, {{262.0, 925.0}, {126.0, 20.5}}, label: 'The quiet frame' <AX element pid: 18905, elementOrHash.elementID: 4654184032.339>
+                                    StaticText, 0x1128fc500, {{262.0, 948.5}, {400.5, 18.0}}, label: 'Nothing at the foot until a country is chosen; then one line.' <AX element pid: 18905, elementOrHash.elementID: 4654173792.340>
+                                    StaticText, 0x1128fc640, {{262.0, 969.5}, {117.5, 14.5}}, label: 'Native · on the globe' <AX element pid: 18905, elementOrHash.elementID: 4654176992.341>
+                          Other, 0x1128fc780, {{262.0, 909.0}, {508.0, 1.0}} <AX element pid: 18905, elementOrHash.elementID: 4653310080.272>
+                          Other, 0x1128fc8c0, {{210.0, 1016.5}, {612.0, 167.0}} <AX element pid: 18905, elementOrHash.elementID: 4653311360.273>
+                          Cell, 0x1128fca00, {{242.0, 1016.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4343423744.274>
+                            Other, 0x1128fcb40, {{242.0, 1016.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4438373504.290>
+                            Other, 0x1128fcc80, {{242.0, 1016.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4344363456.291>
+                              Other, 0x1128fcdc0, {{242.0, 1016.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4640870912.306>
+                                Other, 0x1128fcf00, {{242.0, 1016.5}, {548.0, 40.5}} <AX element pid: 18905, elementOrHash.elementID: 4654178752.315>
+                                  StaticText, 0x1128fd040, {{242.0, 1016.5}, {548.0, 40.5}}, label: 'Parked' <AX element pid: 18905, elementOrHash.elementID: 4654177792.323>
+                          Cell, 0x1128fd180, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4655392768.275>
+                            Other, 0x1128fd2c0, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4653303040.292>
+                              Other, 0x1128fd400, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4387256320.307>
+                            Other, 0x1128fd540, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4387248256.293>
+                              Other, 0x1128fd680, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4640875520.308>
+                                Other, 0x1128fd7c0, {{242.0, 1369.0}, {548.0, 52.0}} <AX element pid: 18905, elementOrHash.elementID: 4654177632.316>
+                                  TextField, 0x1128fd900, {{262.0, 1384.0}, {469.0, 22.0}}, identifier: 'addSourceField', placeholderValue: 'https://…/catalog.json' <AX element pid: 18905, elementOrHash.elementID: 4655390208.324>
+                                  Button, 0x1128fda40, {{739.0, 1385.0}, {31.0, 20.5}}, identifier: 'addSource', label: 'Add', Disabled <AX element pid: 18905, elementOrHash.elementID: 4654173472.325>
+                          Other, 0x1128fdb80, {{773.0, 422.0}, {30.0, 564.0}}, label: 'Vertical scroll bar, 3 pages', value: 0% <AX element pid: 18905, elementOrHash.elementID: 4345155072.276>
+                            Other, 0x1128fdcc0, {{800.0, 1008.0}, {3.0, 7.0}} <AX element pid: 18905, elementOrHash.elementID: 4344917824.294>
+                          Other, 0x1128fde00, {{773.0, 422.0}, {30.0, 564.0}}, label: 'Vertical scroll bar, 3 pages', value: 0% <AX element pid: 18905, elementOrHash.elementID: 4345155072.276>
+                            Other, 0x1128fdf40, {{800.0, 1008.0}, {3.0, 7.0}} <AX element pid: 18905, elementOrHash.elementID: 4344917824.294>
+                Toolbar, 0x1128fe080, {{226.0, 358.0}, {580.0, 660.0}}, identifier: 'Toolbar', label: 'Toolbar' <AX element pid: 18905, elementOrHash.elementID: 4388329472.250>
+                  Other, 0x1128fe1c0, {{226.0, 358.0}, {580.0, 660.0}} <AX element pid: 18905, elementOrHash.elementID: 4438451584.254>
+  Window, 0x1128fe300, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4343419904.4>
+    Other, 0x1128fe440, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4387273216.6>
+      Other, 0x1128fe580, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 18905, elementOrHash.elementID: 4387274240.8>

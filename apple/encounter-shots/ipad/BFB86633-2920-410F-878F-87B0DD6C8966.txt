@@ -1,0 +1,1 @@
+clouds: 0.8 ms of GPU a frame, at 0.84 pixels a point
