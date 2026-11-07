@@ -16,6 +16,8 @@ use toy_kit::paint::Painter;
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 use town::{dist, Kind, Town};
 
+/// The info mark's ghost fingers' ids start here (toy-kit info.rs).
+const GHOST: u64 = 1 << 48;
 /// Seconds the town has run before it opens, so it opens flowing.
 const BEFORE: f64 = 70.0;
 /// The lake, an ellipse at the middle (points).
@@ -82,6 +84,8 @@ pub struct Jam {
     pin: Option<([f64; 2], f64)>,
     /// Where roads were closed: the road, where it was crossed (town points), when.
     barriers: Vec<(usize, [f64; 2], f64)>,
+    /// Roads the info mark's ghost closed, to open again when its demo is done: the road, when.
+    lent: Vec<(usize, f64)>,
     /// The last tap on the water: where (points) and when, for its ripple.
     splash: ([f64; 2], f64),
     /// Where slashes fell: from, to (town points), when.
@@ -182,6 +186,7 @@ impl Jam {
         self.edits.clear();
         self.pin = None;
         self.barriers.clear();
+        self.lent.clear();
         self.arrive = 1.0;
     }
 
@@ -220,6 +225,7 @@ impl Toy for Jam {
             rings: Vec::new(),
             pin: None,
             barriers: Vec::new(),
+            lent: Vec::new(),
             splash: ([0.0, 0.0], -99.0),
             slashes: Vec::new(),
             arrive: 1.0,
@@ -325,6 +331,7 @@ impl Toy for Jam {
                     let mut path = f.path.clone();
                     path.push(q);
                     let mut any = false;
+                    let had = self.barriers.len();
                     for w in path.windows(2) {
                         let edit = Edit::Cut(self.to_town(w[0]), self.to_town(w[1]));
                         if self.apply(&edit) {
@@ -335,6 +342,12 @@ impl Toy for Jam {
                     if any {
                         self.sound.thump();
                         ctx.haptic();
+                    }
+                    // the info mark's ghost shows the slash, and gives the road back after
+                    if e.id >= GHOST {
+                        for &(r, _, _) in &self.barriers[had..] {
+                            self.lent.push((r, self.t + 3.0));
+                        }
                     }
                     self.slashes.push((a, b, self.t));
                 }
@@ -350,7 +363,8 @@ impl Toy for Jam {
         }
         let had = self.town.trips.len();
         self.town.step(dt);
-        self.town.tidy();
+        let keep: Vec<usize> = self.lent.iter().map(|x| x.0).collect();
+        self.town.tidy(&keep);
         // each car's light eases toward how long its trip will take
         let ease = 1.0 - (-dt * 2.0).exp();
         for i in 0..self.town.cars.len() {
@@ -364,6 +378,17 @@ impl Toy for Jam {
         }
         self.rings.retain(|(_, at)| t - at < 1.2);
         self.slashes.retain(|(_, _, at)| t - at < 0.8);
+        let due: Vec<usize> = self.lent.iter().filter(|(_, at)| t >= *at).map(|x| x.0).collect();
+        self.lent.retain(|(_, at)| t < *at);
+        for r in due {
+            if self.town.roads.get(r).is_some_and(|x| !x.open && x.alive) {
+                let at = self.town.roads[r].at(self.town.roads[r].len * 0.5).0;
+                let edit = Edit::Open(at);
+                if self.apply(&edit) {
+                    self.edits.push(edit);
+                }
+            }
+        }
         if self.pin.is_some_and(|(_, at)| t - at > 8.0) {
             self.pin = None;
         }

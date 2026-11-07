@@ -658,14 +658,14 @@ impl Town {
         self.route();
     }
 
-    /// Drawn roads that were cut leave once they are empty.
-    pub fn tidy(&mut self) {
+    /// Drawn roads that were cut leave once they are empty (but not those in `keep`).
+    pub fn tidy(&mut self, keep: &[usize]) {
         let mut n = vec![0usize; self.roads.len()];
         for c in &self.cars {
             n[c.link / 2] += 1;
         }
         for (i, r) in self.roads.iter_mut().enumerate() {
-            if r.kind == Kind::Built && !r.open && r.alive && n[i] == 0 && self.t - r.changed > 1.2 {
+            if r.kind == Kind::Built && !r.open && r.alive && n[i] == 0 && self.t - r.changed > 1.2 && !keep.contains(&i) {
                 r.alive = false;
             }
         }
