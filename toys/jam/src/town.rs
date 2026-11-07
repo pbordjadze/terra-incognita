@@ -64,6 +64,8 @@ pub struct Road {
     cum: Vec<f64>,
     pub len: f64,
     pub kind: Kind,
+    /// Free speed (points a second): its kind's, or a long road's scaled to its length.
+    pub vf: f64,
     /// Cars may enter it.
     pub open: bool,
     /// Still on the map (a drawn road that was cut goes once it is empty).
@@ -79,7 +81,7 @@ impl Road {
             cum.push(cum.last().unwrap() + dist(w[0], w[1]));
         }
         let len = *cum.last().unwrap();
-        Road { a, b, pts, cum, len, kind, open: true, alive: true, changed: -99.0 }
+        Road { a, b, pts, cum, len, kind, vf: kind.vf(), open: true, alive: true, changed: -99.0 }
     }
 
     /// The point `u` points along from `a`, and the way it runs there.
@@ -183,8 +185,9 @@ fn hash(mut h: u32) -> u32 {
 
 /// The town's first roads, point-symmetric about the lake: on the left a narrow street up from the
 /// bottom junction, then the long way round to the top; on the right the long way round first, then a
-/// narrow street. Nothing joins the two sides across the lake.
-pub fn first_roads() -> (Vec<[f64; 2]>, Vec<Road>) {
+/// narrow street. Nothing joins the two sides across the lake. `wide` (1 on a phone) swings the long
+/// roads further out on a wider screen, their speed scaled with their length so they take the same time.
+pub fn first_roads(wide: f64) -> (Vec<[f64; 2]>, Vec<Road>) {
     let o = [0.0, 520.0];
     let s0 = [0.0, 300.0];
     let a = [-98.0, 28.0];
@@ -200,20 +203,27 @@ pub fn first_roads() -> (Vec<[f64; 2]>, Vec<Road>) {
         let c = [m[0] + n[0] * bow, m[1] + n[1] * bow];
         bezier(p, c, c, q, 28)
     };
-    // the long way round: out past the edge of the screen and back
-    let long = |p: [f64; 2], q: [f64; 2], side: f64| -> Vec<[f64; 2]> {
-        let dy = (q[1] - p[1]).signum();
-        bezier(p, [side * 228.0, p[1] + 40.0 * dy], [side * 228.0, q[1] - 10.0 * dy], q, 60)
+    // the long way round, out wide over the dark
+    let long = |p: [f64; 2], q: [f64; 2], side: f64| long_at(p, q, side, wide);
+    let phone = Road::new(2, 4, long_at(a, e0, -1.0, 1.0), Kind::Long).len;
+    let slow = |mut r: Road| {
+        r.vf *= r.len / phone;
+        r
     };
     let roads = vec![
         Road::new(0, 1, vec![o, s0], Kind::Entry),
         Road::new(1, 2, street(s0, a, -30.0), Kind::Street),
-        Road::new(2, 4, long(a, e0, -1.0), Kind::Long),
-        Road::new(1, 3, long(s0, b, 1.0), Kind::Long),
+        slow(Road::new(2, 4, long(a, e0, -1.0), Kind::Long)),
+        slow(Road::new(1, 3, long(s0, b, 1.0), Kind::Long)),
         Road::new(3, 4, street(b, e0, -30.0), Kind::Street),
         Road::new(4, 5, vec![e0, d], Kind::Exit),
     ];
     (nodes, roads)
+}
+
+fn long_at(p: [f64; 2], q: [f64; 2], side: f64, wide: f64) -> Vec<[f64; 2]> {
+    let dy = (q[1] - p[1]).signum();
+    bezier(p, [side * 228.0 * wide, p[1] + 40.0 * dy], [side * 228.0 * wide, q[1] - 10.0 * dy], q, 60)
 }
 
 fn bez(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], t: f64) -> [f64; 2] {
@@ -228,7 +238,12 @@ fn bezier(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], n: usize) -> V
 
 impl Town {
     pub fn new(seed: u32) -> Town {
-        let (nodes, roads) = first_roads();
+        Town::wide(seed, 1.0)
+    }
+
+    /// The town for a screen `wide` times a phone's proportions across (1 to 1.8).
+    pub fn wide(seed: u32, wide: f64) -> Town {
+        let (nodes, roads) = first_roads(wide.clamp(1.0, 1.8));
         let mut t = Town {
             nodes,
             roads,
@@ -297,7 +312,7 @@ impl Town {
         self.speed = (0..nl)
             .map(|l| {
                 let r = &self.roads[l / 2];
-                let vf = r.kind.vf();
+                let vf = r.vf;
                 let k = n[l] as f64 / (r.len.max(1.0) * r.kind.lanes());
                 vf / (1.0 + k * vf / CAP)
             })
@@ -490,7 +505,7 @@ impl Town {
             let first = self.choose(None, self.from, 0).filter(|&l| self.room(l, &q));
             if let Some(l) = first {
                 let seed = hash((self.t * 1000.0) as u32 ^ self.rng);
-                self.cars.push(Car { link: l, s: 0.0, v: self.roads[l / 2].kind.vf() * 0.7, born: self.t, seed, waiting: false, late: 1.0, past: Vec::new() });
+                self.cars.push(Car { link: l, s: 0.0, v: self.roads[l / 2].vf * 0.7, born: self.t, seed, waiting: false, late: 1.0, past: Vec::new() });
             }
             if self.next_car < self.t - 1.0 {
                 self.next_car = self.t;
@@ -556,6 +571,7 @@ impl Town {
         let mut first = Road::new(old.a, n, pa, old.kind);
         let mut second = Road::new(n, old.b, pb, old.kind);
         for x in [&mut first, &mut second] {
+            x.vf = old.vf;
             x.open = old.open;
             x.changed = old.changed;
         }

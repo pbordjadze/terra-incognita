@@ -159,7 +159,8 @@ impl Jam {
     }
 
     fn fresh(&mut self) {
-        let mut town = Town::new(0x5107_c0de);
+        let wide = (self.points[0] / self.points[1]) / (393.0 / 852.0);
+        let mut town = Town::wide(0x5107_c0de, wide * 0.95);
         // the usual trip: what the drivers expect, on average, over the town's last half minute alone
         let (mut sum, mut n) = (0.0, 0);
         let mut run = 0.0;
@@ -232,7 +233,20 @@ impl Toy for Jam {
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
+        let was = self.points[0] / self.points[1];
         self.points = ctx.points();
+        // a screen of other proportions (turned, or split): the town laid out for it, the reader's
+        // changes made again
+        if ((self.points[0] / self.points[1]) / was - 1.0).abs() > 0.05 {
+            let edits = std::mem::take(&mut self.edits);
+            self.fresh();
+            for e in edits {
+                if self.apply(&e) {
+                    self.edits.push(e);
+                }
+            }
+            self.windows = windows(&self.town);
+        }
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
