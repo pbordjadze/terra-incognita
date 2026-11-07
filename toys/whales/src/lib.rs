@@ -218,8 +218,8 @@ impl Whales {
         let mshader = gpu.shader("marks", &toy_kit::globe::wgsl(include_str!("marks.wgsl")));
         let mlayout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("marks"),
-            bind_group_layouts: &[&globe.view_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&globe.view_layout)],
+            immediate_size: 0,
         });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
         let marks_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -228,11 +228,11 @@ impl Whales {
             vertex: wgpu::VertexState {
                 module: &mshader,
                 entry_point: Some("vs_mark"),
-                buffers: &[wgpu::VertexBufferLayout {
+                buffers: &[Some(wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<MarkI>() as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &attrs,
-                }],
+                })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
@@ -244,7 +244,7 @@ impl Whales {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let marks_buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -696,6 +696,7 @@ impl Toy for Whales {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.globe.draw(&mut rp);
             rp.set_pipeline(&self.rings_pass.pipeline);

@@ -182,7 +182,7 @@ impl Veil {
             ],
         });
         let shader = dev.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("terra veil"), source: wgpu::ShaderSource::Wgsl(VEIL_WGSL.into()) });
-        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("terra veil"), bind_group_layouts: &[&layout], push_constant_ranges: &[] });
+        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("terra veil"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
         let pipeline = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("terra veil"),
             layout: Some(&pl),
@@ -200,7 +200,7 @@ impl Veil {
             primitive: Default::default(),
             depth_stencil: None,
             multisample: Default::default(),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let sampler = dev.create_sampler(&wgpu::SamplerDescriptor { mag_filter: wgpu::FilterMode::Linear, min_filter: wgpu::FilterMode::Linear, ..Default::default() });
@@ -259,6 +259,7 @@ impl Veil {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.pipeline);
             rp.set_bind_group(0, bind, &[]);
@@ -577,6 +578,7 @@ impl Terra {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.globe.draw(&mut rp);
         }

@@ -974,7 +974,7 @@ impl PiecePass {
             label: Some("pieces"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             ..Default::default()
         });
         let bgl = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -994,7 +994,7 @@ impl PiecePass {
                 wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&sampler) },
             ],
         });
-        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("pieces"), bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("pieces"), bind_group_layouts: &[Some(&bgl)], immediate_size: 0 });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
         let pipeline = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pieces"),
@@ -1002,7 +1002,7 @@ impl PiecePass {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<PieceInst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<PieceInst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
@@ -1014,7 +1014,7 @@ impl PiecePass {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         PiecePass { pipeline, bind, uniform }
@@ -1033,6 +1033,7 @@ impl PiecePass {
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind, &[]);

@@ -67,12 +67,13 @@ pub async fn start() -> Result<(), JsValue> {
         files.insert(name.to_string(), bytes);
     }
 
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone())).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let gpu = Gpu::new(&instance, Some(&surface)).await.map_err(|e| JsValue::from_str(&e.to_string()))?;
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: gpu.format,
+        color_space: wgpu::SurfaceColorSpace::Srgb,
         width: w.max(1),
         height: h.max(1),
         present_mode: wgpu::PresentMode::Fifo,
@@ -190,11 +191,11 @@ pub async fn start() -> Result<(), JsValue> {
             surface.configure(&gpu_device, &config);
             app2.borrow_mut().resize(w, h, dpr);
         }
-        if let Ok(frame) = surface.get_current_texture() {
+        if let wgpu::CurrentSurfaceTexture::Success(frame) | wgpu::CurrentSurfaceTexture::Suboptimal(frame) = surface.get_current_texture() {
             let view = frame.texture.create_view(&Default::default());
             let t = now(&perf2);
             app2.borrow_mut().frame(&view, t);
-            frame.present();
+            app2.borrow().gpu.queue.present(frame);
             // the frame's cost, every five seconds, in the console
             if t - stats_at >= 5.0 {
                 stats_at = t;

@@ -37,7 +37,7 @@ pub fn decode(bytes: &[u8], channels: u32) -> anyhow::Result<Pixels> {
 /// app's limit).
 pub fn settle(gpu: &Gpu) {
     gpu.queue.submit([]);
-    let _ = gpu.device.poll(wgpu::PollType::wait());
+    let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
 }
 
 /// The next mip of an image: each texel the mean of four (the box filter the map's distances take
@@ -264,7 +264,7 @@ impl Textures {
                 address_mode_w: u,
                 mag_filter: filter,
                 min_filter: filter,
-                mipmap_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::MipmapFilterMode::Linear,
                 ..Default::default()
             })
         };

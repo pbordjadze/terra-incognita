@@ -29,7 +29,7 @@ impl Veil {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Veil {
         let module = gpu.shader("veil", &marks_wgsl(include_str!("veil.wgsl")));
         let uniform = Uniform::new(gpu, "veil");
-        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("veil"), bind_group_layouts: &[view, &uniform.layout], push_constant_ranges: &[] });
+        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("veil"), bind_group_layouts: &[Some(view), Some(&uniform.layout)], immediate_size: 0 });
         let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("veil"),
             layout: Some(&layout),
@@ -38,7 +38,7 @@ impl Veil {
             primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, ..Default::default() },
             depth_stencil: None,
             multisample: Default::default(),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         Veil { pipeline, uniform, on: false, last: VeilUniform::default() }

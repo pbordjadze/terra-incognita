@@ -136,11 +136,11 @@ impl MaybesPass {
 
 /// The maybes' pipeline: `mark_pipeline`'s, with the partner's slot beside the cloud's own.
 fn pipeline(gpu: &Gpu, module: &wgpu::ShaderModule, view: &wgpu::BindGroupLayout, own: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
-    let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("maybes draw"), bind_group_layouts: &[view, own], push_constant_ranges: &[] });
+    let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("maybes draw"), bind_group_layouts: &[Some(view), Some(own)], immediate_size: 0 });
     gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("maybes draw"),
         layout: Some(&layout),
-        vertex: wgpu::VertexState { module, entry_point: Some("vs"), buffers: &[LAYOUT, PARTNER], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module, entry_point: Some("vs"), buffers: &[Some(LAYOUT), Some(PARTNER)], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module,
             entry_point: Some("fs"),
@@ -150,7 +150,7 @@ fn pipeline(gpu: &Gpu, module: &wgpu::ShaderModule, view: &wgpu::BindGroupLayout
         primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, ..Default::default() },
         depth_stencil: None,
         multisample: Default::default(),
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     })
 }

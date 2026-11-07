@@ -180,7 +180,7 @@ impl Creatures {
             }],
         });
         let bind = dev.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("creature"), layout: &bgl, entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() }] });
-        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("creature"), bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("creature"), bind_group_layouts: &[Some(&bgl)], immediate_size: 0 });
         let attrs = wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x4, 4 => Float32x4];
         let pipeline = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("creature"),
@@ -188,7 +188,7 @@ impl Creatures {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Instance>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Instance>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
@@ -200,7 +200,7 @@ impl Creatures {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         Creatures { pipeline, bind, uniform, list: Vec::new() }
@@ -220,6 +220,7 @@ impl Creatures {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind, &[]);

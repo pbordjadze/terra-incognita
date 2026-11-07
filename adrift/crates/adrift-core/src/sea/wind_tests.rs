@@ -157,7 +157,7 @@ fn a_thing_down_stays_down_and_says_where() {
 #[test]
 fn the_gpu_steps_the_wind_as_the_cpu_does() {
     use crate::gpu::{Gpu, Textures};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = match block(Gpu::new(&instance, None)) {
         Ok(g) => g,
         Err(e) => {
@@ -449,7 +449,7 @@ fn a_seeds_cloud_is_its_cpu_paths() {
     use super::wind::{glide, grid_steps};
     use crate::gpu::{Gpu, Textures};
     use crate::model::{Held, Medium};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = match block(Gpu::new(&instance, None)) {
         Ok(g) => g,
         Err(e) => {

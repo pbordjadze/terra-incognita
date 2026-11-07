@@ -289,7 +289,7 @@ impl Toy for Mold {
             })
         });
         let sim_shader = gpu.shader("mold sim", include_str!("sim.wgsl"));
-        let sim_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold sim"), bind_group_layouts: &[&sim_layout], push_constant_ranges: &[] });
+        let sim_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold sim"), bind_group_layouts: &[Some(&sim_layout)], immediate_size: 0 });
         let compute = |entry: &str| {
             dev.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some(entry),
@@ -344,7 +344,7 @@ impl Toy for Mold {
             ],
         });
         let streak_shader = gpu.shader("mold streaks", &toy_kit::globe::wgsl(&format!("@group(0) @binding(0) var<uniform> U: View;\n{}", include_str!("streaks.wgsl"))));
-        let streak_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold streaks"), bind_group_layouts: &[&globe.view_layout, &streak_layout], push_constant_ranges: &[] });
+        let streak_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold streaks"), bind_group_layouts: &[Some(&globe.view_layout), Some(&streak_layout)], immediate_size: 0 });
         let streak_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("mold streaks"),
             layout: Some(&streak_pl),
@@ -358,7 +358,7 @@ impl Toy for Mold {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(add), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -517,6 +517,7 @@ impl Toy for Mold {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.night.draw(&mut rp, &self.globe);
             rp.set_pipeline(&self.draw_pipe);

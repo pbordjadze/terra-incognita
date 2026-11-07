@@ -322,6 +322,7 @@ impl Toy for Walk {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.ground.pipe);
             rp.set_bind_group(0, &self.ground.bind, &[]);

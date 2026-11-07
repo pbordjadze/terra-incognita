@@ -50,81 +50,105 @@ pub fn iphone() -> bool {
     std::env::var("KIT_IPHONE_LIMITS").is_ok_and(|v| v == "1")
 }
 
-/// The limits wgpu 26 gives an iPhone's GPU on Metal, for the Apple7 family (A14, A15: iPhone 12 and
-/// 13; the A12 of the oldest iOS 17 phones differs only in 96 sampled textures a stage and 128-entry
-/// sampler arrays, both far above what the kit requests). From wgpu-hal 26.0.6, src/metal/adapter.rs:
-/// `PrivateCapabilities::new` (lines 732–846: per-stage counts, buffer size, texture sizes, varyings,
-/// threads and threadgroup memory, buffer alignment 64 off the Mac at line 765) and
-/// `capabilities()` (lines 1038–1090: how they become `wgt::Limits`).
+/// The limits wgpu 30 gives an iPhone's GPU on Metal, for the Apple7 family (A14, A15: iPhone 12 and
+/// 13; the A12 of the oldest iOS 17 phones differs only in 72 sampled textures a stage and 128-entry
+/// sampler arrays, both far above what the kit requests). From wgpu-hal 30.0.1, src/metal/adapter.rs:
+/// `PrivateCapabilities::new` (lines 847–1022: per-stage counts, buffer size, texture sizes, varyings,
+/// threads and threadgroup memory) and `capabilities()` (lines 1370–1490: how they become
+/// `wgt::Limits`, Metal's 31 buffer slots less the 2 wgpu keeps), then src/auxil/mod.rs:128–141
+/// (`adjust_raw_limits`: 8 bind groups, 16 vertex buffers, 24 of both). Where the kit's own figure is
+/// stricter than the phone's (offset alignments, bindings a group) it is kept: nothing the kit makes
+/// needs more.
 pub fn iphone_limits() -> wgpu::Limits {
-    // maxBufferLength is queried from the device (adapter.rs:766–774); 256 MB is the hal's floor for
-    // iOS (line 773) and the least any iPhone reports, so it is what is assumed here (an estimate: an
+    // maxBufferLength is queried from the device (adapter.rs:897–903); 256 MB is the hal's floor for
+    // iOS (line 902) and the least any iPhone reports, so it is what is assumed here (an estimate: an
     // A14 reports more, but nothing above 256 MB can be counted on)
     let max_buffer: u64 = 1 << 28;
+    // Metal's 31 buffer slots a stage, less wgpu's two (immediates, buffer sizes): adapter.rs:1390
+    let buffers: u32 = 31 - 2;
     let base = wgpu::Limits::default();
     wgpu::Limits {
-        max_texture_dimension_1d: 16384, // :775–786 (iOS_GPUFamily3_v1 and later)
+        max_texture_dimension_1d: 16384, // :907–920 (iOS_GPUFamily3_v1 and later, below Apple10)
         max_texture_dimension_2d: 16384,
-        max_texture_dimension_3d: 2048, // :787
-        max_texture_array_layers: 2048, // :788
-        max_bind_groups: 8,             // :1043
+        max_texture_dimension_3d: 2048, // :922
+        max_texture_array_layers: 2048, // :924
+        max_bind_groups: 8,             // auxil :130
+        max_bind_groups_plus_vertex_buffers: 24, // auxil :138
         max_bindings_per_bind_group: 65535,
         max_dynamic_uniform_buffers_per_pipeline_layout: base.max_dynamic_uniform_buffers_per_pipeline_layout,
         max_dynamic_storage_buffers_per_pipeline_layout: base.max_dynamic_storage_buffers_per_pipeline_layout,
-        max_sampled_textures_per_shader_stage: 128, // :734–742 (Apple6 and later)
-        max_samplers_per_shader_stage: 16,          // :743
-        max_storage_buffers_per_shader_stage: 31,   // :732 (Metal's 31 buffer slots a stage)
-        max_storage_textures_per_shader_stage: 128,
-        max_uniform_buffers_per_shader_stage: 31,
-        max_binding_array_elements_per_shader_stage: 1_000_000, // :744 (argument buffers tier 2)
-        max_binding_array_sampler_elements_per_shader_stage: 1000, // :751–763 (Apple7)
-        max_uniform_buffer_binding_size: max_buffer as u32, // :1057
-        max_storage_buffer_binding_size: max_buffer as u32, // :1058
-        max_vertex_buffers: 16,                             // :733, MAX_VERTEX_BUFFERS
+        max_sampled_textures_per_shader_stage: 96, // :847–855 (Apple6 and later: 96 sampled, 32 storage)
+        max_samplers_per_shader_stage: 16,         // :1418
+        max_storage_buffers_per_shader_stage: buffers,
+        max_storage_textures_per_shader_stage: 32,
+        max_uniform_buffers_per_shader_stage: buffers,
+        max_binding_array_elements_per_shader_stage: 1_000_000, // :856–862 (argument buffers tier 2)
+        max_binding_array_acceleration_structure_elements_per_shader_stage: 0,
+        max_binding_array_sampler_elements_per_shader_stage: 1024, // :864–877 (Apple7)
+        max_uniform_buffer_binding_size: max_buffer, // :1426
+        max_storage_buffer_binding_size: max_buffer, // :1428
+        max_vertex_buffers: 16,                      // auxil :131–133, MAX_VERTEX_BUFFERS
         max_buffer_size: max_buffer,
         max_vertex_attributes: 31,
         max_vertex_buffer_array_stride: base.max_vertex_buffer_array_stride,
-        min_uniform_buffer_offset_alignment: 64, // :765
-        min_storage_buffer_offset_alignment: 64,
-        max_inter_stage_shader_components: 60, // :816–822 (not the Mac's 124)
-        max_color_attachments: 8,               // :796–807
-        max_color_attachment_bytes_per_sample: 64, // :809–815 (Apple4 and later)
-        max_compute_workgroup_storage_size: 32 << 10, // :834–843
-        max_compute_invocations_per_workgroup: 1024, // :823–832
+        min_uniform_buffer_offset_alignment: 64, // the phone's is 4 (:887–895)
+        min_storage_buffer_offset_alignment: 64, // and 32 (:1431)
+        max_inter_stage_shader_variables: 31, // :981–988 (Apple4 and later; not the Mac's)
+        max_color_attachments: 8,             // :934–945
+        max_color_attachment_bytes_per_sample: 64, // :948–958 (Apple4 and later)
+        max_compute_workgroup_storage_size: 32 << 10, // :1012–1022
+        max_compute_invocations_per_workgroup: 1024, // :997–1007
         max_compute_workgroup_size_x: 1024,
         max_compute_workgroup_size_y: 1024,
         max_compute_workgroup_size_z: 1024,
         max_compute_workgroups_per_dimension: 0xFFFF,
-        min_subgroup_size: 4,
-        max_subgroup_size: 64,
-        max_push_constant_size: 0x1000,
+        max_immediate_size: 0x1000, // :1447
         max_non_sampler_bindings: u32::MAX,
+        // mesh shaders, multiview and ray tracing: none (the kit uses none, and an A14 lacks them)
+        max_task_workgroup_total_count: 0,
+        max_task_workgroups_per_dimension: 0,
+        max_mesh_workgroup_total_count: 0,
+        max_mesh_workgroups_per_dimension: 0,
+        max_task_invocations_per_workgroup: 0,
+        max_task_invocations_per_dimension: 0,
+        max_mesh_invocations_per_workgroup: 0,
+        max_mesh_invocations_per_dimension: 0,
+        max_task_payload_size: 0,
+        max_mesh_output_vertices: 0,
+        max_mesh_output_primitives: 0,
+        max_mesh_output_layers: 0,
+        max_mesh_multiview_view_count: 0,
         max_blas_primitive_count: 0,
         max_blas_geometry_count: 0,
         max_tlas_instance_count: 0,
         max_acceleration_structures_per_shader_stage: 0,
+        max_buffers_and_acceleration_structures_per_shader_stage: buffers,
+        max_multiview_view_count: 0,
+        max_ray_dispatch_count: 0,
+        max_ray_recursion_depth: 0,
     }
 }
 
-/// The features an Apple7 iPhone on iOS 17 has under wgpu 26 that the kit could ever want: those
-/// `features()` sets unconditionally (wgpu-hal 26.0.6, src/metal/adapter.rs:918–929, less the MSL
-/// passthrough and adapter-specific format features, which a toy must not lean on), and those that
-/// hold for every Apple7 phone (:932–935 indirect, :950 and :955 ASTC and ETC2, :957 depth clip,
-/// :972–975 int64). BC compression, float32 filtering (:931) and clamp-to-border are left out: an
-/// iPhone lacks them or may.
+/// The features an Apple7 iPhone on iOS 17 has under wgpu 30 that the kit could ever want: those
+/// `features()` sets unconditionally (wgpu-hal 30.0.1, src/metal/adapter.rs:1185–1197, less the MSL
+/// passthrough, external textures and adapter-specific format features, which a toy must not lean
+/// on), and those that hold for every Apple7 phone (:1202 indirect, :1223 and :1228 ASTC and ETC2,
+/// :1230 depth clip, :1263–1266 int64). BC compression, float32 filtering (:1200) and clamp-to-border
+/// are left out: an iPhone lacks them or may. (Multi-draw indirect, a feature under wgpu 26, is no
+/// longer one in wgpu 30.)
 pub fn iphone_features() -> wgpu::Features {
     use wgpu::Features as F;
     F::MAPPABLE_PRIMARY_BUFFERS
         | F::VERTEX_WRITABLE_STORAGE
-        | F::PUSH_CONSTANTS
+        | F::IMMEDIATES
         | F::POLYGON_MODE_LINE
         | F::CLEAR_TEXTURE
         | F::TEXTURE_FORMAT_16BIT_NORM
         | F::SHADER_F16
+        | F::SHADER_I16
         | F::DEPTH32FLOAT_STENCIL8
         | F::BGRA8UNORM_STORAGE
         | F::INDIRECT_FIRST_INSTANCE
-        | F::MULTI_DRAW_INDIRECT
         | F::TEXTURE_COMPRESSION_ASTC
         | F::TEXTURE_COMPRESSION_ETC2
         | F::DEPTH_CLIP_CONTROL
@@ -133,6 +157,12 @@ pub fn iphone_features() -> wgpu::Features {
 
 /// `KIT_MEMORY_REPORT=<file>`: samples the device's live GPU bytes every 5 ms and keeps the peaks in
 /// the file (written whole, then renamed, so the file is always complete when the process ends).
+/// (Native only: the web has no threads or environment, and wgpu's device is not `Send` there.)
+#[cfg(target_arch = "wasm32")]
+pub fn start_report(_device: std::sync::Arc<wgpu::Device>) {}
+
+/// `KIT_MEMORY_REPORT=<file>`, natively.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start_report(device: std::sync::Arc<wgpu::Device>) {
     let Ok(path) = std::env::var("KIT_MEMORY_REPORT") else { return };
     let path = std::path::PathBuf::from(path);
@@ -199,6 +229,6 @@ mod tests {
             usage: wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
-        let _ = gpu.device.poll(wgpu::PollType::wait());
+        let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
     }
 }

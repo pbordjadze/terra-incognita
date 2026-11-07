@@ -524,7 +524,7 @@ impl AirMaybes {
             ],
         });
         let shader = gpu.shader("wind", super::WIND_WGSL);
-        let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("air maybes"), bind_group_layouts: &[&layout], push_constant_ranges: &[] });
+        let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("air maybes"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
         let pipeline = gpu.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("air maybes"),
             layout: Some(&pipeline_layout),

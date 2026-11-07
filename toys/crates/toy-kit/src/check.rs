@@ -480,7 +480,7 @@ pub fn resolve(place: &Place, anchors: impl FnOnce() -> Vec<(String, [f64; 2])>,
 
 /// A headless GPU (Vulkan on Linux, Metal on a Mac).
 pub fn gpu() -> anyhow::Result<Gpu> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     block_on(Gpu::new(&instance, None))
 }
 

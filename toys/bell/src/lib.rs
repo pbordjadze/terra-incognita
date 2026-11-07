@@ -271,6 +271,7 @@ impl Toy for Bell {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.globe.draw(&mut rp);
         }
@@ -286,6 +287,7 @@ impl Toy for Bell {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.pipe);
             rp.set_bind_group(0, self.globe.view_bind(), &[]);

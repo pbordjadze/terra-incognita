@@ -54,7 +54,7 @@ impl SeaPass {
         let glow_layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("sea glow"), entries: &[tex2d_entry(0)] });
         let pipeline = gpu.fullscreen_pipeline("sea", &shader, &[view_layout, &layout, &ulayout, &glow_layout], Some(Gpu::over()));
         let glow_pipeline = {
-            let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sea glow"), bind_group_layouts: &[view_layout, &layout], push_constant_ranges: &[] });
+            let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sea glow"), bind_group_layouts: &[Some(view_layout), Some(&layout)], immediate_size: 0 });
             gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("sea glow"),
                 layout: Some(&pl),
@@ -68,7 +68,7 @@ impl SeaPass {
                     targets: &[Some(wgpu::ColorTargetState { format: GLOW_FORMAT, blend: None, write_mask: wgpu::ColorWrites::ALL })],
                     compilation_options: Default::default(),
                 }),
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             })
         };
@@ -146,6 +146,7 @@ impl SeaPass {
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         rp.set_pipeline(&self.glow_pipeline);
         rp.set_bind_group(0, view_bind, &[]);
@@ -198,7 +199,7 @@ fn pair_months(gpu: &Gpu, stream: &crate::gpu::Texture) -> wgpu::Texture {
 "#,
     );
     let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("stream pairing"), entries: &[tex2d_entry(0)] });
-    let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("stream pairing"), bind_group_layouts: &[&layout], push_constant_ranges: &[] });
+    let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("stream pairing"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
     let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("stream pairing"),
         layout: Some(&pl),
@@ -212,7 +213,7 @@ fn pair_months(gpu: &Gpu, stream: &crate::gpu::Texture) -> wgpu::Texture {
             targets: &[Some(wgpu::ColorTargetState { format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     });
     let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -234,6 +235,7 @@ fn pair_months(gpu: &Gpu, stream: &crate::gpu::Texture) -> wgpu::Texture {
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         rp.set_pipeline(&pipeline);
         rp.set_bind_group(0, &bind, &[]);

@@ -118,8 +118,8 @@ pub(crate) fn read_from(gpu: &Gpu, paths: &wgpu::Buffer, readback: &wgpu::Buffer
     gpu.queue.submit([enc.finish()]);
     let slice = readback.slice(..size);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-    let out = bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range()).to_vec();
+    gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+    let out = bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range().expect("mapped")).to_vec();
     readback.unmap();
     out
 }
@@ -219,8 +219,8 @@ impl Maybes {
         let shader = gpu.shader("rules", RULES_WGSL);
         let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("maybes"),
-            bind_group_layouts: &[&layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&layout)],
+            immediate_size: 0,
         });
         let make = |entry: &str| {
             gpu.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {

@@ -9,7 +9,7 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
-wgpu = { version = "26", default-features = false, features = ["wgsl"] }
+wgpu = { version = "30", default-features = false, features = ["wgsl"] }
 bytemuck = { version = "1", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 serde = { version = "1", features = ["derive"] }

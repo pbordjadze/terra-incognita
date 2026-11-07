@@ -429,7 +429,7 @@ mod tests {
     /// An App on the conduct plan's scene (two lamps off Hatteras in a typical June), or None
     /// without a GPU.
     fn app() -> Option<App> {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
         let gpu = match block(Gpu::new(&instance, None)) {
             Ok(g) => g,
             Err(e) => {
