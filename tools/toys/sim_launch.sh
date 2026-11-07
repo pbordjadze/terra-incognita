@@ -39,16 +39,22 @@ if [ -f "$SIM_ENV" ]; then
   done < "$SIM_ENV"
 fi
 DEVICE="${SIM_DEVICE:-iPhone}"
-# an iPhone (or the device asked for: the newest runtime's first of it), booted once and reused by the next toy in this job
+# an iPhone (or the device asked for), booted once and reused by the next toy in this job: the plainest
+# of it first (an "iPhone 17 Pro", an "iPad Pro 13-inch"; not Xcode 27's two-screened "iPhone Duo",
+# whose screenshots came back empty), on the newest runtime that has one
 UDID="$(xcrun simctl list devices available -j | DEVICE="$DEVICE" python3 -c '
-import json, os, sys
+import json, os, re, sys
 d = json.load(sys.stdin)["devices"]
+D = re.escape(os.environ["DEVICE"])
 runtimes = sorted((r for r in d if "iOS" in r), key=lambda r: [int(x) for x in r.rsplit("iOS-", 1)[-1].split("-") if x.isdigit()])
-for r in reversed(runtimes):
-    phones = [x for x in d[r] if x["name"].startswith(os.environ["DEVICE"])]
-    booted = [x for x in phones if x["state"] == "Booted"]
-    if booted or phones:
-        print((booted or phones)[0]["udid"]); break
+for tier in (D + r" \d+ Pro$", D + r" Pro\b", D + r" \d", D):
+    found = None
+    for r in reversed(runtimes):
+        devs = [x for x in d[r] if re.match(tier, x["name"])]
+        if devs:
+            found = ([x for x in devs if x["state"] == "Booted"] or devs)[0]; break
+    if found:
+        print(found["udid"]); break
 ')"
 [ -n "$UDID" ] || { echo "no $DEVICE simulator"; exit 1; }
 xcrun simctl list devices | grep "$UDID" | sed 's/^ */simulator: /'
@@ -75,11 +81,11 @@ while :; do
   i=$(( $(date +%s) - start ))
   # (a Simulator app is a process of the Mac's own: its executable's path names it)
   if ! pgrep -f "/$EXEC.app/$EXEC" > /dev/null; then alive=0; echo "gone after ${i} s"; break; fi
-  if [ "$shot_screen" = 0 ] && [ "$i" -ge 3 ]; then shot_screen=1; xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; fi
-  if [ "$shot_rules" = 0 ] && [ "$i" -ge 33 ]; then shot_rules=1; xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true; fi
+  if [ "$shot_screen" = 0 ] && [ "$i" -ge 3 ]; then shot_screen=1; xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>> "$OUT/screenshots.txt" || echo "no screen.png" >> "$OUT/screenshots.txt"; fi
+  if [ "$shot_rules" = 0 ] && [ "$i" -ge 33 ]; then shot_rules=1; xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>> "$OUT/screenshots.txt" || echo "no rules.png" >> "$OUT/screenshots.txt"; fi
   [ "$i" -ge "$WAIT" ] && break
 done
-[ "$alive" = 1 ] && [ "$WAIT" -ge 63 ] && { xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>&1 || true; }
+[ "$alive" = 1 ] && [ "$WAIT" -ge 63 ] && { xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>> "$OUT/screenshots.txt" || echo "no origins.png" >> "$OUT/screenshots.txt"; }
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
 [ -n "$DATA" ] && cp "$DATA/Documents/toy-log.txt" "$OUT/toy-log.txt" 2> /dev/null || true
 ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" | head -n $(( $(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true) - before )) |

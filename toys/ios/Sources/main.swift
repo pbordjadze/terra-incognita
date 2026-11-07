@@ -51,6 +51,9 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         isMultipleTouchEnabled = true
         backgroundColor = .black
         (layer as? CAMetalLayer)?.framebufferOnly = true
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, _: UITraitCollection) in
+            if let shell = self.shell { toy_set_night(shell, self.traitCollection.userInterfaceStyle == .dark) }
+        }
         caption.font = UIFont.preferredFont(forTextStyle: .callout)
         caption.adjustsFontForContentSizeCategory = true
         caption.adjustsFontSizeToFitWidth = true
@@ -396,10 +399,6 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         set {}
     }
 
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
-        if let shell { toy_set_night(shell, traitCollection.userInterfaceStyle == .dark) }
-    }
     override var canBecomeFirstResponder: Bool { true }
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if motion == .motionShake, let shell { toy_shaken(shell) }
@@ -483,14 +482,25 @@ final class ToyController: UIViewController {
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 }
 
+// The scene lifecycle (an app built against the iOS 27 SDK must adopt it, or UIKit stops it at launch):
+// one scene (Info.plist's UIApplicationSceneManifest), its window made by SceneDelegate.
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+}
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        let w = UIWindow(frame: UIScreen.main.bounds)
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let scene = scene as? UIWindowScene else { return }
+        let w = UIWindow(windowScene: scene)
         w.rootViewController = ToyController()
         w.makeKeyAndVisible()
         window = w
-        return true
     }
 }

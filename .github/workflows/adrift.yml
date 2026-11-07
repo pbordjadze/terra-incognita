@@ -15,7 +15,7 @@ name: Adrift
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
-    paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh']
+    paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh', 'ci/xcode.sh']
   workflow_dispatch:
     inputs:
       ipa:
@@ -81,13 +81,14 @@ jobs:
     if: ${{ !cancelled() && needs.check.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
     permissions:
       contents: write
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
     env:
       BUILD: ${{ github.run_number }}
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
+      - name: Xcode (the one version, ci/xcode.sh)
+        run: bash ci/xcode.sh
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-apple-ios }
       - uses: Swatinem/rust-cache@v2
