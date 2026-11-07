@@ -36,7 +36,7 @@ whole in `main`'s history before row 255 replaced it with this.)
 - Cars keep a gap of 7 points a lane nose to nose and queue at a road's end when there is no room on
   the next.
 - **Drawn:** the numbers. The narrow streets: two lanes, 200 points a second free. The long roads round:
-  out past the screen's edge, 40 points a second, so wide they never fill. A road the reader draws: four
+  out wide round the lake, 25 points a second on a phone (on a wider screen they swing further out and run faster in proportion, taking the same time), so wide they never fill. A road the reader draws: four
   lanes, 220 points a second. Cars come in at 3.6 a second. They are tuned so the obvious bridge makes
   the mean trip about a quarter slower (the test `a_bridge_slows_everyone` holds it at over a fifth) and
   closing it brings it back.
@@ -45,19 +45,22 @@ whole in `main`'s history before row 255 replaced it with this.)
 
 - At every junction each driver takes the next road whose time as it looks right now (its length at the
   speed its crowd gives it), plus the quickest way on from its end, is least, each road seen with an
-  error of their own of up to 12 per cent either way. That is selfish, myopic routing, the assumption
+  error of their own of up to 12 per cent either way, and the roads beyond the next weighed half by
+  what is seen now and half by what the drivers remember of the last 12 s (they can't see that far). That is selfish, myopic routing, the assumption
   under Wardrop's equilibrium and the way a navigation app routes: nothing in it mentions bridges, and
   the paradox, the crowding of the streets and the emptying of the long roads are not in the code.
-- After a change the town sloshes for a while (everyone avoids the road that looked slow, then
-  crowds it once it empties) before it settles: that comes out of the same rule, with no lag added.
+- After a change the town sloshes a little (everyone avoids the road that looked slow, then crowds it
+  once it empties) before it settles; the drivers' memory damps it (the test
+  `the_town_settles_after_a_cut` holds it within a tenth of the old after 16 s).
 
 ## The colour (drawn from the rule)
 
-- A car's light is how long its whole trip will take as it looks now (its time so far, the rest of its
-  road at that road's speed, and the quickest way on), against the town's usual: the mean of that over
-  the half minute before the toy opens, with the town's own roads. White when quicker, warm white at
-  the usual, orange, then red when about a quarter slower; eased over a second so it doesn't flicker.
-  The town's light at the top is the colour its arrivals bring.
+- A car's light is how long its whole way takes right now: the roads it came by, the one it is on and
+  the quickest way on from there, each at the speed its crowd gives it now (what a driver setting out on
+  the same way now would expect), against the town's usual: the mean of that over the half minute before
+  the toy opens, with the town's own roads. White when quicker, warm white at the usual, orange, then
+  red when about a quarter slower; eased over half a second so it doesn't flicker. A road the reader drew
+  wears the mean light of the cars on it.
 
 ## The town (drawn)
 
