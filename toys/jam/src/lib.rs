@@ -90,6 +90,8 @@ pub struct Jam {
     splash: ([f64; 2], f64),
     /// Where slashes fell: from, to (town points), when.
     slashes: Vec<([f64; 2], [f64; 2], f64)>,
+    /// Each drawn road's tint: the mean light of the cars on it, eased.
+    road_tint: Vec<f64>,
     /// The colour the town's arrivals bring, eased.
     arrive: f64,
     touched: bool,
@@ -187,6 +189,7 @@ impl Jam {
         self.pin = None;
         self.barriers.clear();
         self.lent.clear();
+        self.road_tint.clear();
         self.arrive = 1.0;
     }
 
@@ -228,6 +231,7 @@ impl Toy for Jam {
             lent: Vec::new(),
             splash: ([0.0, 0.0], -99.0),
             slashes: Vec::new(),
+            road_tint: Default::default(),
             arrive: 1.0,
             touched: false,
             still: ctx.reduce_motion,
@@ -376,6 +380,23 @@ impl Toy for Jam {
         for &(_, trip) in &self.town.trips[self.town.trips.len() - new..] {
             self.arrive += (trip / self.usual - self.arrive) * 0.06;
         }
+        // each drawn road wears the colour of the trips of the cars on it: white while it helps, red
+        // once the crowd it brought makes every way slower
+        let mut tint = vec![(0.0f64, 0usize); self.town.roads.len()];
+        for c in &self.town.cars {
+            tint[c.link / 2].0 += c.late;
+            tint[c.link / 2].1 += 1;
+        }
+        for (i, r) in self.town.roads.iter().enumerate() {
+            if r.kind == Kind::Built {
+                let want = if tint[i].1 > 0 { tint[i].0 / tint[i].1 as f64 } else { 1.0 };
+                if self.road_tint.len() <= i {
+                    self.road_tint.resize(i + 1, 1.0);
+                }
+                let e = &mut self.road_tint[i];
+                *e += (want - *e) * 0.05;
+            }
+        }
         self.rings.retain(|(_, at)| t - at < 1.2);
         self.slashes.retain(|(_, _, at)| t - at < 0.8);
         let due: Vec<usize> = self.lent.iter().filter(|(_, at)| t >= *at).map(|x| x.0).collect();
@@ -444,7 +465,7 @@ impl Toy for Jam {
         }
         // the roads: their verge, their asphalt, a closed one dim and broken
         for pass in 0..3 {
-            for r in town.roads.iter() {
+            for (ri, r) in town.roads.iter().enumerate() {
                 if !r.alive {
                     continue;
                 }
@@ -473,7 +494,20 @@ impl Toy for Jam {
                         let (a, b) = (px(r.at(u).0), px(r.at(v).0));
                         match pass {
                             0 => p.line(a, b, (w + 1.6) as f32 * m, 1.6 * m, [0.0, 0.0, 0.01, 0.45 * fade]),
-                            1 => p.line(a, b, w as f32 * m, 0.7 * m, [asphalt[0], asphalt[1], asphalt[2], fade]),
+                            1 => {
+                                let mut col = asphalt;
+                                if r.kind == Kind::Built {
+                                    if let Some(&tl) = self.road_tint.get(ri) {
+                                        let c = trip_colour(tl);
+                                        let k = (0.35 * ((tl - 1.0) / 0.25).clamp(0.0, 1.0) + 0.25) as f32;
+                                        col = [0, 1, 2].map(|j| col[j] * (1.0 - k) + c[j] * k);
+                                        if r.open && tl > 1.05 {
+                                            p.glow(a, b, w as f32 * m, 5.0 * m, [c[0], c[1], c[2], 0.10 * ((tl - 1.05) / 0.2).clamp(0.0, 1.0) as f32]);
+                                        }
+                                    }
+                                }
+                                p.line(a, b, w as f32 * m, 0.7 * m, [col[0], col[1], col[2], fade])
+                            }
                             _ => {
                                 let (wa, dir) = r.at(u);
                                 let wet = (wa[0] / LAKE[0]).hypot(wa[1] / LAKE[1]) < 1.08;
@@ -703,12 +737,16 @@ impl Toy for Jam {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::new(
             &[
-                "Every driver takes the way that looks quickest right now. No one plans for anyone else.",
-                "A road slows as it fills. The narrow streets fill fast; the long roads round never do.",
-                "Each car glows with how long its way takes right now: white when quick, red when slow. Shake for the old roads.",
+                "Every driver takes the way that looks quickest now.",
+                "A road slows as it fills. The long roads round never fill.",
+                "A car glows white when its way is quick, red when slow. Shake for the old roads.",
             ],
             "Real: the rules, and that a new road can slow everyone (Braess, 1968). Made up: the town and its cars.",
         ))
+    }
+
+    fn card_at_top(&self, _ctx: &Ctx) -> bool {
+        true
     }
 
     fn origins(&self) -> Option<toy_kit::info::Rules> {

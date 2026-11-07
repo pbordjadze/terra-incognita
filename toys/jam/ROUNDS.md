@@ -27,3 +27,8 @@ Salt Flat's six (row 244) in the history of this file before row 255.
   speeds now), not what it has suffered, so the town cools within about 15 s of the cut (the test holds
   it); the invitation shows from the first frame; a pinned road lights every road it could join; the long
   roads wholly on the iPhone's screen.
+- R4 (Nov 7, 01:20; R3 critic "no", weakest (polish): the payoff late and nothing tying it to his road;
+  then: tapped roads crossing with no junction, the "?" card over the roads): a road the reader drew wears
+  the light of the cars on it, white while it helps and red once the crowd it brought slows every way, so
+  the bridge reddens first and the town after it; a new road meets every road it crosses at a junction;
+  the "?" card hangs from the top, its lines shorter; the info mark's ghost gives back a road it closes.

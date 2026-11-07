@@ -617,14 +617,40 @@ impl Town {
             return None;
         }
         let (na, nb) = (self.nodes[a], self.nodes[b]);
-        let steps = (dist(na, nb) / 20.0).ceil().max(1.0) as usize;
-        let pts = (0..=steps).map(|i| {
-            let f = i as f64 / steps as f64;
-            [na[0] + (nb[0] - na[0]) * f, na[1] + (nb[1] - na[1]) * f]
-        });
-        let mut r = Road::new(a, b, pts.collect(), Kind::Built);
-        r.changed = self.t;
-        self.roads.push(r);
+        // where it crosses other roads it meets them at a junction
+        let mut cross: Vec<(f64, [f64; 2])> = vec![];
+        for r in self.roads.iter().filter(|r| r.alive) {
+            for w in r.pts.windows(2) {
+                if let Some((f, x)) = meet(na, nb, w[0], w[1]) {
+                    let along = f * dist(na, nb);
+                    if along > snap && along < dist(na, nb) - snap && cross.iter().all(|c| dist(c.1, x) > snap) {
+                        cross.push((f, x));
+                    }
+                }
+            }
+        }
+        cross.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let mut chain = vec![a];
+        for (_, x) in cross {
+            if let Some((r, u, _)) = self.road_near(x, 1.0, true) {
+                let n = self.node_on(r, u, 6.0);
+                if !chain.contains(&n) && n != b {
+                    chain.push(n);
+                }
+            }
+        }
+        chain.push(b);
+        for w in chain.windows(2) {
+            let (na, nb) = (self.nodes[w[0]], self.nodes[w[1]]);
+            let steps = (dist(na, nb) / 20.0).ceil().max(1.0) as usize;
+            let pts = (0..=steps).map(|i| {
+                let f = i as f64 / steps as f64;
+                [na[0] + (nb[0] - na[0]) * f, na[1] + (nb[1] - na[1]) * f]
+            });
+            let mut r = Road::new(w[0], w[1], pts.collect(), Kind::Built);
+            r.changed = self.t;
+            self.roads.push(r);
+        }
         self.route();
         Some(self.roads.len() - 1)
     }
@@ -679,6 +705,20 @@ impl Town {
         }
         n
     }
+}
+
+/// Where segment `p`-`q` meets segment `a`-`b`: how far along `p`-`q` (0..1) and the point.
+fn meet(p: [f64; 2], q: [f64; 2], a: [f64; 2], b: [f64; 2]) -> Option<(f64, [f64; 2])> {
+    let r = [q[0] - p[0], q[1] - p[1]];
+    let s = [b[0] - a[0], b[1] - a[1]];
+    let den = r[0] * s[1] - r[1] * s[0];
+    if den.abs() < 1e-9 {
+        return None;
+    }
+    let ap = [a[0] - p[0], a[1] - p[1]];
+    let t = (ap[0] * s[1] - ap[1] * s[0]) / den;
+    let u = (ap[0] * r[1] - ap[1] * r[0]) / den;
+    ((0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)).then(|| (t, [p[0] + r[0] * t, p[1] + r[1] * t]))
 }
 
 fn crosses(p: [f64; 2], q: [f64; 2], a: [f64; 2], b: [f64; 2]) -> bool {
