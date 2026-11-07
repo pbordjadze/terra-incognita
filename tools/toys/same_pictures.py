@@ -13,7 +13,8 @@ e.g. the bump's base in a worktree (git worktree add ../base origin/main), both 
 Needs what the toys' CI check needs (Mesa's software Vulkan: mesa-vulkan-drivers; the toolchain the
 checkout names). A frame that differs is listed with how many pixels differ and by how much at most; a
 GPU's rounding can move a channel by one, which is reported but called the same (`--exact` refuses it).
-Played single-threaded per toy; the two checkouts can run at once (separate target directories).
+Mold's slime is not deterministic (two runs of one build differ: its agents' deposits race on the GPU), so
+its frames, and Terra's of it, are judged by eye. Played single-threaded per toy; the two checkouts can run at once (separate target directories).
 """
 import json
 import os
@@ -61,11 +62,16 @@ def compare(a, b, exact):
     names = sorted({p.relative_to(a) for p in a.rglob('*.png')} | {p.relative_to(b) for p in b.rglob('*.png')})
     same = off_by_one = 0
     bad = []
+    unreadable = []  # (a frame cut short, say, by a full disk: play that plan again)
     for n in names:
         if not (a / n).exists() or not (b / n).exists():
             bad.append(f'{n}: only in {"b" if not (a / n).exists() else "a"}')
             continue
-        x, y = np.asarray(Image.open(a / n)).astype(int), np.asarray(Image.open(b / n)).astype(int)
+        try:
+            x, y = np.asarray(Image.open(a / n)).astype(int), np.asarray(Image.open(b / n)).astype(int)
+        except OSError as e:
+            unreadable.append(f'{n}: {e}')
+            continue
         if x.shape != y.shape:
             bad.append(f'{n}: {x.shape} vs {y.shape}')
             continue
@@ -80,6 +86,10 @@ def compare(a, b, exact):
     print(f'{len(names)} pictures: {same} identical, {off_by_one} within one step of a channel, {len(bad)} different')
     for line in bad:
         print('  ' + line)
+    if unreadable:
+        print(f'{len(unreadable)} unreadable:')
+        for line in unreadable:
+            print('  ' + line)
     return 1 if bad else 0
 
 
