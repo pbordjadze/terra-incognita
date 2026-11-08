@@ -212,7 +212,8 @@ ffmpeg -loglevel error -y "${INPUTS[@]}" -filter_complex "$GRAPH" "${MAP[@]}" -t
 
 # the contact sheet: 12 frames, left to right and down, at the seconds film.json lists (this ffmpeg
 # may lack drawtext, so they aren't written on the frames)
-ffmpeg -loglevel error -y -i "$OUT/film.mp4" -vf "fps=12/$SECS:round=down,scale=240:-2,tile=6x2:padding=4" \
+EVERY="$(python3 -c "print(max(round(30 * $SECS / 12), 1))")"     # (the film is a steady 30 frames a second)
+ffmpeg -loglevel error -y -i "$OUT/film.mp4" -vf "select='not(mod(n\,$EVERY))',scale=240:-2,tile=6x2:padding=4" \
   -frames:v 1 "$OUT/sheet.png"
 # the sound as pictures: its spectrogram, seconds along the foot and hertz up the side (sound.png), and
 # its waveform across the same seconds (wave.png)
@@ -227,7 +228,7 @@ import os
 out, toy, script, secs, lag, touches, opn, after = sys.argv[1:9]
 json.dump({"toy": toy, "film_starts_s_before_sound": 0.5, "sound_tempo": float(sys.argv[9]), "script": script, "seconds": float(secs), "sound_lag_s": float(lag),
            "touches": json.loads(touches), "open": opn or None, "open_after": float(after) if opn else None,
-           "sheet_seconds": [round(k * float(secs) / 12, 2) for k in range(12)],
+           "sheet_seconds": [round(k * max(round(30 * float(secs) / 12), 1) / 30, 2) for k in range(12)],
            "touched_at_film_seconds": [
                f"{'down' if r[0] == 'D' else 'up'} {r[1]} {float(r[2]) - float(sys.argv[10]):.2f}"
                for r in (line.split() for line in (open(sys.argv[11]) if os.path.exists(sys.argv[11]) else []))
