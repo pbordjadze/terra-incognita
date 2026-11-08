@@ -44,7 +44,10 @@ impl Gpu {
         let request = |granted: &wgpu::Limits| {
             let mut l = wgpu::Limits::default().using_resolution(granted.clone());
             l.max_texture_dimension_2d = l.max_texture_dimension_2d.max(4096);
-            l
+            // and never more than the adapter grants: the iOS Simulator on an Apple-silicon Mac grants
+            // 15 inter-stage variables, one under WebGPU's default 16 (a phone grants 31), and refused
+            // the whole device for it (tools/toys/sim_film.sh)
+            l.or_worse_values_from(granted)
         };
         let required_features = wgpu::Features::empty();
         let required_limits = if crate::budget::iphone() {

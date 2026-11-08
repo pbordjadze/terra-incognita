@@ -45,6 +45,25 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// The sound file the reader chose (toy_wants_file), kept in the app's own storage
     /// (Application Support/opened/) and handed to the toy again at every launch.
     var picking = false
+    /// For a film of the Simulator (tools/toys/sim_film.sh; nothing on a phone sets these):
+    /// TOY_RECORD_AUDIO=<name> writes the toy's own sound, as it leaves the engine's mixer, to
+    /// Documents/<name> (16-bit WAV), with <name>.start once it begins and, when TOY_RECORD_SECONDS
+    /// (120) end it, <name>.clock: the samples rendered against the wall clock, once a frame, so a
+    /// screen recording made at the same time lines up, and the scripted touches' wall-clock seconds.
+    /// TOY_TOUCHES=<json> plays fingers through the same toy_pointer a UITouch takes, shown by a ring:
+    /// [{"at": s, "for": s, "path": [[x, y], ...]}], x and y as fractions of the view, `at` seconds
+    /// after the toy starts; a path of one point is a press held for `for`.
+    var recorder: AVAudioFile?
+    var recording = false
+    var script: [(at: Double, dur: Double, path: [CGPoint])] = []
+    var scriptDown: [Int: Bool] = [:]
+    var scriptStart = 0.0
+    var fingerRings: [Int: UIView] = [:]
+    /// While recording, a mark for the film's clock: a magenta square at the left edge for a
+    /// second, a second into the toy, its wall-clock second written to <name>.mark; the film finds its
+    /// first frame and sets the screen recording's clock by it (the Simulator's capture runs behind).
+    var markShown: (view: UIView, at: Double)?
+    var markDone = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -124,6 +143,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         store.withCString { toy_store(shell, $0) }
         if let kept = keptFile() { open(kept) }
         startSound()
+        loadScript()
         let center = NotificationCenter.default
         center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { toy_pause(shell) }
@@ -167,6 +187,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         guard let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2) else { return }
         let ptr = OpaquePointer(UnsafeMutableRawPointer(s))
         let scratch = self.scratch
+        let rendered = self.rendered
         let cap = ToyView.scratchFrames
         let node = AVAudioSourceNode(format: format) { silence, _, frames, list -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(list)
@@ -191,12 +212,137 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
                 }
                 done += n
             }
+            rendered.pointee += Int64(total)
             silence.pointee = false
             return noErr
         }
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: format)
+        if let name = ProcessInfo.processInfo.environment["TOY_RECORD_AUDIO"] { record(engine, name) }
         do { try engine.start(); self.engine = engine } catch { NSLog("toy: no sound: \(error)") }
+    }
+
+    /// TOY_RECORD_AUDIO (above): a tap on the mixer, written off the audio thread by AVAudioEngine.
+    func record(_ engine: AVAudioEngine, _ name: String) {
+        let env = ProcessInfo.processInfo.environment
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let mixer = engine.mainMixerNode
+        let format = mixer.outputFormat(forBus: 0)
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: format.sampleRate,
+            AVNumberOfChannelsKey: format.channelCount, AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false, AVLinearPCMIsBigEndianKey: false,
+        ]
+        do {
+            recorder = try AVAudioFile(forWriting: docs.appendingPathComponent(name), settings: settings,
+                                       commonFormat: format.commonFormat, interleaved: format.isInterleaved)
+        } catch { NSLog("toy: can't record the sound: \(error)"); return }
+        let limit = AVAudioFramePosition((Double(env["TOY_RECORD_SECONDS"] ?? "") ?? 120) * format.sampleRate)
+        recording = true
+        var first = true
+        var taps = ""
+        renderClock = ""
+        mixer.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, when in
+            guard let self, self.recording, let file = self.recorder else { return }
+            // each buffer's place in the file beside the samples rendered so far (the file begins some way
+            // into them); tick() logs the samples rendered against the wall clock, and the film lines the
+            // file up by both (a buffer's host time here is not when it was rendered: it put the
+            // Simulator's sound 0.6 s early)
+            taps.append(String(format: "T %lld %.0f %.0f %lld %u\n", file.length, when.sampleTime, format.sampleRate,
+                               self.rendered.pointee, buffer.frameLength))
+            if first {
+                first = false
+                let now = String(format: "%.4f\n", Date().timeIntervalSince1970)
+                try? now.write(to: docs.appendingPathComponent(name + ".start"), atomically: true, encoding: .utf8)
+            }
+            try? file.write(from: buffer)
+            if file.length >= limit {
+                self.recording = false
+                let all = taps
+                DispatchQueue.main.async {
+                    mixer.removeTap(onBus: 0)
+                    self.recorder = nil     // (closes the file)
+                    try? (all + self.renderClock).write(to: docs.appendingPathComponent(name + ".clock"), atomically: true, encoding: .utf8)
+                }
+            }
+        }
+    }
+
+    /// The samples the toy has rendered against the wall clock, once a frame while recording (above).
+    /// (In the Simulator the mixer's own timeline stays at 0, so the source node counts them.)
+    var renderClock = ""
+    let rendered: UnsafeMutablePointer<Int64> = {
+        let p = UnsafeMutablePointer<Int64>.allocate(capacity: 1)
+        p.initialize(to: 0)
+        return p
+    }()
+    func showMark(_ now: Double) {
+        guard let name = ProcessInfo.processInfo.environment["TOY_RECORD_AUDIO"], !markDone, now - scriptStart >= 1 else { return }
+        if let shown = markShown {
+            if now - shown.at >= 1 { shown.view.removeFromSuperview(); markShown = nil; markDone = true }
+            return
+        }
+        let v = UIView(frame: CGRect(x: 0, y: 70, width: 24, height: 24))     // (clear of the rounded corner)
+        v.backgroundColor = UIColor(red: 1, green: 0, blue: 1, alpha: 1)
+        v.isUserInteractionEnabled = false
+        addSubview(v)
+        markShown = (v, now)
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let at = String(format: "%.4f\n", Date().timeIntervalSince1970)
+        try? at.write(to: docs.appendingPathComponent(name + ".mark"), atomically: true, encoding: .utf8)
+    }
+
+    func logRenderClock() {
+        guard recording else { return }
+        renderClock.append(String(format: "R %.4f %lld\n", Date().timeIntervalSince1970, rendered.pointee))
+    }
+
+    /// TOY_TOUCHES (above): the scripted fingers, moved once a frame.
+    func loadScript() {
+        guard let json = ProcessInfo.processInfo.environment["TOY_TOUCHES"], let data = json.data(using: .utf8),
+              let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
+        script = list.compactMap { s in
+            guard let at = (s["at"] as? NSNumber)?.doubleValue, let pts = s["path"] as? [[NSNumber]], !pts.isEmpty else { return nil }
+            let path = pts.map { CGPoint(x: $0[0].doubleValue, y: $0[1].doubleValue) }
+            return (at, (s["for"] as? NSNumber)?.doubleValue ?? 0.1, path)
+        }
+        scriptStart = CACurrentMediaTime()
+    }
+
+    func playScript(_ now: Double) {
+        guard let shell, !script.isEmpty else { return }
+        let t = now - scriptStart
+        for (i, s) in script.enumerated() where t >= s.at && scriptDown[i] != false {
+            let f = min(max((t - s.at) / max(s.dur, 0.001), 0), 1)
+            let along = f * Double(s.path.count - 1)
+            let k = min(Int(along), s.path.count - 1), r = along - Double(k)
+            let a = s.path[k], b = s.path[min(k + 1, s.path.count - 1)]
+            let p = CGPoint(x: (a.x + (b.x - a.x) * r) * bounds.width, y: (a.y + (b.y - a.y) * r) * bounds.height)
+            let id = UInt64(100_000 + i)
+            let ring = fingerRings[i] ?? {
+                let v = UIView(frame: CGRect(x: 0, y: 0, width: 44, height: 44))
+                v.layer.cornerRadius = 22
+                v.layer.borderWidth = 2
+                v.layer.borderColor = UIColor(white: 1, alpha: 0.7).cgColor
+                v.isUserInteractionEnabled = false
+                addSubview(v)
+                fingerRings[i] = v
+                return v
+            }()
+            ring.center = p
+            if scriptDown[i] == nil {
+                scriptDown[i] = true
+                toy_pointer(shell, id, 0, Double(p.x), Double(p.y), now)
+                if recording { renderClock.append(String(format: "D %d %.4f\n", i, Date().timeIntervalSince1970)) }
+            } else if f < 1 {
+                toy_pointer(shell, id, 1, Double(p.x), Double(p.y), now)
+            } else {
+                toy_pointer(shell, id, 2, Double(p.x), Double(p.y), now)
+                if recording { renderClock.append(String(format: "U %d %.4f\n", i, Date().timeIntervalSince1970)) }
+                scriptDown[i] = false
+                ring.removeFromSuperview()
+            }
+        }
     }
 
     override func layoutSubviews() {
@@ -213,6 +359,9 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
 
     @objc func tick(_ link: CADisplayLink) {
         guard let shell else { return }
+        playScript(CACurrentMediaTime())
+        showMark(CACurrentMediaTime())
+        logRenderClock()
         toy_frame(shell, link.targetTimestamp)
         if toy_take_haptic(shell) { haptic.impactOccurred() }
         if toy_wants_file(shell) { pickFile() }

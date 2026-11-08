@@ -1,0 +1,6 @@
+{
+ "_": "tools/toys/sim_film.sh frost regrow 30: the glass frosts for 10 s, one finger drags slowly up the middle for 5 s and lifts; the regrowth should answer, an octave up, the notes the stroke crossed, in its order.",
+ "touches": [
+  {"at": 10, "for": 5, "path": [[0.5, 0.82], [0.48, 0.6], [0.52, 0.42], [0.5, 0.28]]}
+ ]
+}

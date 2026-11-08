@@ -1,0 +1,11 @@
+{
+ "_": "tools/toys/sim_film.sh bell strikes 32: the toy's own demo strike at 3 s, then three strikes of a finger at different places (which notes ring depends on where), a slow turn of the globe, and the idle Earth striking itself from its great quakes.",
+ "open": "info",
+ "open_after": 3,
+ "touches": [
+  {"at": 9, "for": 0.08, "path": [[0.32, 0.4]]},
+  {"at": 14, "for": 0.08, "path": [[0.68, 0.58]]},
+  {"at": 17, "for": 0.08, "path": [[0.5, 0.5]]},
+  {"at": 20, "for": 3, "path": [[0.25, 0.55], [0.75, 0.48]]}
+ ]
+}
