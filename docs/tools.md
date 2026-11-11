@@ -188,6 +188,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Packs | pack, publish to the `packs` branch, retire (main's publish retires a pack deleted from `Prototypes/`), list | `python3 tools/playground/playground.py pack \| publish \| retire \| list`; `packs.yml` |
 | Remote revision fixture | a hello-pack revision with other words, for `RemotePackTests` | `ci/remote_packs.sh <out>` |
 | SideStore | the source JSON for `build-<n>` IPAs | `ci/sidestore_source.py`; `ci.yml` › `ipa` |
+| TestFlight | Terra (the toy app) for the internal testers: the store build (`STORE=1 toys/ios/build.sh terra`), held to an upload's needs, cloud-signed, validated, uploaded from `main` only; App ID, internal group "Team", What to Test (row 312) | `testflight.yml` (Run workflow, Upload ticked, on `main`); `tools/toys/check_store.sh <app>`; `tools/toys/testflight.py register\|testers` |
 | One-time retirement | the former second study's listing | `ci/retire_study2.sh` |
 
 There is no `swift.sh`: Swift is built only by the macOS jobs.

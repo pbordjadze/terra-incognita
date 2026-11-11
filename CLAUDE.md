@@ -196,6 +196,11 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
     `both`), the playground and the globe at places.
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
+  - `testflight.yml` (painting-company row 312): Terra, the toy app, for TestFlight's internal testers
+    (no Beta App Review), Paint by Moonlight's pipeline on `toys/ios/build.sh`'s store build (`STORE=1`):
+    cloud-signed with the App Store Connect API key, validated, and uploaded only from `main` (Run
+    workflow, Upload ticked); a `claude/testflight*` push builds, signs and validates. Version 1.0, build
+    `<run>.<attempt>`; secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it,
     says every 5 minutes how the run stands, and stops by itself if the run ends without a report
     (a newer push cancels a branch's running check); `TIMEOUT=<minutes>`. `ci/shots.py <dir> <name>`
