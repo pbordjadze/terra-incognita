@@ -119,161 +119,19 @@ impl Elkmont {
     }
 
     fn draw_slab(&mut self, v: &View, ppp: f32, near: f32, far: f32, dusk: f32, glow: f32) {
+        let sl = Slab {
+            v,
+            ppp,
+            near,
+            far,
+            hz: haze(dusk),
+            glow,
+        };
         let p = &mut self.painter;
-        let hz = haze(dusk);
-        let fog = |z: f32| 1.0 - (-z / 22.0).exp();
-        let ink = |z: f32, shade: f32| -> [f32; 4] {
-            let k = fog(z);
-            let g = glow * (1.0 - k);
-            [
-                (0.010 + shade * 0.006) * (1.0 - k) + hz[0] * k + 0.30 * g * 0.2,
-                (0.013 + shade * 0.010) * (1.0 - k) + hz[1] * k + 0.50 * g * 0.2,
-                (0.014 + shade * 0.005) * (1.0 - k) + hz[2] * k + 0.10 * g * 0.2,
-                1.0,
-            ]
-        };
-        for tr in &self.forest.trunks {
-            if tr.z < near || tr.z >= far {
-                continue;
-            }
-            // the trunk in three lengths, narrowing as it goes up; its foot fades into the haze with
-            // distance, its height stays a silhouette against the canopy's gaps
-            let w0 = (v.f * tr.r / tr.z).max(0.6 * ppp);
-            let foot = ink(tr.z, 0.0);
-            let k = (fog(tr.z) * 0.35).min(1.0);
-            let high = [
-                0.010 * (1.0 - k) + 0.012 * k,
-                0.013 * (1.0 - k) + 0.016 * k,
-                0.016 * (1.0 - k) + 0.020 * k,
-                1.0,
-            ];
-            let at = |y: f32| v.project([tr.x + tr.lean * y, y, tr.z]).map(|(q, _)| q);
-            // in short lengths, its colour going from the haze at its foot to dark up in the canopy
-            const YS: [f32; 7] = [0.0, EYE + 1.0, 4.5, 7.0, 10.0, 14.0, 120.0];
-            for (j, w) in YS.windows(2).enumerate() {
-                let (Some(a), Some(b)) = (at(w[0]), at(w[1])) else {
-                    continue;
-                };
-                let u = (j as f32 / 4.0).min(1.0);
-                let col = [
-                    foot[0] + (high[0] - foot[0]) * u,
-                    foot[1] + (high[1] - foot[1]) * u,
-                    foot[2] + (high[2] - foot[2]) * u,
-                    1.0,
-                ];
-                let wj = w0 * (1.0 - 0.05 * j as f32);
-                p.line(a, b, wj, 0.6 * ppp + wj * 0.06, col);
-            }
-        }
-        // the ferns: fronds arching out of a crown, their leaflets in pairs, dark on the litter
-        for fern in &self.forest.ferns {
-            if fern.z < near || fern.z >= far {
-                continue;
-            }
-            let col = ink(fern.z, 0.4);
-            for k in 0..6 {
-                let a = fern.turn + k as f32 * 1.05;
-                let (dx, dz) = (a.cos(), a.sin() * 0.5);
-                let pt = |u: f32| {
-                    let r = fern.size * u;
-                    [
-                        fern.x + dx * r,
-                        0.03 + fern.size * (0.9 * u - 0.75 * u * u),
-                        fern.z + dz * r,
-                    ]
-                };
-                let mut last: Option<[f32; 2]> = None;
-                for i in 0..=12 {
-                    let u = i as f32 / 12.0;
-                    let Some((q, z)) = v.project(pt(u)) else {
-                        continue;
-                    };
-                    let wid = (v.f * 0.006 / z).max(0.5 * ppp);
-                    if let Some(l) = last {
-                        p.line(l, q, wid, 0.6 * ppp, col);
-                    }
-                    if i > 0 && i < 12 {
-                        let leaf = v.f * fern.size * 0.2 * (1.0 - u * 0.7) / z;
-                        let (nx, ny) = (-dz, dx);
-                        for sgn in [-1.0f32, 1.0] {
-                            p.line(
-                                q,
-                                [
-                                    q[0] + sgn * nx * leaf,
-                                    q[1] + sgn * ny.abs() * leaf * 0.3 - leaf * 0.15,
-                                ],
-                                wid * 2.2,
-                                0.6 * ppp,
-                                col,
-                            );
-                        }
-                    }
-                    last = Some(q);
-                }
-            }
-        }
-        for l in &self.forest.leaves {
-            if l.at[2] < near || l.at[2] >= far {
-                continue;
-            }
-            let Some((c, z)) = v.project(l.at) else {
-                continue;
-            };
-            let r = v.f * l.size / z;
-            let col = ink(z, 1.0 + l.shade);
-            // a clump of leaves: a dozen small discs round its centre, a flat top
-            let mut k = (l.shade * 1000.0) as u64 | 1;
-            for _ in 0..12 {
-                let a = swarm::rand(&mut k) as f32 * std::f32::consts::TAU;
-                let d = (swarm::rand(&mut k) as f32).sqrt();
-                let q = [
-                    c[0] + a.cos() * d * r * 1.2,
-                    c[1] + a.sin().abs() * d * r * 0.55 - r * 0.15,
-                ];
-                p.disc(q, r * 0.32, r * 0.06 + ppp, col);
-            }
-        }
-        let bright = if self.soft { 0.75 } else { 1.0 };
-        let sw = &self.swarm;
-        let mut fly = |pos: [f32; 3], from: [f32; 3], g: f32, small: f32| {
-            if g <= 0.002 || pos[2] < near || pos[2] >= far {
-                return;
-            }
-            let (Some((a, z)), Some((b, _))) = (v.project(pos), v.project(from)) else {
-                return;
-            };
-            let g = g * bright;
-            let core = (v.f * 0.016 / z).max(1.6 * ppp) * small;
-            // out of focus close by: a wider, softer disc
-            let blur = ((4.5 - z) / 3.0).clamp(0.0, 1.0) * 14.0 * ppp;
-            let halo = (v.f * 0.22 / z + 9.0 * ppp) * small;
-            let c = LIGHT;
-            if small > 1.2 {
-                // a female: her light lies on the leaf litter round her, a low pool
-                let r = v.f * 0.22 / z;
-                p.glow(a, a, r, r * 0.8, [c[0], c[1], c[2], 0.16 * g]);
-            }
-            p.glow(
-                b,
-                a,
-                halo,
-                halo,
-                [c[0], c[1], c[2], 0.035 * g * (z / 4.0).clamp(0.5, 1.0)],
-            );
-            p.glow(
-                b,
-                a,
-                core + blur,
-                0.7 * ppp + blur,
-                [0.6 + 0.4 * c[0], c[1], 0.32 + 0.48 * c[2], 0.85 * g],
-            );
-        };
-        for (i, m) in sw.males[..sw.out].iter().enumerate() {
-            fly(m.pos, m.pos, sw.male_glow(i), 1.0);
-        }
-        for (i, f) in sw.females.iter().enumerate() {
-            fly(f.pos, f.pos, sw.female_glow(i), 1.3);
-        }
+        draw_trunks(p, &sl, &self.forest);
+        draw_ferns(p, &sl, &self.forest);
+        draw_leaves(p, &sl, &self.forest);
+        draw_flies(p, &sl, &self.swarm, if self.soft { 0.75 } else { 1.0 });
         // the finger's light: a small cold-green LED, and its flash
         // drawn while held, and while a let-go flash fades
         let lit = self.lamp.is_some() || self.swarm.t - self.lamp_last < 0.5;
@@ -477,3 +335,187 @@ impl Toy for Elkmont {
 }
 
 toy_kit::ios_shell!(Elkmont);
+
+/// One depth slab's view and light, as its painters need them.
+struct Slab<'a> {
+    v: &'a View,
+    ppp: f32,
+    near: f32,
+    far: f32,
+    hz: [f32; 3],
+    glow: f32,
+}
+
+impl Slab<'_> {
+    fn fog(&self, z: f32) -> f32 {
+        1.0 - (-z / 22.0).exp()
+    }
+
+    /// The dark of a thing at `z`, fading into the haze, lit a little by the swarm.
+    fn ink(&self, z: f32, shade: f32) -> [f32; 4] {
+        let (k, hz) = (self.fog(z), self.hz);
+        let g = self.glow * (1.0 - k);
+        [
+            (0.010 + shade * 0.006) * (1.0 - k) + hz[0] * k + 0.30 * g * 0.2,
+            (0.013 + shade * 0.010) * (1.0 - k) + hz[1] * k + 0.50 * g * 0.2,
+            (0.014 + shade * 0.005) * (1.0 - k) + hz[2] * k + 0.10 * g * 0.2,
+            1.0,
+        ]
+    }
+}
+
+/// The trunks in the slab.
+fn draw_trunks(p: &mut Painter, sl: &Slab, forest: &Forest) {
+    for tr in &forest.trunks {
+        if tr.z < sl.near || tr.z >= sl.far {
+            continue;
+        }
+        // the trunk in three lengths, narrowing as it goes up; its foot fades into the haze with
+        // distance, its height stays a silhouette against the canopy's gaps
+        let w0 = (sl.v.f * tr.r / tr.z).max(0.6 * sl.ppp);
+        let foot = sl.ink(tr.z, 0.0);
+        let k = (sl.fog(tr.z) * 0.35).min(1.0);
+        let high = [
+            0.010 * (1.0 - k) + 0.012 * k,
+            0.013 * (1.0 - k) + 0.016 * k,
+            0.016 * (1.0 - k) + 0.020 * k,
+            1.0,
+        ];
+        let at = |y: f32| sl.v.project([tr.x + tr.lean * y, y, tr.z]).map(|(q, _)| q);
+        // in short lengths, its colour going from the haze at its foot to dark up in the canopy
+        const YS: [f32; 7] = [0.0, EYE + 1.0, 4.5, 7.0, 10.0, 14.0, 120.0];
+        for (j, w) in YS.windows(2).enumerate() {
+            let (Some(a), Some(b)) = (at(w[0]), at(w[1])) else {
+                continue;
+            };
+            let u = (j as f32 / 4.0).min(1.0);
+            let col = [
+                foot[0] + (high[0] - foot[0]) * u,
+                foot[1] + (high[1] - foot[1]) * u,
+                foot[2] + (high[2] - foot[2]) * u,
+                1.0,
+            ];
+            let wj = w0 * (1.0 - 0.05 * j as f32);
+            p.line(a, b, wj, 0.6 * sl.ppp + wj * 0.06, col);
+        }
+    }
+}
+
+/// The ferns in the slab.
+fn draw_ferns(p: &mut Painter, sl: &Slab, forest: &Forest) {
+    // the ferns: fronds arching out of a crown, their leaflets in pairs, dark on the litter
+    for fern in &forest.ferns {
+        if fern.z < sl.near || fern.z >= sl.far {
+            continue;
+        }
+        let col = sl.ink(fern.z, 0.4);
+        for k in 0..6 {
+            let a = fern.turn + k as f32 * 1.05;
+            let (dx, dz) = (a.cos(), a.sin() * 0.5);
+            let pt = |u: f32| {
+                let r = fern.size * u;
+                [
+                    fern.x + dx * r,
+                    0.03 + fern.size * (0.9 * u - 0.75 * u * u),
+                    fern.z + dz * r,
+                ]
+            };
+            let mut last: Option<[f32; 2]> = None;
+            for i in 0..=12 {
+                let u = i as f32 / 12.0;
+                let Some((q, z)) = sl.v.project(pt(u)) else {
+                    continue;
+                };
+                let wid = (sl.v.f * 0.006 / z).max(0.5 * sl.ppp);
+                if let Some(l) = last {
+                    p.line(l, q, wid, 0.6 * sl.ppp, col);
+                }
+                if i > 0 && i < 12 {
+                    let leaf = sl.v.f * fern.size * 0.2 * (1.0 - u * 0.7) / z;
+                    let (nx, ny) = (-dz, dx);
+                    for sgn in [-1.0f32, 1.0] {
+                        p.line(
+                            q,
+                            [
+                                q[0] + sgn * nx * leaf,
+                                q[1] + sgn * ny.abs() * leaf * 0.3 - leaf * 0.15,
+                            ],
+                            wid * 2.2,
+                            0.6 * sl.ppp,
+                            col,
+                        );
+                    }
+                }
+                last = Some(q);
+            }
+        }
+    }
+}
+
+/// The rhododendron's clumps in the slab.
+fn draw_leaves(p: &mut Painter, sl: &Slab, forest: &Forest) {
+    for l in &forest.leaves {
+        if l.at[2] < sl.near || l.at[2] >= sl.far {
+            continue;
+        }
+        let Some((c, z)) = sl.v.project(l.at) else {
+            continue;
+        };
+        let r = sl.v.f * l.size / z;
+        let col = sl.ink(z, 1.0 + l.shade);
+        // a clump of leaves: a dozen small discs round its centre, a flat top
+        let mut k = (l.shade * 1000.0) as u64 | 1;
+        for _ in 0..12 {
+            let a = swarm::rand(&mut k) as f32 * std::f32::consts::TAU;
+            let d = (swarm::rand(&mut k) as f32).sqrt();
+            let q = [
+                c[0] + a.cos() * d * r * 1.2,
+                c[1] + a.sin().abs() * d * r * 0.55 - r * 0.15,
+            ];
+            p.disc(q, r * 0.32, r * 0.06 + sl.ppp, col);
+        }
+    }
+}
+
+/// The fireflies in the slab: a halo and a core each, blurred close by.
+fn draw_flies(p: &mut Painter, sl: &Slab, sw: &Swarm, bright: f32) {
+    let mut fly = |pos: [f32; 3], from: [f32; 3], g: f32, small: f32| {
+        if g <= 0.002 || pos[2] < sl.near || pos[2] >= sl.far {
+            return;
+        }
+        let (Some((a, z)), Some((b, _))) = (sl.v.project(pos), sl.v.project(from)) else {
+            return;
+        };
+        let g = g * bright;
+        let core = (sl.v.f * 0.016 / z).max(1.6 * sl.ppp) * small;
+        // out of focus close by: a wider, softer disc
+        let blur = ((4.5 - z) / 3.0).clamp(0.0, 1.0) * 14.0 * sl.ppp;
+        let halo = (sl.v.f * 0.22 / z + 9.0 * sl.ppp) * small;
+        let c = LIGHT;
+        if small > 1.2 {
+            // a female: her light lies on the leaf litter round her, a low pool
+            let r = sl.v.f * 0.22 / z;
+            p.glow(a, a, r, r * 0.8, [c[0], c[1], c[2], 0.16 * g]);
+        }
+        p.glow(
+            b,
+            a,
+            halo,
+            halo,
+            [c[0], c[1], c[2], 0.035 * g * (z / 4.0).clamp(0.5, 1.0)],
+        );
+        p.glow(
+            b,
+            a,
+            core + blur,
+            0.7 * sl.ppp + blur,
+            [0.6 + 0.4 * c[0], c[1], 0.32 + 0.48 * c[2], 0.85 * g],
+        );
+    };
+    for (i, m) in sw.males[..sw.out].iter().enumerate() {
+        fly(m.pos, m.pos, sw.male_glow(i), 1.0);
+    }
+    for (i, f) in sw.females.iter().enumerate() {
+        fly(f.pos, f.pos, sw.female_glow(i), 1.3);
+    }
+}

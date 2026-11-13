@@ -292,6 +292,113 @@ impl Swarm {
         };
     }
 
+    /// One male's flight for `dt`: a heading that wanders, turning back at the woods' edges.
+    fn fly(m: &mut Male, t: f64, dt: f64, seed: &mut u64) {
+        // fly: a heading that wanders, turning back into the woods at its edges
+        let turn = (rand(seed) as f32 - 0.5) * 2.0 * WANDER * dt as f32 * 3.0;
+        m.heading += turn;
+        // a female's answer seen: he flies down to her
+        if let Some((at, until)) = m.lure {
+            if t > until {
+                m.lure = None;
+            } else {
+                let want = (at[2] - m.pos[2]).atan2(0.6 * (at[0] - m.pos[0]));
+                let d = (want - m.heading + std::f32::consts::PI).rem_euclid(std::f32::consts::TAU)
+                    - std::f32::consts::PI;
+                m.heading += d.clamp(-1.0, 1.0) * 2.5 * dt as f32;
+                m.climb += ((at[1] + 0.3 - m.pos[1]).clamp(-0.4, 0.4) - m.climb) * dt as f32 * 2.0;
+            }
+        }
+        m.climb = (m.climb + (rand(seed) as f32 - 0.5) * dt as f32 * 1.2).clamp(-0.25, 0.25);
+        let v = [
+            m.heading.cos() * SPEED,
+            m.climb,
+            m.heading.sin() * SPEED * 0.6,
+        ];
+        let next = [
+            m.pos[0] + v[0] * dt as f32,
+            m.pos[1] + v[1] * dt as f32,
+            m.pos[2] + v[2] * dt as f32,
+        ];
+        if in_woods(next) {
+            m.pos = next;
+        } else {
+            m.heading += std::f32::consts::PI * 0.7;
+            m.climb = -m.climb;
+        }
+    }
+
+    /// One male in his burst: pulled into step by a flash seen, flashing when due, ending together.
+    fn burst(m: &mut Male, t: f64, saw: Option<f64>, seed: &mut u64, seen_now: &mut Vec<Seen>) {
+        let State::Burst { next, done, most } = m.state else {
+            return;
+        };
+        // a flash seen just before his own next pulls it earlier (into step)
+        let mut next = next;
+        if let Some(at) = saw {
+            let mine = next - m.interflash;
+            let ahead = mine - (at + ANSWER_S * 0.5);
+            if ahead > 0.0 && ahead < PULL_WINDOW_S && t - m.last_flash > FLASH_S {
+                next -= ahead * PULL;
+            }
+        }
+        if t >= next {
+            m.last_flash = next;
+            m.flash_from = m.pos;
+            seen_now.push(Seen {
+                pos: m.pos,
+                t: next,
+                sight: SIGHT_M,
+                firefly: true,
+            });
+            // he keeps on while he sees the others flashing, from his fourth flash to his
+            // most; so a burst ends together, and the rest after it starts together
+            let done = done + 1;
+            let alone = next - m.saw > m.interflash * 1.6;
+            m.state = if done >= most || (done >= BURST_MIN && alone) {
+                m.dark = DARK_S + DARK_SPREAD * gauss(seed);
+                let rest = REST_S + REST_SPREAD * gauss(seed);
+                State::Resting {
+                    until: next + rest.max(3.0),
+                }
+            } else {
+                State::Burst {
+                    next: next + m.interflash,
+                    done,
+                    most,
+                }
+            };
+        } else {
+            m.state = State::Burst { next, done, most };
+        }
+    }
+
+    /// The females answer a burst they saw, a few seconds after its end; the males near one come.
+    fn females(&mut self, t: f64, dt: f64, any_burst: bool, seed: &mut u64) {
+        // the females answer a burst they saw, a few seconds after its end, with a doublet
+        if self.bursting && !any_burst {
+            for f in self.females.iter_mut() {
+                let near = self.males[..self.out]
+                    .iter()
+                    .any(|m| t - m.last_flash < 3.0 && dist2(m.pos, f.pos) < 100.0);
+                if near && rand(seed) < FEMALE_ANSWERS {
+                    let at = self.last_any + FEMALE_DELAY_S + 0.6 * rand(seed);
+                    f.flashes = [at, at + DOUBLET_GAP_S];
+                }
+            }
+        }
+        // the males near a female who answers see her, and come
+        for f in &self.females {
+            if f.flashes[0] <= t && f.flashes[0] > t - dt {
+                for m in self.males[..self.out].iter_mut() {
+                    if dist2(m.pos, f.pos) < LURE_M * LURE_M && rand(seed) < 0.7 {
+                        m.lure = Some((f.pos, t + LURE_S));
+                    }
+                }
+            }
+        }
+    }
+
     pub fn step(&mut self, dt: f64) {
         self.t += dt;
         let t = self.t;
@@ -301,41 +408,7 @@ impl Swarm {
         let mut seed = self.seed;
         let mut any_burst = false;
         for m in self.males[..self.out].iter_mut() {
-            // fly: a heading that wanders, turning back into the woods at its edges
-            let turn = (rand(&mut seed) as f32 - 0.5) * 2.0 * WANDER * dt as f32 * 3.0;
-            m.heading += turn;
-            // a female's answer seen: he flies down to her
-            if let Some((at, until)) = m.lure {
-                if t > until {
-                    m.lure = None;
-                } else {
-                    let want = (at[2] - m.pos[2]).atan2(0.6 * (at[0] - m.pos[0]));
-                    let d = (want - m.heading + std::f32::consts::PI)
-                        .rem_euclid(std::f32::consts::TAU)
-                        - std::f32::consts::PI;
-                    m.heading += d.clamp(-1.0, 1.0) * 2.5 * dt as f32;
-                    m.climb +=
-                        ((at[1] + 0.3 - m.pos[1]).clamp(-0.4, 0.4) - m.climb) * dt as f32 * 2.0;
-                }
-            }
-            m.climb =
-                (m.climb + (rand(&mut seed) as f32 - 0.5) * dt as f32 * 1.2).clamp(-0.25, 0.25);
-            let v = [
-                m.heading.cos() * SPEED,
-                m.climb,
-                m.heading.sin() * SPEED * 0.6,
-            ];
-            let next = [
-                m.pos[0] + v[0] * dt as f32,
-                m.pos[1] + v[1] * dt as f32,
-                m.pos[2] + v[2] * dt as f32,
-            ];
-            if in_woods(next) {
-                m.pos = next;
-            } else {
-                m.heading += std::f32::consts::PI * 0.7;
-                m.climb = -m.climb;
-            }
+            Self::fly(m, t, dt, &mut seed);
             // see, and flash
             let sees = |s: &[Seen], p: [f32; 3], fireflies: bool| -> Option<f64> {
                 s.iter()
@@ -369,74 +442,16 @@ impl Swarm {
                         Self::start_burst(m, t, &mut seed);
                     }
                 }
-                State::Burst { next, done, most } => {
+                State::Burst { .. } => {
                     any_burst = true;
-                    // a flash seen just before his own next pulls it earlier (into step)
-                    let mut next = next;
-                    if let Some(at) = saw {
-                        let mine = next - m.interflash;
-                        let ahead = mine - (at + ANSWER_S * 0.5);
-                        if ahead > 0.0 && ahead < PULL_WINDOW_S && t - m.last_flash > FLASH_S {
-                            next -= ahead * PULL;
-                        }
-                    }
-                    if t >= next {
-                        m.last_flash = next;
-                        m.flash_from = m.pos;
-                        seen_now.push(Seen {
-                            pos: m.pos,
-                            t: next,
-                            sight: SIGHT_M,
-                            firefly: true,
-                        });
-                        // he keeps on while he sees the others flashing, from his fourth flash to his
-                        // most; so a burst ends together, and the rest after it starts together
-                        let done = done + 1;
-                        let alone = next - m.saw > m.interflash * 1.6;
-                        m.state = if done >= most || (done >= BURST_MIN && alone) {
-                            m.dark = DARK_S + DARK_SPREAD * gauss(&mut seed);
-                            let rest = REST_S + REST_SPREAD * gauss(&mut seed);
-                            State::Resting {
-                                until: next + rest.max(3.0),
-                            }
-                        } else {
-                            State::Burst {
-                                next: next + m.interflash,
-                                done,
-                                most,
-                            }
-                        };
-                    } else {
-                        m.state = State::Burst { next, done, most };
-                    }
+                    Self::burst(m, t, saw, &mut seed, &mut seen_now);
                 }
             }
         }
-        // the females answer a burst they saw, a few seconds after its end, with a doublet
         if !seen_now.is_empty() {
             self.last_any = t;
         }
-        if self.bursting && !any_burst {
-            for f in self.females.iter_mut() {
-                let near = self.males[..self.out]
-                    .iter()
-                    .any(|m| t - m.last_flash < 3.0 && dist2(m.pos, f.pos) < 100.0);
-                if near && rand(&mut seed) < FEMALE_ANSWERS {
-                    let at = self.last_any + FEMALE_DELAY_S + 0.6 * rand(&mut seed);
-                    f.flashes = [at, at + DOUBLET_GAP_S];
-                }
-            }
-        }
-        // the males near a female who answers see her, and come
-        for f in &self.females {
-            if f.flashes[0] <= t && f.flashes[0] > t - dt {
-                for m in self.males[..self.out].iter_mut() {
-                    if dist2(m.pos, f.pos) < LURE_M * LURE_M && rand(&mut seed) < 0.7 {
-                        m.lure = Some((f.pos, t + LURE_S));
-                    }
-                }
-            }
-        }
+        self.females(t, dt, any_burst, &mut seed);
         self.bursting = any_burst;
         self.seed = seed;
         self.seen = seen_now;
