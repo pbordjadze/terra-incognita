@@ -75,7 +75,6 @@ const FIREFLY_CITIES: [[f64; 2]; 16] = [
 ];
 
 pub const WHALES: usize = 0;
-pub const FIREFLIES: usize = 3;
 
 /// The lights' life: what moves in them, their glints, a touch's stir, a bare tap's ring.
 pub struct Life {

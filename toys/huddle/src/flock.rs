@@ -128,9 +128,15 @@ impl Huddle {
                 spots.push([x * k * 1.15, y * k * 0.9]);
             }
         }
-        spots.sort_by(|a, b| len(*a).total_cmp(&len(*b)));
+        // the nearest to the middle, each given a little luck, so the edge is ragged, not a hexagon
+        let mut spots: Vec<(f32, [f32; 2])> = spots
+            .into_iter()
+            .map(|s| (len(s) + rng.range(0.0, 0.5), s))
+            .collect();
+        spots.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let spots = spots.into_iter().map(|(_, s)| s);
         let face = norm(wind);
-        for s in spots.into_iter().take(n) {
+        for s in spots.take(n) {
             birds.push(Penguin {
                 p: [s[0] + rng.range(-0.09, 0.09), s[1] + rng.range(-0.09, 0.09)],
                 face: turn(face, [rng.range(-1.0, 1.0), rng.range(-1.0, 1.0)], 0.5),

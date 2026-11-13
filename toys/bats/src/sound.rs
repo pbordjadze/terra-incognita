@@ -30,7 +30,7 @@ impl Sound {
         Box::new(Detector {
             mix: self.0.clone(),
             now: Mix::default(),
-            clicks: Vec::new(),
+            clicks: Vec::with_capacity(96),
             seed: 0x9E37_79B9,
             owed: 0.0,
             t: 0.0,
@@ -114,7 +114,7 @@ impl Synth for Detector {
             let tc = (self.t * 2.1).fract() as f32;
             let pulse = ((tc * 3.0 / 0.33).fract() < 0.5 && tc < 0.33) as u8 as f32;
             self.cricket += (pulse - self.cricket) * (dt * 400.0).min(1.0);
-            let cr = (self.t as f32 * 4400.0 * std::f32::consts::TAU).sin()
+            let cr = ((self.t * 4400.0).fract() as f32 * std::f32::consts::TAU).sin()
                 * self.cricket
                 * (0.004 + 0.012 * self.now.dusk);
             // the air past the hawk: noise, low-passed more as it slows

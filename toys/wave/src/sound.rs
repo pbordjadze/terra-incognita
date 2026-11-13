@@ -42,7 +42,8 @@ struct Roar {
     seed: u32,
     /// two channels of filter state: a low murmur's and the roar's band
     bands: [[f32; 4]; 2],
-    t: f32,
+    /// seconds since it began (f64: an f32 stops advancing at a sample's step after about 8 minutes)
+    t: f64,
 }
 
 impl Roar {
@@ -66,7 +67,7 @@ impl Synth for Roar {
         let p = (self.now.pan * 0.5 + 0.5).clamp(0.0, 1.0);
         let (gl, gr) = ((1.0 - p).sqrt() * 1.2, p.sqrt() * 1.2);
         for f in 0..frames {
-            self.t += dt;
+            self.t += dt as f64;
             let k = if want > self.level { 3.0 } else { 0.8 };
             self.level += (want - self.level) * (dt * k).min(1.0);
             let mut o = [0.0f32; 2];
@@ -80,7 +81,7 @@ impl Synth for Roar {
                 s[2] += (n - s[2]) * 0.22;
                 s[3] += (s[2] - s[3]) * 0.22;
                 let band = s[2] - s[3] * 0.6;
-                let murmur = s[1] * 3.0 * (0.5 + 0.2 * (self.t * 0.3 + ch as f32).sin());
+                let murmur = s[1] * 3.0 * (0.5 + 0.2 * (self.t * 0.3 + ch as f64).sin() as f32);
                 let g = if ch == 0 { gl } else { gr };
                 o[ch] = murmur * 0.25 + band * self.level * 0.55 * g;
             }

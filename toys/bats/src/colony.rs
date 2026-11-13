@@ -101,6 +101,8 @@ pub struct Colony {
     owed: f32,
     /// the bats near enough each other to hear a swerve, by cell (rebuilt while one is spreading)
     cells: HashMap<(i32, i32, i32), Vec<u32>>,
+    /// whether `cells` holds where the bats are now (none has moved since it was built)
+    indexed: bool,
     /// bats that swerved this step (for the sound)
     pub swerved: u32,
     /// where the hawks are now: every bat keeps clear of them
@@ -219,6 +221,7 @@ impl Colony {
             t: 0.0,
             owed: 0.0,
             cells: HashMap::new(),
+            indexed: false,
             swerved: 0,
             hawks: Vec::new(),
         }
@@ -273,9 +276,16 @@ impl Colony {
             self.hear(i, dt);
             self.fly(i, dt);
         }
+        // they have all moved: the next to need the index (a hawk, or the next step) builds it once
+        self.indexed = false;
     }
 
+    /// Builds `cells`, unless it already holds where the bats are; cells left empty are dropped, so
+    /// the map holds only where bats are now, not everywhere they have been.
     fn index(&mut self) {
+        if self.indexed {
+            return;
+        }
         for v in self.cells.values_mut() {
             v.clear();
         }
@@ -284,6 +294,8 @@ impl Colony {
                 self.cells.entry(cell(b.p)).or_default().push(i as u32);
             }
         }
+        self.cells.retain(|_, v| !v.is_empty());
+        self.indexed = true;
     }
 
     /// The bats within `r` metres of `p` (needs `index`).
@@ -339,9 +351,7 @@ impl Colony {
         }
         let p = b.p;
         let mut near = Vec::new();
-        if self.cells.is_empty() {
-            self.index();
-        }
+        self.index();
         self.near(p, HEAR, &mut near);
         for j in near {
             let wait = self.rng.range(REACT[0], REACT[1]);

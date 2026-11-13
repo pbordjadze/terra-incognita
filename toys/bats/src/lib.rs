@@ -24,7 +24,7 @@ const HORIZON: f32 = 0.79;
 /// Dusk deepens over this many seconds, then holds.
 const DUSK_S: f32 = 300.0;
 /// The emergence is already under way when the toy opens: this many seconds of it are run first.
-const PREWARM_S: f32 = 150.0;
+const PREWARM_S: f32 = 70.0;
 /// A real wingspan, metres (bats, the hawk), and how much larger the hawk is drawn, to be seen.
 const BAT_SPAN: f32 = 0.30;
 const HAWK_SPAN: f32 = 1.3;

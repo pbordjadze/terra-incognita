@@ -20,7 +20,7 @@ const N: usize = 480;
 const PT_PER_M: f64 = 50.0;
 const PACE: f32 = 4.0;
 /// Seconds (real, before `PACE`) the huddle has already stood when the toy opens.
-const PREWARM_S: f32 = 100.0;
+const PREWARM_S: f32 = 50.0;
 /// A penguin's shadow on the ice, metres (x west, y south): the sun a few degrees up.
 const SHADOW: [f32; 2] = [0.6, 1.3];
 /// The day's wind, metres a second (the paper's days ran to 8.3 m/s).

@@ -40,7 +40,9 @@ impl Sound {
             lp: [0.0; 3],
             gust: 0.0,
             t: 0.0,
-            voices: Vec::new(),
+            // room enough that the audio thread never allocates (or frees) as calls come and go
+            voices: Vec::with_capacity(64),
+            incoming: Vec::with_capacity(4),
         })
     }
 }
@@ -61,8 +63,11 @@ struct Ice {
     seed: u32,
     lp: [f32; 3],
     gust: f32,
-    t: f32,
+    /// seconds since it began (f64: an f32 stops advancing at a sample's step after about 8 minutes)
+    t: f64,
     voices: Vec<Voice>,
+    /// the calls just asked for, taken from the shared list without freeing either
+    incoming: Vec<(f32, f32)>,
 }
 
 impl Ice {
@@ -78,9 +83,11 @@ impl Ice {
             return;
         };
         self.wind = s.wind;
-        let calls = std::mem::take(&mut s.calls);
+        self.incoming.clear();
+        self.incoming.append(&mut s.calls);
         drop(s);
-        for (pan, near) in calls {
+        for i in 0..self.incoming.len() {
+            let (pan, near) = self.incoming[i];
             let p = (pan * 0.5 + 0.5).clamp(0.0, 1.0);
             let f0 = 420.0 + 140.0 * self.rand();
             let syllables = 3 + (self.rand() * 4.0) as u32;
@@ -115,11 +122,12 @@ impl Synth for Ice {
         let frames = out.len() / channels.max(1);
         let tau = std::f32::consts::TAU;
         for f in 0..frames {
-            self.t += dt;
+            self.t += dt as f64;
             // the wind: noise through low-passes, its loudness drifting in gusts
             let n = self.rand() * 2.0 - 1.0;
             let speed = (self.wind / 12.0).clamp(0.05, 1.2);
-            self.gust += ((0.6 + 0.4 * (self.t * 0.31).sin() * (self.t * 0.13 + 2.0).sin())
+            self.gust += ((0.6
+                + 0.4 * (self.t * 0.31).sin() as f32 * (self.t * 0.13 + 2.0).sin() as f32)
                 - self.gust)
                 * dt
                 * 0.5;
