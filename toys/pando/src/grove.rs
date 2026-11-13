@@ -7,7 +7,8 @@ use crate::wind::{hash, Wind};
 use crate::Cam;
 use toy_kit::paint::Painter;
 
-/// The camera's height above the stems' feet (m), and how far the nearest and farthest stems are.
+/// The camera's height above the stems' feet (m: standing on a rise at the grove's edge, looking in
+/// under the crowns), and how far the nearest and farthest stems are.
 pub const EYE: f32 = 27.0;
 const NEAR: f32 = 10.0;
 const FAR: f32 = 190.0;
@@ -107,7 +108,7 @@ impl Grove {
                     x: x + (rnd() - 0.5) * SPACING * 0.8,
                     z: z + (rnd() - 0.5) * SPACING * 0.8,
                     h,
-                    r: h * (0.075 + 0.03 * rnd()),
+                    r: h * (0.08 + 0.03 * rnd()),
                     d: 0.0,
                     v: 0.0,
                     // a stem this size sways about once every two to four seconds
@@ -178,24 +179,33 @@ impl Grove {
             p.line(a, b, cam.len(wid), cam.len(0.6 * ppp), with(bark, fade));
             // its crown: a cloud of small leaf clusters, swaying with the stem
             let rx = s * tr.r;
-            let ry = s * tr.h * 0.27;
-            let c = v.project([tr.x, tr.h * 0.70, tr.z]).unwrap_or(top);
-            let blob = (rx * 0.17).max(1.0 * ppp);
+            let ry = s * tr.h * 0.2;
+            let c = v.project([tr.x, tr.h * 0.74, tr.z]).unwrap_or(top);
+            let blob = (rx * 0.13).max(0.9 * ppp);
             let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
             let w = wind.at([tr.x, tr.z]);
             let share = turned(w);
             // the crown's body first: its shaded inside, so the leaves on its surface have depth
             let deep = mix3([0.50, 0.30, 0.07], HAZE, k);
-            for (dy, rk) in [(-0.55f32, 0.62f32), (0.0, 0.85), (0.5, 0.72)] {
+            for (dy, rk) in [(-0.55f32, 0.62f32), (0.0, 0.78), (0.5, 0.62)] {
                 let q = [c[0] + s * tr.d * (0.6 - 0.3 * dy), c[1] + dy * ry];
                 p.line(
                     cam.pt([q[0], q[1] - ry * 0.18]),
                     cam.pt([q[0], q[1] + ry * 0.18]),
                     cam.len(rx * rk),
-                    cam.len(rx * 0.2),
+                    cam.len(rx * 0.12),
                     with(deep, fade),
                 );
             }
+            // the white stem going up inside the crown, seen in the gaps between its leaves
+            let inner = [c[0] + s * tr.d * 0.6, c[1] - ry * 0.7];
+            p.line(
+                cam.pt([c[0] + s * tr.d * 0.2, c[1] + ry]),
+                cam.pt(inner),
+                cam.len(wid * 0.7),
+                cam.len(0.6 * ppp),
+                with(mix3(bark, [0.5, 0.4, 0.3], 0.25), fade),
+            );
             for j in 0..n {
                 let hseed = tr.seed.wrapping_add(j.wrapping_mul(7919));
                 let ang = hash(hseed) * std::f32::consts::TAU;
@@ -216,16 +226,26 @@ impl Grove {
                 let lit = 0.28 + 0.85 * sun;
                 let base = tone(hseed);
                 let col = if pale {
-                    let l = 0.62 + 0.45 * sun;
-                    [PALE[0] * l, PALE[1] * l, PALE[2] * l]
+                    let l = 0.75 + 0.4 * sun;
+                    [
+                        (PALE[0] * l).min(1.0),
+                        (PALE[1] * l).min(1.0),
+                        (PALE[2] * l).min(1.0),
+                    ]
                 } else {
                     [base[0] * lit, base[1] * lit, base[2] * lit]
                 };
                 let col = mix3(col, HAZE, k);
                 let q = [c[0] + ox * rx + sway, c[1] + oy * ry];
                 // an underside turned up is a small pale glint, a leaf's width
-                let br = blob * if pale { 0.62 } else { 1.0 };
-                p.disc(cam.pt(q), cam.len(br), cam.len(0.6 * ppp), with(col, fade));
+                let br = blob * if pale { 0.5 } else { 1.0 };
+                // soft-edged, so the clusters melt into one mass of leaves
+                p.disc(
+                    cam.pt(q),
+                    cam.len(br),
+                    cam.len(br * 0.45 + 0.6 * ppp),
+                    with(col, fade),
+                );
             }
         }
     }

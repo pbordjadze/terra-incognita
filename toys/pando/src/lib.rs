@@ -239,7 +239,7 @@ impl Pando {
                 if let (Some(ga), Some(gb)) = (v.ground(pa), v.ground(pb)) {
                     let vel = [(gb[0] - ga[0]) / dt, (gb[1] - ga[1]) / dt];
                     // a finger's sweep is a few metres wide close by, tens of metres far off
-                    let size = 6.0 + gb[1] * 0.12;
+                    let size = 4.0 + gb[1] * 0.08;
                     let cap = 4.0 + gb[1] * 0.08;
                     let sp = (vel[0] * vel[0] + vel[1] * vel[1]).sqrt();
                     let vel = if sp > cap {

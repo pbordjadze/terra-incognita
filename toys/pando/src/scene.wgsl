@@ -33,7 +33,7 @@ fn grove(px: vec2<f32>) -> vec3<f32> {
   let cols = array<vec3<f32>, 3>(vec3<f32>(0.55, 0.47, 0.55), vec3<f32>(0.36, 0.34, 0.38), vec3<f32>(0.20, 0.22, 0.21));
   for (var k = 0; k < 3; k++) {
     let kf = f32(k);
-    let top = horizon - h * (0.05 - 0.012 * kf) * ridge(px.x, kf);
+    let top = horizon - h * (0.07 - 0.015 * kf) * ridge(px.x, kf);
     let firs = select(0.0, h * 0.006 * noise2(vec2<f32>(px.x * 0.35, 9.0)), k == 2);
     if (px.y > top - firs) {
       c = cols[k];

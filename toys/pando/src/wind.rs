@@ -108,7 +108,7 @@ impl Wind {
             return;
         }
         // a hand can't blow a gale: the strength saturates
-        let strength = 5.0 * (1.0 - (-s / 6.0).exp());
+        let strength = 4.5 * (1.0 - (-s / 6.0).exp());
         let speed = s.clamp(MEAN * CONVECT, 9.0);
         self.gusts.push(Gust {
             at,
