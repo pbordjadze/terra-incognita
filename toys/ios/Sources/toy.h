@@ -34,6 +34,13 @@ void toy_rules_open(ToyShell *shell);
 bool toy_origins_spot(ToyShell *shell, double *x, double *y);
 const char *toy_origins_text(ToyShell *shell);
 void toy_origins_open(ToyShell *shell);
+// The switches mark left of those (toy-kit's switches.rs; Toy::switches): its place in points (false: none),
+// the panel's rules while it shows (a line each: label, a tab, 1 on or 0 off; NULL while shut; valid until
+// the next frame), opening or closing the panel (closing turns every rule back on), and turning rule i.
+bool toy_switches_spot(ToyShell *shell, double *x, double *y);
+const char *toy_switches_text(ToyShell *shell);
+void toy_switches_open(ToyShell *shell);
+void toy_switch_set(ToyShell *shell, uint32_t i, bool on);
 // Whether the card (the rules or the origins) hangs from the top, asked as it opens (Toy::card_at_top).
 bool toy_card_at_top(ToyShell *shell);
 // The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in

@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 use toy_kit::info::{Demo, Rules};
+use toy_kit::switches::Switch;
 use toy_kit::{Assets, Camera, Ctx, Gpu, PointerEvent, Synth, Toy};
 
 /// Terra's data, shared by every toy it opens (the toys' manifests merged: `manifest.json`).
@@ -26,6 +27,8 @@ pub trait Room {
     fn rules(&self) -> Option<Rules>;
     fn origins(&self) -> Option<Rules>;
     fn card_at_top(&self) -> bool;
+    fn switches(&self) -> Vec<Switch>;
+    fn set_switch(&mut self, i: usize, on: bool);
     fn synth(&mut self) -> Option<Box<dyn Synth>>;
     fn take_haptic(&mut self) -> bool;
     /// The device was shaken (Frost sweeps its window clear).
@@ -151,6 +154,12 @@ impl<T: Toy> Room for Inside<T> {
     fn card_at_top(&self) -> bool {
         self.toy.card_at_top(&self.ctx)
     }
+    fn switches(&self) -> Vec<Switch> {
+        self.toy.switches()
+    }
+    fn set_switch(&mut self, i: usize, on: bool) {
+        self.toy.set_switch(&mut self.ctx, i, on);
+    }
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
         self.toy.synth()
     }
@@ -187,6 +196,41 @@ impl crate::Terra {
             ctx.show_info();
         }
         self.veil.target = None;
+    }
+}
+
+// the held toy's cards and switches, as Terra's own while it is open and settled (none on the Earth)
+impl crate::Terra {
+    /// A toy is held: opening, open or closing.
+    pub(crate) fn inside(&self) -> bool {
+        use crate::State;
+        matches!(
+            self.state,
+            State::Opening { .. } | State::Inside | State::Closing { .. }
+        )
+    }
+
+    pub(crate) fn held_origins(&self) -> Option<Rules> {
+        self.settled().and_then(|r| r.origins())
+    }
+
+    pub(crate) fn held_switches(&self) -> Vec<Switch> {
+        self.settled().map(|r| r.switches()).unwrap_or_default()
+    }
+
+    pub(crate) fn set_held_switch(&mut self, i: usize, on: bool) {
+        if matches!(self.state, crate::State::Inside) {
+            if let Some(r) = self.room.as_mut() {
+                r.set_switch(i, on);
+            }
+        }
+    }
+
+    fn settled(&self) -> Option<&dyn Room> {
+        if matches!(self.state, crate::State::Inside) {
+            return self.room.as_deref();
+        }
+        None
     }
 }
 

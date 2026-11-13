@@ -31,6 +31,8 @@ const INTERFLASH_SPREAD: f64 = 0.03;
 /// Flashes in a burst (inclusive).
 const BURST_MIN: u32 = 4;
 const BURST_MAX: u32 = 8;
+/// The rules as the switches mark names them, in `Swarm::on`'s order.
+pub const RULES: [&str; 3] = ["Flash 4 to 8 times", "Rest till dark", "Start on a flash"];
 /// After a burst, the rest in which nothing sets him off (s, mean and spread), measured from the
 /// burst's last flash.
 const REST_S: f64 = 3.0;
@@ -149,6 +151,9 @@ pub struct Swarm {
     bursting: bool,
     /// Males out now (grows to MALES over EMERGE_S).
     pub out: usize,
+    /// The three rules, each on or off (the switches mark; `RULES`): a burst of four to eight flashes,
+    /// rest until the woods go dark, start on a flash seen.
+    pub on: [bool; 3],
     /// The light of the whole swarm this step (the sum of the flashes' light, for the woods' glow).
     pub light: f32,
 }
@@ -215,6 +220,7 @@ impl Swarm {
             last_any: -100.0,
             bursting: false,
             out: 0,
+            on: [true; 3],
             light: 0.0,
         };
         sw.emerge();
@@ -286,8 +292,10 @@ impl Swarm {
         self.seed = seed;
     }
 
-    fn start_burst(m: &mut Male, first: f64, seed: &mut u64) {
+    fn start_burst(m: &mut Male, first: f64, seed: &mut u64, bursts: bool) {
         let n = BURST_MIN + (rand(seed) * (BURST_MAX - BURST_MIN + 1) as f64) as u32;
+        // (with "a burst" off, one flash and then the rest)
+        let n = if bursts { n } else { 1 };
         m.state = State::Burst {
             next: first,
             done: 0,
@@ -417,6 +425,7 @@ impl Swarm {
         let mut seen_now: Vec<Seen> = std::mem::take(&mut self.pending);
         let mut seed = self.seed;
         let mut any_burst = false;
+        let [bursts, wait_dark, follow] = self.on;
         for (i, m) in self.males[..self.out].iter_mut().enumerate() {
             Self::fly(m, t, dt, &mut seed);
             // see, and flash
@@ -430,7 +439,8 @@ impl Swarm {
                     .map(|f| f.t)
                     .reduce(f64::min)
             };
-            let saw = sees(&seen, m.pos, false);
+            // (with "start on a flash" off he sees no one's: each keeps his own time)
+            let saw = sees(&seen, m.pos, false).filter(|_| follow);
             if let Some(at) = sees(&seen, m.pos, true) {
                 m.saw = at;
             }
@@ -439,7 +449,8 @@ impl Swarm {
                 State::Resting { until } => {
                     // rested, and the woods around him dark a moment
                     // rested once the woods round him have been dark a while
-                    if t >= until && t - m.saw.max(m.last_flash) > m.dark {
+                    let dark = t - m.saw.max(m.last_flash) > m.dark;
+                    if t >= until && (dark || !wait_dark) {
                         let wait = WAIT_MEAN_S * -rand(&mut seed).max(1e-9).ln();
                         m.state = State::Ready { own: t + wait };
                     }
@@ -447,9 +458,9 @@ impl Swarm {
                 State::Ready { own } => {
                     if let Some(at) = saw {
                         let first = at + ANSWER_S + ANSWER_SPREAD * rand(&mut seed);
-                        Self::start_burst(m, first.max(t), &mut seed);
+                        Self::start_burst(m, first.max(t), &mut seed, bursts);
                     } else if t >= own {
-                        Self::start_burst(m, t, &mut seed);
+                        Self::start_burst(m, t, &mut seed, bursts);
                     }
                 }
                 State::Burst { .. } => {

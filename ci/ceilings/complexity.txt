@@ -46,7 +46,7 @@ toys/carol/src/lib.rs::draw 283 45
 toys/carol/src/lib.rs::new 106 5
 toys/carol/src/lib.rs::pointer 79 26
 toys/crates/toy-kit/src/check.rs::main_with 89 21
-toys/crates/toy-kit/src/check.rs::play_with 299 74
+toys/crates/toy-kit/src/check.rs::play_with 291 70
 toys/crates/toy-kit/src/globe/mod.rs::pointer 162 41
 toys/crates/toy-kit/src/globe/rivers.rs::mask 123 14
 toys/crates/toy-kit/src/globe/rivers.rs::new 176 4
@@ -77,7 +77,7 @@ toys/swell/src/lib.rs::new 198 10
 toys/taste/src/bin/taster.rs::play 64 22
 toys/taste/src/lib.rs::draw 201 28
 toys/taste/src/lib.rs::update 76 26
-toys/terra/src/doors.rs::paint 369 42
+toys/terra/src/doors.rs::paint 368 41
 toys/terra/src/lib.rs::pointer 69 26
 toys/terra/src/lib.rs::squeeze_pointer 105 27
 toys/terra/src/lib.rs::update 237 59

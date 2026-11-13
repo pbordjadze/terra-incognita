@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The info mark's line, the rules and their origins, the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
+The info mark's line, the rules and their origins, the switches panel (switches.rs), the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
 so a check's frame lacks them; the check writes what was showing beside each shot as
 `<shot>.shell.json` (size, ppp, line, rules, origins, top: the card hung from the top). This draws them as the shell lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
@@ -100,6 +100,37 @@ def caption(img, text, k):
         d.text(((W * k - tw) / 2, (y0 + pad[0] + i * lh + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, 242))
 
 
+def switches(img, text, k):
+    """The switches panel: a column a rule, its label (footnote, up to two lines; dimmer when off) over an
+    iOS switch (51 by 31 points; green when on), on the rules' glass, its foot 60 points above the screen's."""
+    W, H = img.size[0] / k, img.size[1] / k
+    rows = [r.split('\t') for r in text.split('\n') if r.count('\t') == 1]
+    w, pad, gap = min(W - 32, 480), 12, 8
+    n = max(len(rows), 1)
+    col = (w - 2 * pad - gap * (n - 1)) / n
+    f = ImageFont.truetype(FONT, round(13 * k))
+    d = ImageDraw.Draw(img, 'RGBA')
+    wrapped = [wrap(d, label, f, col * k)[:2] for label, _ in rows]
+    lh = 16
+    label_h = lh * max((len(x) for x in wrapped), default=1)
+    h = pad + label_h + gap + 31 + pad
+    x0, y0 = (W - w) / 2, H - 60 - h
+    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 16)
+    d = ImageDraw.Draw(img, 'RGBA')
+    for i, ((_, on), lines) in enumerate(zip(rows, wrapped)):
+        on = on == '1'
+        cx = x0 + pad + i * (col + gap) + col / 2
+        for j, t in enumerate(lines):
+            tw = d.textlength(t, font=f)
+            d.text((cx * k - tw / 2, (y0 + pad + j * lh + 1) * k), t, font=f,
+                   fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
+        sx, sy = cx - 25.5, y0 + pad + label_h + gap
+        track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
+        d.rounded_rectangle([sx * k, sy * k, (sx + 51) * k, (sy + 31) * k], radius=15.5 * k, fill=track)
+        kx = sx + (35.5 if on else 15.5)
+        d.ellipse([(kx - 13.5) * k, (sy + 2) * k, (kx + 13.5) * k, (sy + 29) * k], fill=(255, 255, 255, 255))
+
+
 def title(img, text, k):
     """The toy's quiet title line (Toy::title): footnote, white at 0.55, centred at the top."""
     W = img.size[0] / k
@@ -120,6 +151,8 @@ def main():
             img = Image.open(shot).convert('RGB')
             if s.get('rules') or s.get('origins'):
                 rules(img, s.get('rules') or s['origins'], s['ppp'], s.get('top', False))
+            if s.get('switches'):
+                switches(img, s['switches'], s['ppp'])
             if s.get('title'):
                 title(img, s['title'], s['ppp'])
             if s.get('line'):

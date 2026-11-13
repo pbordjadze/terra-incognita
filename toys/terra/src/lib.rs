@@ -609,13 +609,6 @@ impl Terra {
         homecoming(home, self.life.doors[self.door].at)
     }
 
-    fn inside(&self) -> bool {
-        matches!(
-            self.state,
-            State::Opening { .. } | State::Inside | State::Closing { .. }
-        )
-    }
-
     fn strike(&self, degree: i32, amp: f32, pan: f32) {
         self.bells.strike(Note {
             freq: pentatonic(392.0, degree),
@@ -1986,11 +1979,15 @@ impl Toy for Terra {
     }
 
     fn origins(&self) -> Option<Rules> {
-        // the open toy's, while it is open and settled (none on the Earth)
-        if matches!(self.state, State::Inside) {
-            return self.room.as_ref().and_then(|r| r.origins());
-        }
-        None
+        self.held_origins()
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        self.held_switches()
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        self.set_held_switch(i, on);
     }
 
     fn info_at_start(&self) -> bool {
