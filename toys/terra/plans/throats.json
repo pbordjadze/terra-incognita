@@ -1,0 +1,11 @@
+{
+ "_": "Throats (painting-company row 257), its light over the hills near Los Banos, California, where the side-blotched lizards' rock-paper-scissors was found: a window onto the sunlit hillside, the three throats' colours chasing round in a spiral. Touched, the window shows the toy itself and grows as the Earth turns California to the middle and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  { "t": 1.0, "tap": "throats" },
+  { "t": 8.0, "tap": "earth" }
+ ],
+ "shots": [{ "t": 0.9, "name": "the-light" }, { "t": 2.2, "name": "window" }, { "t": 3.0, "name": "growing" }, { "t": 6.5, "name": "inside" }, { "t": 9.0, "name": "going-back" }, { "t": 12.8, "name": "back" }],
+ "film": { "from": 0.5, "to": 13, "every": 0.1 }
+}

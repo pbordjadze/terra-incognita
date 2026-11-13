@@ -133,15 +133,6 @@ pub fn doors() -> Vec<Door> {
             open: rooms::open::<swell::Swell>,
         },
         Door {
-            id: "jam",
-            name: "Shortcut",
-            at: [9.18, 48.78],
-            tint: [0.96, 0.86, 0.70],
-            night: true,
-            degree: 5,
-            open: rooms::open::<jam::Jam>,
-        },
-        Door {
             id: "meander",
             name: "Meander",
             at: [-67.03, -12.97],
@@ -149,6 +140,15 @@ pub fn doors() -> Vec<Door> {
             night: false,
             degree: 7,
             open: rooms::open::<meander::Meander>,
+        },
+        Door {
+            id: "throats",
+            name: "Throats",
+            at: [-120.85, 37.06],
+            tint: [0.93, 0.62, 0.30],
+            night: false,
+            degree: 5,
+            open: rooms::open::<throats::Throats>,
         },
         Door {
             id: "frost",
@@ -708,50 +708,40 @@ impl Life {
                         prev = Some(q);
                     }
                 }
-                "jam" => {
-                    // a window onto a small town at night round a lake: two roads up either side of the
-                    // water, the cars on them small warm lights going up, one road out at the top
+                "throats" => {
+                    // a window onto the hillside from above: the dry grass, and the lizards' three throats
+                    // chasing each other round in a spiral (orange takes blue's rock, blue yellow's, yellow
+                    // orange's), slowly turning
                     let w = a * halo;
                     p.disc(
                         c,
                         (r * 1.05 * k) as f32,
                         (r * 0.2 * k) as f32,
-                        [0.06, 0.075, 0.085, 0.95 * w],
+                        [0.58, 0.50, 0.32, 0.95 * w],
                     );
-                    p.disc(
-                        c,
-                        (r * 0.32 * k) as f32,
-                        (r * 0.12 * k) as f32,
-                        [0.02, 0.05, 0.09, 0.9 * a],
-                    );
-                    // either side: from the foot round the lake to the top
-                    let side = |s: f64, sd: f64| -> [f32; 2] {
-                        let th = std::f64::consts::PI * (1.0 - s);
-                        let x = sd * 0.52 * th.sin();
-                        let y = 0.78 * th.cos();
-                        [c[0] + (x * r * k) as f32, c[1] - (y * r * k) as f32]
-                    };
-                    for sd in [-1.0, 1.0] {
+                    let throats = [[0.95, 0.52, 0.18], [0.24, 0.42, 0.85], [0.96, 0.86, 0.30]];
+                    for (arm, col) in throats.iter().enumerate() {
                         let mut prev: Option<[f32; 2]> = None;
-                        for j in 0..=20 {
-                            let q = side(j as f64 / 20.0, sd);
+                        for j in 0..=24 {
+                            let u = j as f64 / 24.0;
+                            let ang = -tm * 0.6
+                                + arm as f64 * std::f64::consts::TAU / 3.0
+                                + u * std::f64::consts::TAU * 0.9;
+                            let rad = r * 0.9 * u;
+                            let q = [
+                                c[0] + (ang.cos() * rad * k) as f32,
+                                c[1] + (ang.sin() * rad * k) as f32,
+                            ];
                             if let Some(pp) = prev {
-                                p.line(pp, q, 0.55 * kf, 0.8, [0.22, 0.22, 0.25, 0.9 * a]);
+                                p.line(
+                                    pp,
+                                    q,
+                                    (0.16 * r * k * (0.4 + u)) as f32,
+                                    1.0,
+                                    [col[0], col[1], col[2], 0.9 * a],
+                                );
                             }
                             prev = Some(q);
-                        }
-                        for j in 0..5 {
-                            let s = (tm * 0.07 + j as f64 * 0.2 + if sd > 0.0 { 0.1 } else { 0.0 })
-                                .rem_euclid(1.0);
-                            let q = side(s, sd);
-                            p.glow(
-                                q,
-                                q,
-                                (0.05 * r * k) as f32,
-                                (0.12 * r * k) as f32,
-                                [1.0, 0.85, 0.6, 0.35 * a],
-                            );
-                            p.disc(q, 0.9 * kf, 1.0, [1.0, 0.95, 0.85, 0.95 * a]);
                         }
                     }
                 }
