@@ -25,3 +25,12 @@ the maker's reasoning. Its verdict, then what the maker changed. Times are ET.
 - Changed: wider crescents (more spread across the wind); the heights softened by a small blur on the
   CPU (no banding); the sun low from upwind and turning with it; soft-edged shadows; a stronger pour, on
   bare ground in the plan.
+
+## Round 3 (2026-11-13, ~2:30 AM ET, commit eeebf68b): not shippable, the last round
+- First look: dunes read as dunes, bright on pale ground, horns downwind, but tall arches more than wide
+  crescents, moulded edges; after the wind turns, still commas and blobs at 20 s; the pour now visible.
+- The one change asked: wide crescents, and crescents again facing the new wind soon after a drag.
+- Changed: after a turn the field runs faster for 25 s (up to the gust's 3.5×, so no slower a frame), so
+  the dunes turn into crescents facing the new wind within about 20 s (`turn.json` shows it at 60 s). Done
+  after three rounds; left: the arches' proportions (the rule's own at this hop length), the moulded
+  edges.

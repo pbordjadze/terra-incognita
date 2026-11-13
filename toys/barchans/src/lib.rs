@@ -46,6 +46,8 @@ pub struct Barchans {
     field: Field,
     cells: Vec<[f32; 4]>,
     blur: Vec<f32>,
+    /// 1 just after the wind turns, 0 once the dunes have had time to answer it
+    hurry: f32,
     painter: Painter,
     sound: Sound,
     grains: Vec<Grain>,
@@ -101,6 +103,7 @@ impl Toy for Barchans {
         let mut toy = Barchans {
             cells: vec![[0.0; 4]; ACROSS * down],
             blur: vec![0.0; ACROSS * down],
+            hurry: 0.0,
             dunes,
             field,
             painter: Painter::new(&ctx.gpu),
@@ -188,7 +191,11 @@ impl Toy for Barchans {
             }
         }
         self.gust = (self.gust - dt * 0.7).max(0.0);
-        self.acc += dt * PICKS_S * (1.0 + 2.5 * self.gust);
+        // after a turn, the field hurries to its new shape for a while (time runs faster, not the rule)
+        let turned = 1.0 - (w[0] * self.want[0] + w[1] * self.want[1]);
+        self.hurry = (self.hurry + turned * 8.0).min(1.0);
+        self.hurry = (self.hurry - dt / 25.0).max(0.0);
+        self.acc += dt * PICKS_S * (1.0 + 2.5 * self.gust.max(self.hurry));
         let n = self.acc as usize;
         self.acc -= n as f32;
         self.dunes.run(n);

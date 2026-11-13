@@ -215,10 +215,10 @@ impl Catatumbo {
         if self.t < self.next_storm {
             return;
         }
-        self.next_storm = self.t + self.rng.range(0.7, 2.8);
+        self.next_storm = self.t + self.rng.range(0.6, 2.0);
         let w = self.size_pt[0];
         let hy = self.horizon();
-        if self.rng.f() < 0.4 || self.t < 1.0 {
+        if self.rng.f() < 0.5 || self.t < 1.0 {
             // a far ground stroke (the first thing the storm does), just below the horizon
             let p = [
                 self.rng.range(w * 0.1, w * 0.9),
@@ -227,7 +227,7 @@ impl Catatumbo {
             self.strike_at(ctx, p, None, 0.55);
         } else {
             let p = [self.rng.range(0.0, w), self.rng.range(hy * 0.25, hy * 0.92)];
-            self.flicker = (self.t, p, self.rng.range(0.25, 0.7));
+            self.flicker = (self.t, p, self.rng.range(0.6, 1.3));
         }
     }
 
@@ -561,23 +561,6 @@ impl Catatumbo {
                 (k * 1.8) as f32,
                 [1.0, 0.98, 1.0, hot],
             );
-            // the glint: the light caught on the ripples either side, broken and fading outward
-            let span = 14.0 + 45.0 * near.min(3.0);
-            for i in 0..14 {
-                let u = (i as f64 + 0.5) / 14.0 * 2.0 - 1.0;
-                let h = hash(s.seed ^ (i as u64) << 9 ^ (self.t * 6.0) as u64);
-                let x = s.at[0] + u * span;
-                let y = s.at[1] + (h - 0.5) * (1.0 + near) * 0.8;
-                let len = span / 14.0 * (1.3 + 0.9 * h);
-                let fade = (1.0 - u.abs()).powf(1.5) as f32;
-                self.painter.glow(
-                    px([x - len * 0.5, y], ppp),
-                    px([x + len * 0.5, y], ppp),
-                    0.0,
-                    (2.4 * near.min(2.0) * ppp) as f32,
-                    [0.9, 0.85, 1.0, hot * 0.45 * fade],
-                );
-            }
             let rr = (14.0 + 50.0 * near.min(3.0)) * ppp;
             self.painter.glow(
                 f,

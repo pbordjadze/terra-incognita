@@ -147,8 +147,8 @@ fn catatumbo(p: &mut Painter, sp: &Spot, tm: f64) {
     let flash =
         ((1.0 - ph / 0.12).max(0.0) + 0.6 * (1.0 - (ph - 0.18).abs() / 0.06).max(0.0)) as f32;
     // the deck never quite dark: a flicker somewhere in it most of the time
-    let fl = (0.5 + 0.5 * (tm * 7.3).sin() * (tm * 2.9 + 1.0).sin()).powi(3) as f32;
-    sp.glass(p, [0.10 + 0.10 * fl, 0.08 + 0.08 * fl, 0.22 + 0.16 * fl]);
+    let fl = (0.5 + 0.5 * (tm * 7.3).sin() * (tm * 2.9 + 1.0).sin()).powi(2) as f32;
+    sp.glass(p, [0.20 + 0.25 * fl, 0.16 + 0.20 * fl, 0.38 + 0.30 * fl]);
     p.disc(
         at(0.0, 0.45),
         (r * 0.7 * k) as f32,

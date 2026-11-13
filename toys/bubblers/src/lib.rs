@@ -21,8 +21,8 @@ pub const PLACE: (f64, f64) = (98.30, 7.90);
 
 /// The screen is this many centimetres across.
 const WIDTH_CM: f32 = 30.0;
-/// The tide went out this long before the toy opens (seconds): the first crabs are just digging out.
-const OPENING_S: f32 = 4.0;
+/// The tide went out this long before the toy opens (seconds): the crabs are about to dig out.
+const OPENING_S: f32 = 1.0;
 /// The tide comes on its own after this long untouched by one (seconds).
 const TIDE_EVERY_S: f32 = 210.0;
 

@@ -27,3 +27,13 @@ the maker's reasoning. Its verdict, then what the maker changed. Times are ET.
   (no beads); a round bloom where it lands and a broken glint either side, fading outward; the sky a
   little brighter and the storm busier; the light on Terra violet with a flicker in it, a stroke every
   1.7 s.
+
+## Round 3 (2026-11-13, ~2:30 AM ET, commit eeebf68b): not shippable, the last round
+- First look: the near strike at full brightness spectacular (crooked, branching, lands round under the
+  finger); the quiet opening almost black, the storm's own strokes too faint and rare; a glint bar still
+  ruler-straight; faint branches still a little beaded; the lit water's chevrons; Terra's disc dark.
+- The one change asked: a storm visibly alive untouched, the cloud lit in sheets every second or two,
+  and the same in Terra's window.
+- Changed: the deck flashes more often and much brighter, more far strokes; the glint bar gone; Terra's
+  window lit violet with its flicker. Done after three rounds (the rule); left as polish: faint branches'
+  beads, the water's texture when lit.

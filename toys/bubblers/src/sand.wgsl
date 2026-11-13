@@ -46,6 +46,8 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let rs = mat2x2<f32>(0.8, 0.6, -0.6, 0.8) * world;
   let sheen = noise2(rs * 0.35 + vec2<f32>(u.time * 0.03, 0.0)) * 0.65 + noise2(rs * 1.1 + 4.0) * 0.35;
   col = col + vec3<f32>(0.05, 0.06, 0.07) * wk * smoothstep(0.35, 0.95, sheen);
+  // just-soaked sand shines
+  col = col + vec3<f32>(0.05, 0.05, 0.05) * smoothstep(0.85, 1.0, wet) * (1.0 - worked);
   // the swash: thin water over the sand, foam at its edge
   let front = u.p0.x;
   if (front > -50.0 && world.y > front - 1.2) {
@@ -55,10 +57,10 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
       let sea = vec3<f32>(0.40, 0.63, 0.62);
       let rw = mat2x2<f32>(0.8, 0.6, -0.6, 0.8) * world;
       // thin and clear at the edge, the sand under it plain, greener as it deepens
-      col = mix(col * vec3<f32>(0.80, 0.86, 0.86), sea, 0.04 + 0.30 * depth);
+      col = mix(col * vec3<f32>(0.82, 0.88, 0.88), sea, 0.03 + 0.14 * depth);
       // the sky's glints on its little waves
       let gl = noise2(rw * 2.3 + vec2<f32>(u.time * 0.9, u.time * 0.5)) * noise2(world * 3.1 - vec2<f32>(0.0, u.time * 0.7));
-      col = col + vec3<f32>(0.22, 0.25, 0.25) * smoothstep(0.62, 0.8, gl) * (0.3 + 0.7 * depth);
+      col = col + vec3<f32>(0.06, 0.07, 0.07) * smoothstep(0.3, 0.8, gl);
       let caustic = noise2(rw * 0.9 + vec2<f32>(u.time * 0.6, -u.time * 0.4)) * noise2(world * 1.3 - vec2<f32>(u.time * 0.3, 0.0));
       col = col + vec3<f32>(0.10, 0.12, 0.12) * smoothstep(0.15, 0.55, caustic) * (1.0 - depth);
       let foam = exp(-(world.y - edge) * 1.1) * smoothstep(0.25, 0.8, noise2(rw * 1.7 + vec2<f32>(0.0, u.time)) * 0.6 + noise2(world * 4.3 + 3.0) * 0.25 + noise2(rw * 11.0) * 0.15);

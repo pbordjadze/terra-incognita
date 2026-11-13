@@ -23,3 +23,12 @@ the maker's reasoning. Its verdict, then what the maker changed. Times are ET.
 - Changed: just that (balls of wet sand that pale over a minute, sizes 0.11–0.2 cm, off the line a
   little; a collar, a hollow and a hole); the water clear at its edge with glints; the ripples in
   patches.
+
+## Round 3 (2026-11-13, ~2:30 AM ET, commit eeebf68b): not shippable "by a narrow margin", the last round
+- First look: a real beach; by 30–45 s overlapping starbursts of shaded sand balls that look like
+  photographs of bubbler beaches; the crabs cartoonish beside it; most out already at the first frame.
+- The one change asked: the tide a thin transparent swash, the sand and balls visible through it, no
+  confetti flecks, glossy sand behind it.
+- Changed: the water much clearer (a tint, not a sheet), its glints soft and no flecks, just-soaked sand
+  shining; it opens a second after the tide so the crabs are seen digging out. Done after three rounds;
+  left as polish: the furrow's ruler edge, the crabs' cartoon eyes.
