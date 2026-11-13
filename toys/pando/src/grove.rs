@@ -68,7 +68,7 @@ impl View {
 
 /// How far into the haze a thing at `z` is.
 pub fn fog(z: f32) -> f32 {
-    1.0 - (-z / 260.0).exp()
+    1.0 - (-z / 150.0).exp()
 }
 pub const HAZE: [f32; 3] = [0.86, 0.70, 0.52];
 
@@ -180,50 +180,52 @@ impl Grove {
             let rx = s * tr.r;
             let ry = s * tr.h * 0.27;
             let c = v.project([tr.x, tr.h * 0.70, tr.z]).unwrap_or(top);
-            let blob = (rx * 0.24).max(1.1 * ppp);
-            let n = ((rx * ry) / (blob * blob) * 1.5).clamp(5.0, 240.0) as u32;
+            let blob = (rx * 0.17).max(1.0 * ppp);
+            let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
             let w = wind.at([tr.x, tr.z]);
             let share = turned(w);
+            // the crown's body first: its shaded inside, so the leaves on its surface have depth
+            let deep = mix3([0.50, 0.30, 0.07], HAZE, k);
+            for (dy, rk) in [(-0.55f32, 0.62f32), (0.0, 0.85), (0.5, 0.72)] {
+                let q = [c[0] + s * tr.d * (0.6 - 0.3 * dy), c[1] + dy * ry];
+                p.line(
+                    cam.pt([q[0], q[1] - ry * 0.18]),
+                    cam.pt([q[0], q[1] + ry * 0.18]),
+                    cam.len(rx * rk),
+                    cam.len(rx * 0.2),
+                    with(deep, fade),
+                );
+            }
             for j in 0..n {
                 let hseed = tr.seed.wrapping_add(j.wrapping_mul(7919));
                 let ang = hash(hseed) * std::f32::consts::TAU;
-                let rr = hash(hseed ^ 0x5555).sqrt();
+                // most of the leaves are at the crown's surface
+                let rr = hash(hseed ^ 0x5555).powf(0.3);
                 let (ox, oy) = (ang.cos() * rr, ang.sin() * rr);
                 // the higher a cluster, the farther the sway carries it
                 let up = 0.5 - 0.5 * oy;
                 let sway = s * tr.d * (0.4 + 0.6 * up);
-                let freq = 2.0 + 4.0 * hash(hseed ^ 0x77);
+                let freq = 3.0 + 2.0 * hash(hseed ^ 0x77);
                 let ph = hash(hseed ^ 0x99) * std::f32::consts::TAU;
                 let flick = (ph + std::f32::consts::TAU * freq * t).sin();
                 let pale = flick > 1.0 - 2.0 * share;
-                // lit from the low sun on the left and from above
-                let lit = 0.42 + 0.48 * up + 0.16 * (-ox);
+                // a round crown in the low sun from the upper left: bright on that side, in its own
+                // shade on the other, darker inside than at its surface
+                let nz = (1.0 - rr * rr).max(0.0).sqrt();
+                let sun = (-0.55 * ox - 0.6 * oy + 0.58 * nz).max(0.0);
+                let lit = 0.28 + 0.85 * sun;
                 let base = tone(hseed);
                 let col = if pale {
-                    let l = 0.7 + 0.35 * up;
-                    mix3(
-                        [PALE[0] * l, PALE[1] * l, PALE[2] * l],
-                        [1.0, 0.97, 0.85],
-                        (w / 10.0).min(0.3),
-                    )
+                    let l = 0.62 + 0.45 * sun;
+                    [PALE[0] * l, PALE[1] * l, PALE[2] * l]
                 } else {
                     [base[0] * lit, base[1] * lit, base[2] * lit]
                 };
                 let col = mix3(col, HAZE, k);
                 let q = [c[0] + ox * rx + sway, c[1] + oy * ry];
-                let br = blob * if pale { 0.8 } else { 1.0 };
-                if pale {
-                    // an underside is a flat leaf turned edge-on and over: a short pale streak
-                    p.line(
-                        cam.pt([q[0] - br * 0.6, q[1]]),
-                        cam.pt([q[0] + br * 0.6, q[1]]),
-                        cam.len(br * 0.55),
-                        cam.len(0.5 * ppp),
-                        with(col, fade),
-                    );
-                } else {
-                    p.disc(cam.pt(q), cam.len(br), cam.len(0.6 * ppp), with(col, fade));
-                }
+                // an underside turned up is a small pale glint, a leaf's width
+                let br = blob * if pale { 0.62 } else { 1.0 };
+                p.disc(cam.pt(q), cam.len(br), cam.len(0.6 * ppp), with(col, fade));
             }
         }
     }

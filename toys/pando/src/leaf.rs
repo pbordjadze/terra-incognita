@@ -97,15 +97,25 @@ impl OneLeaf {
                     l.anchor[1] + (base[1] - l.anchor[1]) * u,
                 ]
             };
-            let tw = (l.twist * (u0 + u1) * 0.5).cos();
-            let wid = 0.0035 + 0.0075 * tw.abs();
-            let shade = 0.65 + 0.35 * tw.abs();
+            let turn = l.twist * (u0 + u1) * 0.5;
+            let tw = turn.cos();
+            let wid = 0.003 + 0.013 * tw.abs();
+            let shade = 0.6 + 0.4 * tw.abs();
+            let (a, b) = (px(at(u0)), px(at(u1)));
             p.line(
-                px(at(u0)),
-                px(at(u1)),
+                a,
+                b,
                 len(wid),
                 len(0.0015),
                 [0.86 * shade, 0.64 * shade, 0.22 * shade, fade],
+            );
+            // a flat ribbon: a bright stripe down its face while it faces us
+            p.line(
+                a,
+                b,
+                len(wid * 0.25),
+                len(0.0015),
+                [1.0, 0.86, 0.45, 0.5 * tw.abs() * fade],
             );
         }
     }

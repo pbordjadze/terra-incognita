@@ -120,7 +120,7 @@ fn leaf(px: vec2<f32>) -> vec4<f32> {
   let face = max(abs(ct), 0.03);
   var q = vec2<f32>(d.x / face, d.y) / len;
   // the blade's middle a little under half its length below the base, so the base meets the stalk
-  q = vec2<f32>(q.x, q.y - 0.43);
+  q = vec2<f32>(q.x, q.y - 0.36);
   let r = leaf_r(q);
   let edge = r - length(q);
   let aa = 1.5 / (len * face);

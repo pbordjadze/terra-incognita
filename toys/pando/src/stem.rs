@@ -105,7 +105,15 @@ impl Stem {
         let mut scars = Vec::new();
         for _ in 0..9 {
             let i = (rnd() * 22.0) as usize + 1;
-            scars.push((trunk[i], 0.02 + 0.03 * rnd()));
+            // within the trunk's width there
+            let half = 0.07;
+            scars.push((
+                [
+                    trunk[0][0] + (trunk[24][0] - trunk[0][0]) * i as f32 / 24.0 + 0.004,
+                    trunk[i][1],
+                ],
+                half * (0.3 + 0.35 * rnd()),
+            ));
         }
         let mut branches = Vec::new();
         let mut twigs = Vec::new();
@@ -253,39 +261,46 @@ impl Stem {
         let px = |q: [f32; 2]| cam.pt([q[0] * w, q[1] * w]);
         let len = |r: f32| cam.len(r * w);
         // the trunk: chalk white with a greenish cast, shaded on its right
-        for i in 0..self.trunk.len() - 1 {
-            let (a, b) = (
-                self.moved(self.trunk[i], aspect),
-                self.moved(self.trunk[i + 1], aspect),
-            );
-            let u = i as f32 / 24.0;
-            let r = 0.085 - 0.03 * u;
-            p.line(px(a), px(b), len(r), len(0.004), [0.80, 0.82, 0.74, fade]);
+        // (one long stroke a layer, so no joins show)
+        let (a, b) = (
+            self.moved(self.trunk[0], aspect),
+            self.moved(self.trunk[self.trunk.len() - 1], aspect),
+        );
+        let r = 0.07;
+        for (off, wid, col) in [
+            (0.0, 1.0, [0.80, 0.82, 0.74]),
+            (0.45, 0.5, [0.68, 0.71, 0.63]),
+            (0.62, 0.3, [0.58, 0.61, 0.54]),
+            (-0.42, 0.35, [0.90, 0.91, 0.84]),
+        ] {
             p.line(
-                px([a[0] + r * 0.45, a[1]]),
-                px([b[0] + r * 0.45, b[1]]),
-                len(r * 0.5),
-                len(0.02),
-                [0.68, 0.71, 0.63, fade],
-            );
-            p.line(
-                px([a[0] - r * 0.4, a[1]]),
-                px([b[0] - r * 0.4, b[1]]),
-                len(r * 0.35),
-                len(0.02),
-                [0.88, 0.89, 0.82, fade],
+                px([a[0] + r * off, a[1]]),
+                px([b[0] + r * off, b[1]]),
+                len(r * wid),
+                len(if off == 0.0 { 0.003 } else { 0.02 }),
+                with(col, fade),
             );
         }
         // the black eyes left where lower branches were shed
         for (c, s) in &self.scars {
             let c = self.moved(*c, aspect);
-            p.line(
-                px([c[0] - s, c[1]]),
-                px([c[0] + s, c[1]]),
-                len(s * 0.22),
-                len(0.002),
-                [0.10, 0.09, 0.08, 0.92 * fade],
-            );
+            // a dark eye: a lens across the bark, thickest in its middle, its ends drooping a little
+            let mut last = None;
+            for i in 0..=8 {
+                let u = -1.0 + i as f32 / 4.0;
+                let q = [c[0] + u * s * 0.85, c[1] + s * 0.12 * u.abs()];
+                if let Some(l) = last {
+                    let th = s * 0.15 * (1.0 - u * u).max(0.0) + 0.002;
+                    p.line(
+                        px(l),
+                        px(q),
+                        len(th),
+                        len(0.002),
+                        [0.10, 0.09, 0.08, 0.92 * fade],
+                    );
+                }
+                last = Some(q);
+            }
         }
         for pts in &self.branches {
             for j in 0..pts.len() - 1 {
@@ -351,7 +366,13 @@ fn draw_blade(
         [PALE[0] * lit, PALE[1] * lit, PALE[2] * lit]
     };
     p.line(px(a), px(b), len(r), len(0.002), with(col, fade));
-    // the short tip
-    let tip = [mid[0] + d[0] * half * 1.05, mid[1] + d[1] * half * 1.05];
-    p.line(px(b), px(tip), len(r * 0.35), len(0.002), with(col, fade));
+    // its midrib, seen while it faces us
+    let rib = [
+        col[0] * 0.78,
+        col[1] * 0.74,
+        col[2] * 0.7,
+        0.7 * face * fade,
+    ];
+    let end = [mid[0] + d[0] * half * 0.9, mid[1] + d[1] * half * 0.9];
+    p.line(px(base), px(end), len(0.0012), len(0.001), rib);
 }
