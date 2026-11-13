@@ -68,10 +68,11 @@ def rules(img, text, k, top=False):
         y += lh
 
 
-def glass(img, box, k, radius):
-    """UIKit's ultra-thin dark material with the shell's 0.62 tint, over `box` (pixels)."""
+def glass(img, box, k, radius, tint=0.75):
+    """UIKit's ultra-thin dark material with the shell's tint (0.62 alpha; the switches' panel 0.3), over
+    `box` (pixels)."""
     g = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
-    g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), 0.75)
+    g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), tint)
     mask = Image.new('L', g.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, g.size[0] - 1, g.size[1] - 1), radius=round(radius * k), fill=255)
     img.paste(g, box[:2], mask)
@@ -101,34 +102,32 @@ def caption(img, text, k):
 
 
 def switches(img, text, k):
-    """The switches panel: a column a rule, its label (footnote, up to two lines; dimmer when off) over an
-    iOS switch (51 by 31 points; green when on), on the rules' glass, its foot 60 points above the screen's."""
+    """The switches panel (main.swift's layoutSwitches): small, in the bottom right corner, its foot 60 points
+    above the screen's, on a lighter glass; a row a rule, its label (footnote, right-aligned, dimmer when off)
+    beside an iOS switch at three quarters size (38 by 23 points; a pale track when on)."""
     W, H = img.size[0] / k, img.size[1] / k
     rows = [r.split('\t') for r in text.split('\n') if r.count('\t') == 1]
-    w, pad, gap = min(W - 32, 480), 12, 8
-    n = max(len(rows), 1)
-    col = (w - 2 * pad - gap * (n - 1)) / n
+    pad, gap, row, sw, sh = 10, 8, 30, 38.25, 23.25
     f = ImageFont.truetype(FONT, round(13 * k))
     d = ImageDraw.Draw(img, 'RGBA')
-    wrapped = [wrap(d, label, f, col * k)[:2] for label, _ in rows]
-    lh = 16
-    label_h = lh * max((len(x) for x in wrapped), default=1)
-    h = pad + label_h + gap + 31 + pad
-    x0, y0 = (W - w) / 2, H - 60 - h
-    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 16)
+    most = min(W - 32, 320) - 2 * pad - gap - sw
+    label_w = min(max((d.textlength(lb, font=f) / k for lb, _ in rows), default=0), most)
+    w = pad + label_w + gap + sw + pad
+    h = pad + row * len(rows) + pad - 6
+    x0, y0 = W - 16 - w, H - 60 - h
+    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 14, 0.4)
     d = ImageDraw.Draw(img, 'RGBA')
-    for i, ((_, on), lines) in enumerate(zip(rows, wrapped)):
+    for i, (label, on) in enumerate(rows):
         on = on == '1'
-        cx = x0 + pad + i * (col + gap) + col / 2
-        for j, t in enumerate(lines):
-            tw = d.textlength(t, font=f)
-            d.text((cx * k - tw / 2, (y0 + pad + j * lh + 1) * k), t, font=f,
-                   fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
-        sx, sy = cx - 25.5, y0 + pad + label_h + gap
-        track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
-        d.rounded_rectangle([sx * k, sy * k, (sx + 51) * k, (sy + 31) * k], radius=15.5 * k, fill=track)
-        kx = sx + (35.5 if on else 15.5)
-        d.ellipse([(kx - 13.5) * k, (sy + 2) * k, (kx + 13.5) * k, (sy + 29) * k], fill=(255, 255, 255, 255))
+        mid = y0 + pad - 3 + row * (i + 0.5)
+        tw = d.textlength(label, font=f)
+        d.text(((x0 + pad + label_w) * k - tw, (mid - 8) * k), label, font=f,
+               fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
+        sx, sy = x0 + w - pad - sw, mid - sh / 2
+        track = (199, 199, 199, 230) if on else (120, 120, 128, 110)
+        d.rounded_rectangle([sx * k, sy * k, (sx + sw) * k, (sy + sh) * k], radius=sh / 2 * k, fill=track)
+        kx, r = sx + (sw - sh / 2 if on else sh / 2), sh / 2 - 1.5
+        d.ellipse([(kx - r) * k, (mid - r) * k, (kx + r) * k, (mid + r) * k], fill=(255, 255, 255, 255))
 
 
 def title(img, text, k):

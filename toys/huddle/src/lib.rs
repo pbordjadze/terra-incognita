@@ -403,7 +403,7 @@ impl Toy for Huddle {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "In the Antarctic winter, emperor penguins on Atka Bay's sea ice huddle against the wind. No one leads, yet the huddle turns over and creeps downwind.",
-            "The three dots show the rules each penguin follows: switch one off to see what it does.",
+            "The three dots show the rule each penguin follows: switch it off to see what it does.",
             "Drag to turn the wind; touch a penguin to start a wave of steps.",
         ]))
     }

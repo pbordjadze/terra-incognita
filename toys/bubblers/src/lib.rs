@@ -261,7 +261,7 @@ impl Toy for Bubblers {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "On the beaches of Phuket at low tide, sand-bubbler crabs feed outward from their burrows, leaving the sifted sand behind in little balls that spread into starbursts.",
-            "The three dots show the rules each crab follows: switch one off to see what it does.",
+            "The three dots show the rule each crab follows: switch it off to see what it does.",
             "Your tap is a footstep; drag to draw in the sand; shake, and the tide comes in.",
         ]))
     }

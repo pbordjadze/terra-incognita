@@ -1,5 +1,5 @@
-//! The switches mark (painting-company row 335; Paul chose it on Nov 13 2026 from three mockups): a
-//! fourth small mark, left of the others, for a toy whose crowd follows a few simple rules (`Toy::switches`).
+//! The switches mark (painting-company row 335; chosen on Nov 13 2026 from three mockups): a fourth
+//! small mark, left of the others, for a toy whose crowd follows a few simple rules (`Toy::switches`).
 //! A tap on it lays those rules out as switches over the live scene, all on; turning one off shows what
 //! that rule was holding together (no heading to match, and the starlings smear into strands), and
 //! turning it back on brings the order back. The panel stays while the reader plays with it, and touches

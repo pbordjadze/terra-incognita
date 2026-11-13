@@ -39,7 +39,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     var rulesText: String?
     var cardTop = false
     /// The switches mark's panel (toy-kit's switches.rs): the rules the toy's crowd follows, each a label
-    /// over a native switch, in a row on the same dark glass, above the marks. It stays while the reader
+    /// beside a small native switch, on a lighter glass in the corner above the marks. It stays while the reader
     /// plays (the scene keeps its touches; the glass swallows its own), until the mark is tapped again.
     /// tools/kit/shell_text.py draws the same for the Linux check's screenshots: change both together.
     let switches = PanelGlass(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
@@ -99,10 +99,10 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         rules.contentView.addSubview(rulesScroll)
         rules.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(closeRules)))
         addSubview(rules)
-        switches.layer.cornerRadius = 16
+        switches.layer.cornerRadius = 14
         switches.layer.cornerCurve = .continuous
         switches.clipsToBounds = true
-        switches.contentView.backgroundColor = UIColor(white: 0.06, alpha: 0.62)
+        switches.contentView.backgroundColor = UIColor(white: 0.06, alpha: 0.3)
         switches.alpha = 0
         switches.isHidden = true
         addSubview(switches)
@@ -283,11 +283,14 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             let label = UILabel()
             label.font = UIFont.preferredFont(forTextStyle: .footnote)
             label.adjustsFontForContentSizeCategory = true
-            label.numberOfLines = 2
-            label.textAlignment = .center
+            label.numberOfLines = 1
+            label.textAlignment = .right
             label.textColor = .white
             label.isAccessibilityElement = false
             let toggle = UISwitch()
+            // small and quiet, so the scene stays the subject: three quarters size, a pale track when on
+            toggle.transform = CGAffineTransform(scaleX: 0.75, y: 0.75)
+            toggle.onTintColor = UIColor(white: 0.78, alpha: 0.9)
             toggle.tag = i
             toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
             switches.contentView.addSubview(label)
@@ -301,22 +304,21 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         toy_switch_set(shell, UInt32(toggle.tag), toggle.isOn)
     }
 
-    /// The panel's place: as wide as the rules' card, its foot 60 points above the screen's (clear of the
-    /// marks); a column a rule, its label (up to two lines) over its switch.
+    /// The panel's place: small, in the bottom right corner over the marks (the switches mark opened it),
+    /// its foot 60 points above the screen's; a row a rule, its label right-aligned beside a switch at
+    /// three quarters size. tools/kit/shell_text.py draws the same on the shots.
     func layoutSwitches() {
-        let w = min(bounds.width - 32, 480), pad: CGFloat = 12, gap: CGFloat = 8
-        let n = CGFloat(max(switchCells.count, 1))
-        let col = (w - 2 * pad - gap * (n - 1)) / n
-        let fit = CGSize(width: col, height: .greatestFiniteMagnitude)
-        let labelH = switchCells.map { $0.0.sizeThatFits(fit).height }.max() ?? 0
-        let toggleH = switchCells.first?.1.intrinsicContentSize.height ?? 31
-        let h = pad + labelH + gap + toggleH + pad
-        switches.frame = CGRect(x: (bounds.width - w) / 2, y: bounds.height - 60 - h, width: w, height: h)
+        let pad: CGFloat = 10, gap: CGFloat = 8, row: CGFloat = 30
+        let toggle = switchCells.first?.1.frame.size ?? CGSize(width: 38, height: 23)
+        let most = min(bounds.width - 32, 320) - 2 * pad - gap - toggle.width
+        let labelW = min(switchCells.map { ceil($0.0.intrinsicContentSize.width) }.max() ?? 0, most)
+        let w = pad + labelW + gap + toggle.width + pad
+        let h = pad + row * CGFloat(switchCells.count) + pad - 6
+        switches.frame = CGRect(x: bounds.width - 16 - w, y: bounds.height - 60 - h, width: w, height: h)
         for (i, (label, toggle)) in switchCells.enumerated() {
-            let x = pad + CGFloat(i) * (col + gap)
-            label.frame = CGRect(x: x, y: pad, width: col, height: labelH)
-            let size = toggle.intrinsicContentSize
-            toggle.frame = CGRect(x: x + (col - size.width) / 2, y: pad + labelH + gap, width: size.width, height: size.height)
+            let mid = pad - 3 + row * (CGFloat(i) + 0.5)
+            label.frame = CGRect(x: pad, y: mid - row / 2, width: labelW, height: row)
+            toggle.center = CGPoint(x: w - pad - toggle.frame.width / 2, y: mid)
         }
     }
 

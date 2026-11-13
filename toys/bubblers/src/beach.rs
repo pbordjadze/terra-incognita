@@ -93,13 +93,14 @@ pub struct Beach {
     /// what happened this step, for the sound and the hand: balls laid, crabs that bolted
     pub laid: Vec<[f32; 2]>,
     pub bolted: Vec<[f32; 2]>,
-    /// The two rules, each on or off (the switches mark; `RULES`): each spoke starts beside the last,
-    /// on the least worked sand (off: anywhere at random); a crab bolts when it sees a neighbour bolt.
-    pub on: [bool; 2],
+    /// The rule, on or off (the switches mark; `RULES`): each spoke starts beside the last, on the
+    /// least worked sand (off: anywhere at random). (Bolting with a neighbour shows only after the
+    /// reader's footstep, so it isn't a switch.)
+    pub on: [bool; 1],
 }
 
 /// The rules as the switches mark names them, in `Beach::on`'s order.
-pub const RULES: [&str; 2] = ["Feed beside the last", "Bolt when one bolts"];
+pub const RULES: [&str; 1] = ["Feed beside the last"];
 
 /// The tide: it rises over the beach in this long, stands, and falls back (seconds).
 pub const TIDE_IN: f32 = 6.0;
@@ -164,7 +165,7 @@ impl Beach {
             dirty: true,
             laid: Vec::new(),
             bolted: Vec::new(),
-            on: [true; 2],
+            on: [true; 1],
         }
     }
 
@@ -391,10 +392,7 @@ impl Beach {
                     self.bolted.push(c.p);
                     // the neighbours see it go
                     for (j, o) in self.crabs.iter_mut().enumerate() {
-                        if j == k
-                            || !self.on[1]
-                            || matches!(o.state, State::Hidden(_) | State::Flee)
-                        {
+                        if j == k || matches!(o.state, State::Hidden(_) | State::Flee) {
                             continue;
                         }
                         let d = ((o.p[0] - c.p[0]).powi(2) + (o.p[1] - c.p[1]).powi(2)).sqrt();

@@ -754,6 +754,9 @@ struct Run<T: Toy> {
     items: Vec<Item>,
     next: usize,
     resolved: Vec<Option<[[f64; 2]; 9]>>,
+    /// A `"switch"` with the panel shut fails the plan (not in the touch check's shadow runs, which
+    /// may leave out the tap that opened it).
+    strict: bool,
 }
 
 impl<T: Toy> Run<T> {
@@ -770,6 +773,7 @@ impl<T: Toy> Run<T> {
         ctx.night = plan.night;
         ctx.reduce_motion = plan.reduce_motion;
         let mut host = Host::<T>::new(ctx)?;
+        let strict = items.len() == schedule(&plan.events).len();
         host.first_info.on = plan.first_info;
         host.toy.settings(&mut host.ctx);
         if let Some(s) = &plan.restore {
@@ -780,6 +784,7 @@ impl<T: Toy> Run<T> {
             items,
             next: 0,
             resolved: vec![None; plan.events.len()],
+            strict,
         })
     }
 
@@ -822,7 +827,16 @@ impl<T: Toy> Run<T> {
                     })?;
                     self.host.opened(f);
                 }
-                What::Switch(i, on) => self.host.set_switch(i, on),
+                What::Switch(i, on) => {
+                    let n = self.host.toy.switches().len();
+                    if (self.strict && self.host.switches_text().is_none()) || i >= n {
+                        anyhow::bail!(
+                            "event at t={}: switch {i}: the panel must be open (tap \"switches\" first) and the toy has {n} rules",
+                            events[it.ev].t
+                        );
+                    }
+                    self.host.set_switch(i, on);
+                }
             }
             self.next += 1;
         }
@@ -1058,7 +1072,7 @@ pub fn play_with<T: Toy>(
                 )?;
                 // the shell's text showing then (the info line, the rules), which the shell sets in
                 // the system's text and this frame lacks: tools/kit/shell_text.py draws it on the shot
-                shell_json(
+                crate::shell_json(
                     host,
                     &out.join(format!("{}.shell.json", shots[si].1)),
                     [w, h],
@@ -1570,29 +1584,6 @@ pub fn main_with<T: Toy>(name: &str, given: &[String]) {
         eprintln!("check: {e:#}");
         std::process::exit(1);
     }
-}
-
-/// The shell's text showing at a shot (the info line, the rules, the switches panel, the title), which the
-/// shell sets in the system's text and the frame lacks: tools/kit/shell_text.py draws it on the shot.
-fn shell_json<T: Toy>(host: &Host<T>, path: &Path, size: [u32; 2], ppp: f64) -> anyhow::Result<()> {
-    let title = host.toy.title();
-    let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
-    let switches = host.switches_text();
-    if line.is_none()
-        && rules.is_none()
-        && origins.is_none()
-        && switches.is_none()
-        && title.is_none()
-    {
-        return Ok(());
-    }
-    let s = |c: Option<&std::ffi::CStr>| {
-        serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()))
-    };
-    let j = serde_json::json!({ "size": size, "ppp": ppp, "line": s(line), "rules": s(rules),
-        "origins": s(origins), "switches": s(switches), "top": host.card_at_top(), "title": title });
-    std::fs::write(path, j.to_string())?;
-    Ok(())
 }
 
 #[cfg(test)]

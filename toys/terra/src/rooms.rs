@@ -226,6 +226,23 @@ impl crate::Terra {
         }
     }
 
+    /// Back to the Earth: the toy goes down into it, at the toy's own camera.
+    pub(crate) fn leave(&mut self, ctx: &mut Ctx, t: f64) {
+        self.leave_from(ctx, t, None);
+    }
+
+    /// Leaving a toy turns its rules back on (as closing the switches panel does), for it is still drawn
+    /// as it goes back into its light, after the kit has stopped seeing its switches.
+    pub(crate) fn rules_back_on(&mut self) {
+        if let Some(r) = self.room.as_mut() {
+            for (i, s) in r.switches().iter().enumerate() {
+                if !s.on {
+                    r.set_switch(i, true);
+                }
+            }
+        }
+    }
+
     fn settled(&self) -> Option<&dyn Room> {
         if matches!(self.state, crate::State::Inside) {
             return self.room.as_deref();

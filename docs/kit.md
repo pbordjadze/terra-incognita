@@ -204,16 +204,17 @@ by standing on the kit:
   asked as a card opens, hangs it from the top (Mold: over whichever half has less lit land). On Mold
   only, as a trial; any toy adopts it by giving `origins()`. Judged by two fresh critics on
   `plans/rules.json` (now "?", then the asterisk); the Simulator keeps `rules.png` and `origins.png`.
-- **The switches mark** (Nov 13, painting-company row 335; Paul chose it from three mockups: "B seems
-  best to me"): three joined dots, left of the other marks, for a toy whose crowd follows a few local
-  rules (`Toy::switches`, `set_switch`; `switches.rs`). Tapped, the rules show as native switches
-  over the live scene (the shell's panel, VoiceOver reads them as toggles); a rule off shows what it
+- **The switches mark** (Nov 13, painting-company row 335; chosen from three mockups): three joined dots, left of the other marks, for a toy whose crowd follows a few local
+  rules (`Toy::switches`, `set_switch`; `switches.rs`). Tapped, the rules show as small native
+  switches on a light glass in the corner, over the live scene (the shell's panel, VoiceOver reads them as toggles); a rule off shows what it
   was holding together; the panel stays while the reader plays and the scene keeps its touches; a
   second tap, or any card opening, closes it and turns every rule back on. The "?" then needs only
   the place, the gesture and a pointer to the dots. A plan taps `"switches"` and turns a rule with
   `"switch": [i, false]`; `shell_text.py` draws the panel. On Murmuration, Elkmont, Wave, Barchans,
   Fireflies, Bats, Throats, Huddle and Bubblers (`plans/switches.json` each). A rule whose switch
-  changes nothing you can see is left off the panel (Fireflies' blind spell).
+  changes nothing you can see within a few seconds is left off the panel (Fireflies' blind spell,
+  Huddle's stepping after a neighbour, Bubblers' bolting with one: those two show only after the
+  reader's own touch); `tools/toys/switch_ab.py` plays a toy with each rule on and off, side by side.
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.

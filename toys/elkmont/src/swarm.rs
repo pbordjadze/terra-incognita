@@ -32,7 +32,7 @@ const INTERFLASH_SPREAD: f64 = 0.03;
 const BURST_MIN: u32 = 4;
 const BURST_MAX: u32 = 8;
 /// The rules as the switches mark names them, in `Swarm::on`'s order.
-pub const RULES: [&str; 3] = ["Flash 4 to 8 times", "Rest till dark", "Start on a flash"];
+pub const RULES: [&str; 3] = ["Flash in bursts", "Rest till dark", "Start on a flash"];
 /// After a burst, the rest in which nothing sets him off (s, mean and spread), measured from the
 /// burst's last flash.
 const REST_S: f64 = 3.0;

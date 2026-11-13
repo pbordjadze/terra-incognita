@@ -704,14 +704,10 @@ impl Terra {
         };
     }
 
-    /// Back to the Earth: the toy goes down into it, at the toy's own camera.
-    fn leave(&mut self, ctx: &mut Ctx, t: f64) {
-        self.leave_from(ctx, t, None);
-    }
-
     /// Back to the Earth; a scene pinched part way back into its light (`squeezed`: the Earth's camera as
     /// the fingers left it) rises on from there.
-    fn leave_from(&mut self, ctx: &mut Ctx, t: f64, squeezed: Option<Camera>) {
+    pub(crate) fn leave_from(&mut self, ctx: &mut Ctx, t: f64, squeezed: Option<Camera>) {
+        self.rules_back_on();
         if let Some(c) = self.room.as_ref().and_then(|r| r.camera()) {
             self.globe.camera = c;
         }
