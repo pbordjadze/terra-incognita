@@ -103,7 +103,7 @@ impl Stem {
             trunk.push([0.23 + 0.05 * u + 0.012 * (u * 7.0 + seed as f32).sin(), y]);
         }
         let mut scars = Vec::new();
-        for _ in 0..9 {
+        for _ in 0..7 + (rnd() * 5.0) as usize {
             let i = (rnd() * 22.0) as usize + 1;
             // within the trunk's width there
             let half = 0.07;
@@ -112,7 +112,7 @@ impl Stem {
                     trunk[0][0] + (trunk[24][0] - trunk[0][0]) * i as f32 / 24.0 + 0.004,
                     trunk[i][1],
                 ],
-                half * (0.3 + 0.35 * rnd()),
+                half * (0.2 + 0.55 * rnd() * rnd()),
             ));
         }
         let mut branches = Vec::new();

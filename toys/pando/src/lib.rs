@@ -157,7 +157,7 @@ impl Pando {
         let s = Self::size(ctx);
         let v = View::of(s[0], s[1]);
         let t = &self.grove.trees[self.tree];
-        v.project([t.x + t.d, t.h * 0.72, t.z])
+        v.project([t.x + t.d + t.lean * t.h * 0.74, t.h * 0.74, t.z])
             .unwrap_or([s[0] * 0.5, s[1] * 0.5])
     }
 
@@ -547,7 +547,7 @@ impl Toy for Pando {
         // a near tree a little below the middle, for the plans to go into
         if let Some(i) = self.grove.hit(&v, [w * 0.5, h * 0.62]) {
             let t = &self.grove.trees[i];
-            if let Some(c) = v.project([t.x + t.d, t.h * 0.72, t.z]) {
+            if let Some(c) = v.project([t.x + t.d + t.lean * t.h * 0.74, t.h * 0.74, t.z]) {
                 out.push(("tree".to_string(), pt(c)));
             }
         }

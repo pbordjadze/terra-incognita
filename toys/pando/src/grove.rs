@@ -21,6 +21,8 @@ pub struct Tree {
     /// Height (m) and the crown's half-width (m).
     pub h: f32,
     pub r: f32,
+    /// How far it leans from upright (radians, across the view).
+    pub lean: f32,
     /// Sway: displacement at the top (m, along the wind) and its rate; its own frequency (Hz).
     pub d: f32,
     pub v: f32,
@@ -98,27 +100,35 @@ impl Grove {
             k = k.wrapping_add(0x9e37_79b9);
             hash(k)
         };
+        // a wild stand, not rows: stems scattered at random, about one to every nine square metres,
+        // of mixed heights, leaning a little each their own way
         let mut z = NEAR;
         while z < FAR {
+            let dz = 2.0;
             let half = 0.62 * z + 12.0;
-            let mut x = -half;
-            while x < half {
-                let h = 13.0 + 7.0 * rnd();
+            // farther off, only some show between the crowns: thin them as they go
+            let n = (2.0 * half * dz / (SPACING * SPACING) / (1.0 + z / 70.0)).round() as usize;
+            for _ in 0..n {
+                let young = rnd() < 0.12;
+                let h = if young {
+                    6.0 + 5.0 * rnd()
+                } else {
+                    13.0 + 8.0 * rnd()
+                };
                 trees.push(Tree {
-                    x: x + (rnd() - 0.5) * SPACING * 0.8,
-                    z: z + (rnd() - 0.5) * SPACING * 0.8,
+                    x: (rnd() * 2.0 - 1.0) * half,
+                    z: z + rnd() * dz,
                     h,
-                    r: h * (0.08 + 0.03 * rnd()),
+                    r: h * (0.07 + 0.05 * rnd()),
+                    lean: (rnd() - 0.5) * 0.12,
                     d: 0.0,
                     v: 0.0,
                     // a stem this size sways about once every two to four seconds
                     freq: 0.25 + 0.2 * rnd(),
                     seed: (rnd() * 1.0e9) as u32,
                 });
-                x += SPACING;
             }
-            // farther off, only every few rows show between the crowns: thin them as they go
-            z += SPACING * (1.0 + z / 70.0);
+            z += dz;
         }
         // far to near, so nearer crowns cover farther ones
         trees.sort_by(|a, b| b.z.total_cmp(&a.z));
@@ -141,7 +151,7 @@ impl Grove {
     pub fn hit(&self, v: &View, q: [f32; 2]) -> Option<usize> {
         let mut best: Option<(usize, f32)> = None;
         for (i, t) in self.trees.iter().enumerate().rev() {
-            let Some(c) = v.project([t.x, t.h * 0.72, t.z]) else {
+            let Some(c) = v.project([t.x + t.lean * t.h * 0.74, t.h * 0.74, t.z]) else {
                 continue;
             };
             let rx = v.f * t.r * 1.2 / t.z;
@@ -163,7 +173,7 @@ impl Grove {
         for tr in &self.trees {
             let k = fog(tr.z);
             let foot = v.project([tr.x, 0.0, tr.z]);
-            let top = v.project([tr.x + tr.d, tr.h, tr.z]);
+            let top = v.project([tr.x + tr.d + tr.lean * tr.h, tr.h, tr.z]);
             let (Some(foot), Some(top)) = (foot, top) else {
                 continue;
             };
@@ -180,7 +190,9 @@ impl Grove {
             // its crown: a cloud of small leaf clusters, swaying with the stem
             let rx = s * tr.r;
             let ry = s * tr.h * 0.2;
-            let c = v.project([tr.x, tr.h * 0.74, tr.z]).unwrap_or(top);
+            let c = v
+                .project([tr.x + tr.lean * tr.h * 0.74, tr.h * 0.74, tr.z])
+                .unwrap_or(top);
             let blob = (rx * 0.13).max(0.9 * ppp);
             let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
             let w = wind.at([tr.x, tr.z]);
@@ -235,6 +247,10 @@ impl Grove {
                 } else {
                     [base[0] * lit, base[1] * lit, base[2] * lit]
                 };
+                // where a gust is passing, the whole crown pales and brightens, so the gust is a band
+                // of light running over the grove, not only leaves switching
+                let gust = ((w - 2.2) / 4.0).clamp(0.0, 1.0);
+                let col = mix3(col, [1.0, 0.93, 0.70], 0.4 * gust * (0.4 + 0.6 * sun));
                 let col = mix3(col, HAZE, k);
                 let q = [c[0] + ox * rx + sway, c[1] + oy * ry];
                 // an underside turned up is a small pale glint, a leaf's width
