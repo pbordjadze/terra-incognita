@@ -15,7 +15,10 @@ use toy_kit::paint::Painter;
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 
 /// Where the toy is: Nazaré's headland (lon, lat).
-pub const PLACE: (f64, f64) = (-9.0745, 39.6040);
+/// Sea texels' alpha at the deepest (land's start at 128).
+const SEA_A: f64 = 110.0;
+
+pub const PLACE: (f64, f64) = (-9.0850, 39.6040);
 
 /// Seconds of sea a second on the screen.
 const RATE: f64 = 6.0;
@@ -133,7 +136,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let ground = (vec3(0.040, 0.040, 0.036) + vec3(0.13, 0.09, 0.055) * s * s) * (0.92 + 0.16 * noise2(px * 0.08));
   // land and sea meet over a pixel or two, not on the texels' steps
   let landness = select(smoothstep(0.47, 0.53, a.a + 0.6 * fwidth(a.a)), 1.0, off);
-  let d = min(a.a, 0.498) / 0.498;
+  let d = min(a.a, 0.431) / 0.431;
   let deep = clamp(d, 0.0, 1.0);
   // the sea: grey-green over the shelf, darker where it is deep (the canyon shows only as darker
   // water), warmer toward the afterglow
@@ -227,11 +230,13 @@ fn texels(floor: &Floor, shade: &[u8], f: &Field) -> Vec<u8> {
             let r = l + w * 4;
             if !floor.sea(i) {
                 data[l + 3] = 128 + shade[i] / 2;
-                data[r + 3] = 255;
+                // land's focus reads as open water's, so the filter bleeds nothing brighter into the shore
+                data[r + 3] = (255.0 / sea::REFRACT_MAX) as u8;
                 continue;
             }
             let depth = floor.depth(i).min(800.0);
-            data[l + 3] = (127.0 * (depth / 800.0).sqrt()) as u8;
+            // well below land's 0.47, so the deepest sea never blends toward ground
+            data[l + 3] = (SEA_A * (depth / 800.0).sqrt()) as u8;
             let tau = f.tau[i];
             if tau.is_finite() {
                 let a = std::f64::consts::TAU * tau / f.period;
@@ -317,7 +322,12 @@ impl Nazare {
             for x in (cx - 30).max(0)..(cx + 4).min(w) {
                 let i = (y * w + x) as usize;
                 let hh = self.field.height[i];
-                if self.field.tau[i].is_finite() && best.is_none_or(|(_, b)| hh > b) {
+                // the wave the canyon bends there, not merely the shallowest water's cap
+                let hh = hh * self.field.focus[i];
+                if self.floor.sea(i)
+                    && self.field.tau[i].is_finite()
+                    && best.is_none_or(|(_, b)| hh > b)
+                {
                     best = Some((i, hh));
                 }
             }
@@ -512,6 +522,7 @@ impl Toy for Nazare {
                     self.field = field;
                     self.upload(&ctx.gpu, &data);
                     self.peak = self.find_peak();
+                    self.last_w = 0.0;
                 }
             }
         }

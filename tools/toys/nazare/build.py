@@ -38,8 +38,8 @@ WCS = ('https://ows.emodnet-bathymetry.eu/wcs?service=WCS&version=1.0.0&request=
        '&coverage=emodnet:mean&crs=EPSG:4326&format=image/tiff&interpolation=nearest'
        '&BBOX={w},{s},{e},{n}&resx={r}&resy={r}')
 PLACES = {
-    'headland': [-9.0745, 39.6040],  # Nazaré's lighthouse, the Forte de São Miguel Arcanjo
-    'praia_do_norte': [-9.0720, 39.6105],
+    'headland': [-9.0850, 39.6040],  # Nazaré's lighthouse, the Forte de São Miguel Arcanjo
+    'praia_do_norte': [-9.0845, 39.6105],
     'town': [-9.0700, 39.6010],
 }
 
