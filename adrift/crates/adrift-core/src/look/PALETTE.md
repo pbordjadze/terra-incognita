@@ -1,9 +1,9 @@
 # Visual: the palette, with its contrast measured
 
-The colours are in `palette.json` (one spec: the look's Rust reads it, `tools/adrift/study.py`
-mirrors it, `tools/adrift/palette.py` holds it to the rule). The sea's own tones are Terra's
+The colours are in `palette.json` (one spec: the look's Rust reads it,
+`tools/adrift/palette.py` holds it to the rule). The sea's own tones are Terra's
 (`Globe.metal`'s `G_` and `N_` palettes), which the ground pass keeps; everything here is laid on
-them. The rule (CLAUDE.md › Design rules): an ink 4.5:1 against its ground (the date, the credits:
+them. The rule (WCAG AA): an ink 4.5:1 against its ground (the date, the credits:
 Libertinus Serif on a halo of the open sea's tone), a mark that must be read at a glance 3:1
 (WCAG 1.4.11: the float's rim against the sea, the lamp against the rim, a bead's edge, the dark
 line under the silver, a speck's grain). A wash or a glow (the glass, the lamp's light on the

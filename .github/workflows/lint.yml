@@ -1,11 +1,15 @@
 name: Lint
 
 # The standard linters (ci/lint.sh: rustfmt, clippy -D warnings, ruff, shellcheck, actionlint, SwiftLint) on
-# Linux, a few minutes. Called first by ci.yml, toys.yml, adrift.yml and packs.yml, whose other jobs wait for
-# it, so a lint failure stops a push before any macOS runner is taken.
+# Linux, a few minutes. Called first by toys.yml and adrift.yml, whose other jobs wait for it, so a lint
+# failure stops a push before any macOS runner is taken; on its own for a push those two don't run for.
 
 on:
   workflow_call:
+  push:
+    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    # toys.yml and adrift.yml call this first for these
+    paths-ignore: ['Globe/**', 'toys/**', 'tools/toys/**', 'tools/kit/**', 'adrift/**', 'tools/adrift/**']
   workflow_dispatch:
 
 permissions:

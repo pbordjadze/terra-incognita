@@ -1,6 +1,6 @@
 # Dependabot proposes each week's bumps as one grouped pull request per ecosystem (CLAUDE.md › Staying
 # current says how one is taken). Not covered here, so bumped by hand: Rust (rust-toolchain.toml), Xcode
-# (ci/xcode.sh), SwiftLint (ci.yml's lint job), naga-cli and wasm-bindgen-cli (their install lines).
+# (ci/xcode.sh), SwiftLint (lint.yml), naga-cli and wasm-bindgen-cli (their install lines).
 version: 2
 updates:
   - package-ecosystem: cargo
@@ -14,8 +14,6 @@ updates:
       - dependency-name: wasm-bindgen
   - package-ecosystem: github-actions
     directory: /
-    # generated from painting-company's shared copy (CLAUDE.md › CI): its actions are bumped there
-    exclude-paths: [.github/workflows/qa-explore.yml]
     schedule: { interval: weekly, day: monday }
     groups:
       actions:

@@ -15,7 +15,7 @@ name: Toys
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
-    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
+    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml', 'Globe/**', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
       toy:

@@ -17,7 +17,6 @@ What was already past a limit when it came in is listed in ci/ceilings/<limit>.t
 functions of that name in the file). A listed thing may not pass its ceiling; when it gets better, `--tighten`
 lowers the ceiling in the same commit (CI says when one can come down). Raising a ceiling or listing something
 new takes a reason after a `#` on its line, which review reads: the ratchet is meant to turn one way.
-ci/qa/ is generated from painting-company's shared copy and checked there.
 """
 import csv
 import io
@@ -35,7 +34,7 @@ LINE = re.compile(r'^(\S+)((?:[ \t]+\d+)+)[ \t]*(#.*)?$')
 
 def tracked(patterns, only):
     out = subprocess.run(['git', 'ls-files', '-z', *patterns], cwd=ROOT, capture_output=True, text=True, check=True).stdout
-    files = [f for f in out.split('\0') if f and not f.startswith('ci/qa/')]
+    files = [f for f in out.split('\0') if f]
     if only is not None:
         files = [f for f in files if f in only]
     return [f for f in files if (ROOT / f).is_file()]

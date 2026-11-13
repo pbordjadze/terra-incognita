@@ -9,14 +9,13 @@
 #   ci/silenced.py                    every lint silenced in the code says why, beside it
 #   ci/ratchet.py                     file length (800), function size and complexity (100, 20; lizard) and the
 #                                     Python's types (pyright): what is past a limit may only get better
-# ci/qa/ and qa-explore.yml are generated from painting-company's shared copy and linted there.
 #
 #   bash ci/lint.sh            # everything; the exit status says whether all passed
 #   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced, ratchet
 #   bash ci/lint.sh fix        # rustfmt and ruff's safe fixes in place, then everything
 # The versions are pinned: Rust by rust-toolchain.toml, ruff, shellcheck, actionlint, lizard and pyright by
 # tools/requirements.txt (python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt), SwiftLint
-# by SWIFTLINT in ci.yml's lint job.
+# by SWIFTLINT in lint.yml.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 only="${1:-all}"
@@ -51,16 +50,16 @@ if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = ratchet ]; then
   run "ratchet: file length, complexity, types" python3 ci/ratchet.py
 fi
 if want shell; then
-  run shellcheck bash -c "git ls-files -z '*.sh' ci/hooks ':!ci/qa/*' | xargs -0 shellcheck"
+  run shellcheck bash -c "git ls-files -z '*.sh' ci/hooks | xargs -0 shellcheck"
 fi
 if want actions; then
-  run actionlint bash -c "actionlint \$(git ls-files '.github/workflows/*.yml' ':!.github/workflows/qa-explore.yml')"
+  run actionlint bash -c "actionlint \$(git ls-files '.github/workflows/*.yml')"
 fi
 if want swift; then
   if command -v swiftlint > /dev/null; then
     run swiftlint swiftlint lint --strict --quiet
   else
-    echo "== swiftlint: not on PATH, skipped (ci.yml's lint job runs it)"
+    echo "== swiftlint: not on PATH, skipped (lint.yml runs it)"
   fi
 fi
 

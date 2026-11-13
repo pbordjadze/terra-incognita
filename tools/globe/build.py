@@ -3,7 +3,7 @@
     python3 tools/globe/build.py <cache-dir> [<libertinus.zip>]
 
 Everything is equirectangular, 4096 x 2048 (longitude across from -180, latitude down from 90), so
-the shader (App/TerraIncognita/Globe/Globe.metal) can draw the orthographic globe by inverting the
+a shader (Adrift's and the toy kit's globe) can draw the orthographic globe by inverting the
 projection per pixel. The app uploads each image's decoded bytes as they are (no colour management,
 which would bend the distances): geo and terrain are RGBA with alpha 255 (so premultiplying changes
 nothing), ids is grey.
@@ -18,8 +18,7 @@ nothing), ids is grey.
   ids.png      grey: the country under each pixel, 1 + its index in globe.json (0: none)
   globe.json   countries (name, long name, continent, subregion, population, capital, label point,
                label rank), seas and oceans (name, rank, label point), capitals (name, point)
-  fonts/       Libertinus Serif (the captions and names) and Uncial Antiqua (the seas), with their
-               licences
+  fonts/       Libertinus Serif, with its licence
 
 Sources (fetched into the cache if missing): Natural Earth 1:50m land, lakes, countries, boundary
 lines, rivers and marine areas, and 1:110m populated places; NASA's GEBCO elevation and
@@ -32,7 +31,6 @@ steepness.)
 """
 import itertools
 import json
-import shutil
 import sys
 import urllib.request
 import zipfile
@@ -282,13 +280,10 @@ def main():
         z = zipfile.ZipFile(sys.argv[2])
         for name in z.namelist():
             base = name.rsplit('/', 1)[-1]
-            if base in ('LibertinusSerif-Regular.otf', 'LibertinusSerif-Italic.otf', 'LibertinusSerif-Semibold.otf'):
+            if base in ('LibertinusSerif-Regular.otf', 'LibertinusSerif-Italic.otf'):
                 (fonts / base).write_bytes(z.read(name))
             elif base == 'OFL.txt':
                 (fonts / 'OFL-Libertinus.txt').write_bytes(z.read(name))
-    uncial = ROOT / 'tools' / 'plates' / 'kells-night' / 'fonts'
-    shutil.copy(uncial / 'UncialAntiqua-Regular.ttf', fonts)
-    shutil.copy(uncial / 'OFL-UncialAntiqua.txt', fonts)
     for p in sorted(OUT.rglob('*')):
         if p.is_file():
             print(p.relative_to(OUT), p.stat().st_size)

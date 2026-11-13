@@ -97,7 +97,7 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   app name and bundle id), `manifest.json` (the data it loads, by name, from where in this repository;
   its own built data under `<toy>/data/`, never hand-edited, built by a tool in `tools/toys/<toy>/`),
   `icon.png` (1024 px, drawn from code: `tools/toys/icon.py`), `plans/` (played in CI), and the
-  toy's own `ROUNDS.md` (one line a round) and `SOURCES.md` (every dataset and recording: what is
+  toy's own `SOURCES.md` (every dataset and recording: what is
   measured, what is drawn, the licence and the credit).
 - `ios/`: the one Swift shell for every toy (a CAMetalLayer, touches, haptics, the sound through
   AVAudioEngine in the ambient category, the state kept in the background) and `build.sh <toy>`.
