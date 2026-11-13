@@ -7,6 +7,7 @@ use std::sync::Arc;
 use toy_kit::paint::Painter;
 use toy_kit::{Assets, Ctx, Globe, LonLat};
 
+use crate::likeness;
 use crate::rooms::{self, Room};
 
 pub type Opener = fn(&Ctx, &Arc<dyn Assets>) -> anyhow::Result<Box<dyn Room>>;
@@ -77,7 +78,7 @@ pub const FIREFLIES: usize = 3;
 /// its colour, its note), its name in tools/toys/terra/manifest.py; a likeness of its own in `paint` is
 /// optional (without one it is a breathing light of its colour).
 pub fn doors() -> Vec<Door> {
-    vec![
+    let mut all = vec![
         Door {
             id: "whales",
             name: "Whales",
@@ -159,7 +160,9 @@ pub fn doors() -> Vec<Door> {
             degree: 9,
             open: rooms::open::<frost::Frost>,
         },
-    ]
+    ];
+    all.extend(likeness::doors());
+    all
 }
 
 /// The lights' life: what moves in them, their glints, a touch's stir, a bare tap's ring.
@@ -745,44 +748,8 @@ impl Life {
                         }
                     }
                 }
-                "frost" => {
-                    // a window of dark glass at -50°: frost growing on it in six-armed feathers, then fading
-                    // as if a finger had warmed it, and growing back
-                    let w = a * halo;
-                    p.disc(
-                        c,
-                        (r * 1.05 * k) as f32,
-                        (r * 0.2 * k) as f32,
-                        [0.06, 0.10, 0.20, 0.95 * w],
-                    );
-                    let ph = (tm / 9.0).rem_euclid(1.0);
-                    let grow = smooth(0.0, 0.7, ph) * (1.0 - smooth(0.85, 1.0, ph));
-                    let ice = [0.80, 0.90, 1.0, 0.9 * a];
-                    for arm in 0..6 {
-                        let ang = arm as f64 * std::f64::consts::FRAC_PI_3 + 0.3;
-                        let (sa, ca) = ang.sin_cos();
-                        let len = r * 0.85 * grow;
-                        let tip = [c[0] + (ca * len * k) as f32, c[1] + (sa * len * k) as f32];
-                        p.line(c, tip, 0.9 * kf, 0.8, ice);
-                        for b in 1..4 {
-                            let at = len * b as f64 / 4.0;
-                            let bl = (len - at) * 0.45;
-                            let o = [c[0] + (ca * at * k) as f32, c[1] + (sa * at * k) as f32];
-                            for side in [-1.0f64, 1.0] {
-                                let ba = ang + side * 1.0;
-                                p.line(
-                                    o,
-                                    [
-                                        o[0] + (ba.cos() * bl * k) as f32,
-                                        o[1] + (ba.sin() * bl * k) as f32,
-                                    ],
-                                    0.6 * kf,
-                                    0.8,
-                                    ice,
-                                );
-                            }
-                        }
-                    }
+                "frost" | "catatumbo" | "bubblers" | "barchans" => {
+                    likeness::draw(p, d.id, c, r, k, kf, a, halo, tm)
                 }
                 _ => {
                     // a toy without a likeness of its own yet: a light of its colour, breathing

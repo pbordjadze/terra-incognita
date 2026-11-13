@@ -36,6 +36,7 @@
     "land-12.jpg": "Globe/ground/12.jpg",
     "mold-ground.png": "toys/mold/data/ground.png",
     "night.jpg": "Globe/ground/night.jpg",
+    "opening.bin": "toys/barchans/data/opening.bin",
     "plain.jpg": "toys/meander/data/plain.jpg",
     "rivers.bin": "toys/terra/data/rivers.bin",
     "routes.json": "toys/whales/data/routes.json",

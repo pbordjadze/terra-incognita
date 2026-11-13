@@ -14,10 +14,10 @@
 
 pub mod assets;
 pub mod backdrop;
-pub mod field;
 pub mod budget;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod check;
+pub mod field;
 #[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
@@ -84,8 +84,7 @@ pub fn log(line: &str) {
 /// A launch step in the device's log, with the memory the app may still take there (iOS's
 /// `os_proc_available_memory`, what the system kills on), so a toy that closes while it starts says
 /// how far it got and how much room was left: the last line in `toy-log.txt` is the step it died in.
-/// A toy may call it between its own heavy steps. Off the device it is a line on stderr only when
-/// `KIT_STEPS=1`.
+/// A toy may call it between its own heavy steps. Off the device: a line on stderr if `KIT_STEPS=1`.
 pub fn step(what: &str) {
     #[cfg(target_os = "ios")]
     log(&format!(

@@ -1,0 +1,116 @@
+{
+ "_": "Bubblers (painting-company row 327), its light over Phuket's west coast: a window onto the sand at low tide, the crabs' balls laid out from their burrows in spokes. Turned to from the opening Earth, then touched, the window shows the toy itself and grows as the Earth turns to it and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
+ "seconds": 17,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.3,
+   "drag": [
+    [
+     40,
+     450
+    ],
+    [
+     340,
+     450
+    ]
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 1.0,
+   "drag": [
+    [
+     40,
+     450
+    ],
+    [
+     340,
+     450
+    ]
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 1.7,
+   "drag": [
+    [
+     40,
+     450
+    ],
+    [
+     340,
+     450
+    ]
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 2.3999999999999995,
+   "drag": [
+    [
+     40,
+     450
+    ],
+    [
+     340,
+     450
+    ]
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 3.0999999999999996,
+   "drag": [
+    [
+     40,
+     450
+    ],
+    [
+     340,
+     450
+    ]
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 5.0,
+   "tap": "bubblers"
+  },
+  {
+   "t": 12.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 4.9,
+   "name": "the-light"
+  },
+  {
+   "t": 6.2,
+   "name": "window"
+  },
+  {
+   "t": 7.0,
+   "name": "growing"
+  },
+  {
+   "t": 10.5,
+   "name": "inside"
+  },
+  {
+   "t": 13.0,
+   "name": "going-back"
+  },
+  {
+   "t": 16.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 4.5,
+  "to": 17,
+  "every": 0.1
+ }
+}

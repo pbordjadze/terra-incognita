@@ -66,7 +66,7 @@ impl Barchans {
     fn spawn(&mut self) -> Grain {
         let d = &mut self.dunes;
         for _ in 0..12 {
-            let i = (d.rng.next() % (d.w * d.h) as u64) as usize;
+            let i = (d.rng.next_u64() % (d.w * d.h) as u64) as usize;
             if d.slabs[i] > 1 {
                 return Grain {
                     p: [(i % d.w) as f32 + d.rng.f(), (i / d.w) as f32 + d.rng.f()],
@@ -168,7 +168,10 @@ impl Toy for Barchans {
         // the wind turns toward where the finger sent it, over a second or so
         let w = self.dunes.wind;
         let k = (dt * 2.2).min(1.0);
-        let mut nw = [w[0] + (self.want[0] - w[0]) * k, w[1] + (self.want[1] - w[1]) * k];
+        let mut nw = [
+            w[0] + (self.want[0] - w[0]) * k,
+            w[1] + (self.want[1] - w[1]) * k,
+        ];
         let l = (nw[0] * nw[0] + nw[1] * nw[1]).sqrt().max(1e-4);
         nw = [nw[0] / l, nw[1] / l];
         self.dunes.wind = nw;
@@ -227,7 +230,10 @@ impl Toy for Barchans {
         let len = 0.9 + 1.6 * self.gust;
         for g in &self.grains {
             let a = (g.age / g.life * std::f32::consts::PI).sin() * (0.10 + 0.18 * self.gust);
-            let p0 = [g.p[0].rem_euclid(d.w as f32) * s, g.p[1].rem_euclid(d.h as f32) * s];
+            let p0 = [
+                g.p[0].rem_euclid(d.w as f32) * s,
+                g.p[1].rem_euclid(d.h as f32) * s,
+            ];
             let p1 = [p0[0] - d.wind[0] * len * s, p0[1] - d.wind[1] * len * s];
             self.painter
                 .glow(p0, p1, 0.18 * s, 0.25 * s, [1.0, 0.93, 0.78, a]);

@@ -44,14 +44,14 @@ pub struct Bolt {
 #[derive(Clone)]
 pub struct Rng(pub u64);
 impl Rng {
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 ^= self.0 >> 12;
         self.0 ^= self.0 << 25;
         self.0 ^= self.0 >> 27;
         self.0.wrapping_mul(0x2545_F491_4F6C_DD1D)
     }
     pub fn f(&mut self) -> f64 {
-        (self.next() >> 11) as f64 / (1u64 << 53) as f64
+        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
     }
     pub fn range(&mut self, a: f64, b: f64) -> f64 {
         a + (b - a) * self.f()
@@ -89,8 +89,8 @@ impl Grid {
                     if self.fixed[i] {
                         continue;
                     }
-                    let avg =
-                        0.25 * (self.phi[i - 1] + self.phi[i + 1] + self.phi[i - nx] + self.phi[i + nx]);
+                    let avg = 0.25
+                        * (self.phi[i - 1] + self.phi[i + 1] + self.phi[i - nx] + self.phi[i + nx]);
                     self.phi[i] += OMEGA * (avg - self.phi[i]);
                 }
             }
@@ -98,9 +98,24 @@ impl Grid {
     }
 
     /// Marks the free cells round a new channel cell `i` (of channel index `k`) as candidates.
-    fn open_round(&mut self, i: usize, k: usize, front: &mut Vec<(usize, usize)>, seen: &mut [bool]) {
+    fn open_round(
+        &mut self,
+        i: usize,
+        k: usize,
+        front: &mut Vec<(usize, usize)>,
+        seen: &mut [bool],
+    ) {
         let (x, z) = ((i % self.nx) as i64, (i / self.nx) as i64);
-        for (dx, dz) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)] {
+        for (dx, dz) in [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+            (1, 1),
+        ] {
             let (a, b) = (x + dx, z + dz);
             if a < 1 || b < 1 || a >= self.nx as i64 - 1 || b >= self.nz as i64 - 1 {
                 continue;
@@ -336,7 +351,9 @@ impl Bolt {
 
     /// Where the channel touched the water, across the grid (cells).
     pub fn foot(&self) -> f32 {
-        self.ground.map(|k| self.cells[k].x).unwrap_or(self.nx as f32 * 0.5)
+        self.ground
+            .map(|k| self.cells[k].x)
+            .unwrap_or(self.nx as f32 * 0.5)
     }
 }
 

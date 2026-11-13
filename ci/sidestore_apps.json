@@ -177,6 +177,39 @@
       "iconSource": "toys/throats/icon.png",
       "tintColor": "#F07A1A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "catatumbo-build",
+      "name": "Catatumbo",
+      "bundleIdentifier": "com.pbordjadze.toy.catatumbo",
+      "subtitle": "Lightning over Lake Maracaibo; your finger is the ground",
+      "localizedDescription": "Night over Lake Maracaibo, where the Catatumbo meets it and lightning flickers most nights of the year. Touch the water and a stroke forks down to your finger, grown by the rule real lightning follows; hold and it strikes again down the same channel. Every piece of the channel thunders, the near ones first. Touch the sky for a crawler under the cloud. Working title; a toy in the making.",
+      "icon": "catatumbo-icon.png",
+      "iconSource": "toys/catatumbo/icon.png",
+      "tintColor": "#9B86FF",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "bubblers-build",
+      "name": "Bubblers",
+      "bundleIdentifier": "com.pbordjadze.toy.bubblers",
+      "subtitle": "Sand-bubbler crabs drawing starbursts at low tide",
+      "localizedDescription": "Low tide on a Phuket beach, seen from above. Sand-bubbler crabs feed out from their burrows and leave the sifted sand behind as little balls, laid in spokes, and the beach fills with starbursts nobody drew. Tap for a footstep and they bolt, their neighbours after them; drag to draw in the sand; shake and the tide comes in. Working title; a toy in the making.",
+      "icon": "bubblers-icon.png",
+      "iconSource": "toys/bubblers/icon.png",
+      "tintColor": "#D8C6A2",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "barchans-build",
+      "name": "Barchans",
+      "bundleIdentifier": "com.pbordjadze.toy.barchans",
+      "subtitle": "Crescent dunes walking the Sahara; drag to turn the wind",
+      "localizedDescription": "Dunes near Tarfaya in the Atlantic Sahara, from above in a low sun. One rule (the wind lifts sand, drops it downwind, and it sticks best on sand) makes crescents that walk, merge and calve. Drag to turn the wind and watch them turn; hold still to pour sand. A big dune's sliding face hums at a hundred hertz. Working title; a toy in the making.",
+      "icon": "barchans-icon.png",
+      "iconSource": "toys/barchans/icon.png",
+      "tintColor": "#E9A262",
+      "minOSVersion": "17.0"
     }
   ]
 }

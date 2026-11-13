@@ -60,7 +60,7 @@ impl Toy for Bubblers {
         let size_pt = ctx.points();
         let k = size_pt[0] as f32 / WIDTH_CM;
         let h = size_pt[1] as f32 / k;
-        let mut beach = Beach::new(WIDTH_CM, h, 0xB0BB_1E5);
+        let mut beach = Beach::new(WIDTH_CM, h, 0x0B0B_B1E5);
         let dt = 0.05;
         for _ in 0..(OPENING_S / dt) as usize {
             beach.step(dt);
@@ -187,7 +187,16 @@ impl Toy for Bubblers {
                 self.size_pt[0] as f32 / self.k * 0.5,
                 self.size_pt[1] as f32 / self.k * 0.5,
             ],
-            p: [b.front().unwrap_or(-100.0), b.h, CELL, 0.0, 0.0, 0.0, 0.0, 0.0],
+            p: [
+                b.front().unwrap_or(-100.0),
+                b.h,
+                CELL,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
         };
         let front = b.front().unwrap_or(f32::MAX);
         // the burrows
@@ -195,15 +204,23 @@ impl Toy for Bubblers {
             if c.home[1] > front {
                 continue;
             }
-            self.painter
-                .disc(px([c.home[0] + 0.05, c.home[1] + 0.06]), 0.33 * s, 0.12 * s, [0.95, 0.9, 0.8, 0.35]);
+            self.painter.disc(
+                px([c.home[0] + 0.05, c.home[1] + 0.06]),
+                0.33 * s,
+                0.12 * s,
+                [0.95, 0.9, 0.8, 0.35],
+            );
             self.painter
                 .disc(px(c.home), 0.27 * s, 0.1 * s, [0.12, 0.10, 0.08, 0.9]);
         }
         // the balls: a shadow, the ball, its light
         for p in &b.pellets {
             let grow = ((b.t - p.born) / 0.18).clamp(0.0, 1.0);
-            let melt = if p.gone >= 0.0 { 1.0 - ((b.t - p.gone) / 1.5).clamp(0.0, 1.0) } else { 1.0 };
+            let melt = if p.gone >= 0.0 {
+                1.0 - ((b.t - p.gone) / 1.5).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
             let r = p.r * grow * (0.5 + 0.5 * melt);
             if r <= 0.0 {
                 continue;
@@ -271,7 +288,12 @@ fn paint_crab(p: &mut Painter, c: &beach::Crab, s: f32, t: f32) {
     let body = 0.48 * c.size;
     let f = c.facing;
     let (fx, fy) = (f.cos(), f.sin());
-    let at = |along: f32, across: f32| [c.p[0] + fx * along - fy * across, c.p[1] + fy * along + fx * across];
+    let at = |along: f32, across: f32| {
+        [
+            c.p[0] + fx * along - fy * across,
+            c.p[1] + fy * along + fx * across,
+        ]
+    };
     match c.state {
         State::Hidden(_) => {}
         State::Peek(_) => {
@@ -284,11 +306,17 @@ fn paint_crab(p: &mut Painter, c: &beach::Crab, s: f32, t: f32) {
         }
         _ => {
             // the shadow, the legs, the body, its mottling, the claws and the eyes
-            p.disc(px([c.p[0] + 0.12, c.p[1] + 0.15]), body * 1.25 * s, body * 0.5 * s, [0.25, 0.2, 0.15, 0.28]);
+            p.disc(
+                px([c.p[0] + 0.12, c.p[1] + 0.15]),
+                body * 1.25 * s,
+                body * 0.5 * s,
+                [0.25, 0.2, 0.15, 0.28],
+            );
             for side in [-1.0f32, 1.0] {
                 for leg in 0..4 {
                     let a = (leg as f32 - 1.5) * 0.42;
-                    let swing = (c.gait + leg as f32 * 1.7 + side * 0.8).sin() * 0.18 * c.moving.min(1.0);
+                    let swing =
+                        (c.gait + leg as f32 * 1.7 + side * 0.8).sin() * 0.18 * c.moving.min(1.0);
                     let root = at(a * body * 0.8, side * body * 0.7);
                     let knee = at(a * body * 1.4 + swing * 0.5, side * body * 1.45);
                     let foot = at(a * body * 1.9 + swing, side * body * 1.95);
@@ -298,11 +326,24 @@ fn paint_crab(p: &mut Painter, c: &beach::Crab, s: f32, t: f32) {
                 }
             }
             p.disc(px(c.p), body * s, 0.06 * s, [0.80, 0.70, 0.55, 1.0]);
-            for (i, (u, v)) in [(0.15, 0.2), (-0.2, -0.15), (0.05, -0.28), (-0.25, 0.22)].iter().enumerate() {
+            for (i, (u, v)) in [(0.15, 0.2), (-0.2, -0.15), (0.05, -0.28), (-0.25, 0.22)]
+                .iter()
+                .enumerate()
+            {
                 let r = body * (0.18 + 0.05 * i as f32);
-                p.disc(px(at(u * body, v * body)), r * s, r * 0.6 * s, [0.55, 0.44, 0.33, 0.55]);
+                p.disc(
+                    px(at(u * body, v * body)),
+                    r * s,
+                    r * 0.6 * s,
+                    [0.55, 0.44, 0.33, 0.55],
+                );
             }
-            p.disc(px(at(-0.1 * body, -0.1 * body)), body * 0.5 * s, body * 0.5 * s, [1.0, 0.96, 0.88, 0.25]);
+            p.disc(
+                px(at(-0.1 * body, -0.1 * body)),
+                body * 0.5 * s,
+                body * 0.5 * s,
+                [1.0, 0.96, 0.88, 0.25],
+            );
             for side in [-1.0f32, 1.0] {
                 let claw = at(body * 0.95, side * body * 0.35);
                 p.disc(px(claw), body * 0.22 * s, 0.03 * s, [0.86, 0.78, 0.66, 1.0]);

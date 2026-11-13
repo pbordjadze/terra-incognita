@@ -90,7 +90,7 @@ impl Catatumbo {
     }
 
     fn strike_at(&mut self, ctx: &mut Ctx, p: [f64; 2], finger: Option<u64>, power: f32) {
-        let seed = self.rng.next();
+        let seed = self.rng.next_u64();
         if p[1] > self.horizon() + 1.0 {
             let bolt = Bolt::strike(seed);
             let dist = self.distance_at(p[1]);
@@ -181,7 +181,9 @@ impl Catatumbo {
                     s.dist + (c.z as f64 - b.nz as f64 * 0.5) * CELL_M,
                 ),
             };
-            let d = (x * x + (alt - EYE_M).powi(2) + depth * depth).sqrt().max(20.0);
+            let d = (x * x + (alt - EYE_M).powi(2) + depth * depth)
+                .sqrt()
+                .max(20.0);
             let strength = if c.main { 1.0 } else { 0.35 + c.current };
             // a little jitter: the channel's kinks spread each piece's arrival
             let j = (hash(s.seed ^ k as u64) - 0.5) * 0.02;
@@ -208,7 +210,10 @@ impl Catatumbo {
         let hy = self.horizon();
         if self.rng.f() < 0.4 {
             // a far ground stroke, just below the horizon
-            let p = [self.rng.range(w * 0.1, w * 0.9), hy + self.rng.range(4.0, 22.0)];
+            let p = [
+                self.rng.range(w * 0.1, w * 0.9),
+                hy + self.rng.range(4.0, 22.0),
+            ];
             self.strike_at(ctx, p, None, 0.55);
         } else {
             let p = [self.rng.range(0.0, w), self.rng.range(hy * 0.25, hy * 0.92)];
@@ -244,7 +249,10 @@ fn jag(a: [f64; 2], b: [f64; 2], seed: u64, min: f64, out: &mut Vec<[f64; 2]>) {
     }
     let n = [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
     let off = (hash(seed) - 0.5) * d * 0.32;
-    let m = [(a[0] + b[0]) * 0.5 + n[0] * off, (a[1] + b[1]) * 0.5 + n[1] * off];
+    let m = [
+        (a[0] + b[0]) * 0.5 + n[0] * off,
+        (a[1] + b[1]) * 0.5 + n[1] * off,
+    ];
     jag(a, m, seed.wrapping_mul(31).wrapping_add(1), min, out);
     jag(m, b, seed.wrapping_mul(37).wrapping_add(2), min, out);
 }
@@ -282,10 +290,7 @@ impl Toy for Catatumbo {
             Phase::Down => self.strike_at(ctx, p, Some(e.id), 1.0),
             Phase::Move => {
                 // a finger dragged far from its stroke calls a new one there
-                let held = self
-                    .strikes
-                    .iter()
-                    .rposition(|s| s.finger == Some(e.id));
+                let held = self.strikes.iter().rposition(|s| s.finger == Some(e.id));
                 if let Some(i) = held {
                     let s = &self.strikes[i];
                     let far = ((s.at[0] - p[0]).powi(2) + (s.at[1] - p[1]).powi(2)).sqrt() > 44.0;
@@ -316,7 +321,8 @@ impl Toy for Catatumbo {
             let s = &self.strikes[i];
             let last = *s.strokes.last().unwrap_or(&s.born);
             if s.finger.is_some() && !reduce && t > last && s.strokes.len() < MAX_STROKES {
-                let gap = RESTRIKE_S.0 + (RESTRIKE_S.1 - RESTRIKE_S.0) * hash(s.seed ^ s.strokes.len() as u64);
+                let gap = RESTRIKE_S.0
+                    + (RESTRIKE_S.1 - RESTRIKE_S.0) * hash(s.seed ^ s.strokes.len() as u64);
                 if t - last > gap {
                     self.strikes[i].strokes.push(t);
                 }
@@ -423,7 +429,11 @@ impl Catatumbo {
         let age = t - s.born;
         let first = s.strokes[0];
         let leading = t < first;
-        let reveal = if leading { (age / (first - s.born)).clamp(0.0, 1.0) as f32 } else { 1.0 };
+        let reveal = if leading {
+            (age / (first - s.born)).clamp(0.0, 1.0) as f32
+        } else {
+            1.0
+        };
         let light = self.light(s, t).min(1.6) * cap;
         let after = if leading {
             0.0
@@ -463,8 +473,13 @@ impl Catatumbo {
                 let p = ppp as f32;
                 self.painter.glow(qa, qb, 0.0, r * 9.0 * p, violet);
                 if core {
-                    self.painter
-                        .glow(qa, qb, r * 0.5 * p, 1.2 * p, [1.0, 0.97, 1.0, alpha.min(1.0)]);
+                    self.painter.glow(
+                        qa,
+                        qb,
+                        r * 0.5 * p,
+                        1.2 * p,
+                        [1.0, 0.97, 1.0, alpha.min(1.0)],
+                    );
                 } else {
                     self.painter
                         .glow(qa, qb, r * 0.3 * p, 1.0 * p, [0.75, 0.7, 1.0, alpha]);
@@ -474,7 +489,8 @@ impl Catatumbo {
                     let m = |p: [f64; 2]| {
                         let y = 2.0 * foot_y - p[1];
                         let d = y - foot_y;
-                        let wob = (hash((y * 0.5) as u64 ^ (t * 12.0) as u64) - 0.5) * (2.0 + d * 0.06);
+                        let wob =
+                            (hash((y * 0.5) as u64 ^ (t * 12.0) as u64) - 0.5) * (2.0 + d * 0.06);
                         [p[0] + wob, y]
                     };
                     let (ra, rb) = (m(pa), m(pb));
@@ -490,25 +506,44 @@ impl Catatumbo {
                 }
             }
         }
-        // where it meets the water: a splash of light, and while it comes, a streamer rising to meet it
         if ground {
-            let f = px(s.at, ppp);
-            if leading && reveal > 0.75 {
-                let up = ((reveal - 0.75) / 0.25) as f64 * 30.0 * near.min(2.0);
-                let top = px([s.at[0], s.at[1] - up], ppp);
-                self.painter
-                    .glow(f, top, (width * 0.3 * ppp) as f32, (2.0 * ppp) as f32, [0.8, 0.75, 1.0, 0.6]);
-            }
-            if !leading {
-                let rr = (14.0 + 50.0 * near.min(3.0)) * ppp;
-                self.painter.glow(
-                    f,
-                    [f[0] + 0.01, f[1]],
-                    0.0,
-                    rr as f32,
-                    [0.85, 0.75, 1.0, (light * 0.55 + after * 0.1).min(0.9)],
-                );
-            }
+            self.paint_foot(s, ppp, [reveal, light, after], leading, near, width);
+        }
+    }
+
+    /// Where a stroke meets the water: while it comes, a streamer rising to meet it; then a splash of
+    /// light. `lit` is (how far the leader has come, the stroke's light, its afterglow).
+    fn paint_foot(
+        &mut self,
+        s: &Strike,
+        ppp: f64,
+        lit: [f32; 3],
+        leading: bool,
+        near: f64,
+        width: f64,
+    ) {
+        let [reveal, light, after] = lit;
+        let f = px(s.at, ppp);
+        if leading && reveal > 0.75 {
+            let up = ((reveal - 0.75) / 0.25) as f64 * 30.0 * near.min(2.0);
+            let top = px([s.at[0], s.at[1] - up], ppp);
+            self.painter.glow(
+                f,
+                top,
+                (width * 0.3 * ppp) as f32,
+                (2.0 * ppp) as f32,
+                [0.8, 0.75, 1.0, 0.6],
+            );
+        }
+        if !leading {
+            let rr = (14.0 + 50.0 * near.min(3.0)) * ppp;
+            self.painter.glow(
+                f,
+                [f[0] + 0.01, f[1]],
+                0.0,
+                rr as f32,
+                [0.85, 0.75, 1.0, (light * 0.55 + after * 0.1).min(0.9)],
+            );
         }
     }
 }

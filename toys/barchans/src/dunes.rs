@@ -21,7 +21,7 @@ const REPOSE: i32 = 6;
 pub struct Rng(pub u64);
 impl Rng {
     #[inline]
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 ^= self.0 >> 12;
         self.0 ^= self.0 << 25;
         self.0 ^= self.0 >> 27;
@@ -29,7 +29,7 @@ impl Rng {
     }
     #[inline]
     pub fn f(&mut self) -> f32 {
-        (self.next() >> 40) as f32 / (1u64 << 24) as f32
+        (self.next_u64() >> 40) as f32 / (1u64 << 24) as f32
     }
 }
 
@@ -139,7 +139,11 @@ impl Dunes {
                     };
                     let top = |k: usize| (self.slabs[k] as f32).max(self.shadow[k]);
                     let v = top(a) * (1.0 - frac) + top(b) * frac - fall;
-                    let i = if major_y { self.at(c, row) } else { self.at(row, c) };
+                    let i = if major_y {
+                        self.at(c, row)
+                    } else {
+                        self.at(row, c)
+                    };
                     self.shadow[i] = v;
                 }
             }
@@ -251,7 +255,7 @@ impl Dunes {
                 self.since_shade = 0;
                 self.shade();
             }
-            let i = (self.rng.next() % total) as usize;
+            let i = (self.rng.next_u64() % total) as usize;
             if self.slabs[i] <= 0 {
                 continue;
             }

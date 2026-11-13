@@ -88,8 +88,9 @@ impl Synth for Voice {
             self.wob += 0.00002 * (self.noise() - self.wob * 0.01);
             self.phase += (self.now.pitch as f64 * (1.0 + self.wob as f64 * 0.5)) * dt;
             let p = (self.phase * std::f64::consts::TAU) as f32;
-            let drone = (p.sin() + 0.45 * (2.0 * p).sin() + 0.2 * (3.0 * p).sin() + 0.1 * (5.0 * p).sin())
-                * (0.8 + 0.2 * self.lp[0] * 20.0);
+            let drone =
+                (p.sin() + 0.45 * (2.0 * p).sin() + 0.2 * (3.0 * p).sin() + 0.1 * (5.0 * p).sin())
+                    * (0.8 + 0.2 * self.lp[0] * 20.0);
             let song = drone * 0.22 * self.now.song;
             let l = soft(wind + hiss + song);
             let r = soft(wind * 0.95 + hiss * 1.05 + song);

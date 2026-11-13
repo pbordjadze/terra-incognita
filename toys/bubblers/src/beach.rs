@@ -14,14 +14,14 @@ pub const CELL: f32 = 0.25;
 #[derive(Clone)]
 pub struct Rng(pub u64);
 impl Rng {
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         self.0 ^= self.0 >> 12;
         self.0 ^= self.0 << 25;
         self.0 ^= self.0 >> 27;
         self.0.wrapping_mul(0x2545_F491_4F6C_DD1D)
     }
     pub fn f(&mut self) -> f32 {
-        (self.next() >> 40) as f32 / (1u64 << 24) as f32
+        (self.next_u64() >> 40) as f32 / (1u64 << 24) as f32
     }
     pub fn range(&mut self, a: f32, b: f32) -> f32 {
         a + (b - a) * self.f()
@@ -165,8 +165,14 @@ impl Beach {
 
     /// Marks a disc of cells (radius cm) in one of the grids, toward `to`.
     fn mark(grid: &mut [f32], gw: usize, gh: usize, c: [f32; 2], r: f32, to: f32) {
-        let (x0, x1) = (((c[0] - r) / CELL).floor().max(0.0) as usize, (((c[0] + r) / CELL).ceil() as usize).min(gw));
-        let (y0, y1) = (((c[1] - r) / CELL).floor().max(0.0) as usize, (((c[1] + r) / CELL).ceil() as usize).min(gh));
+        let (x0, x1) = (
+            ((c[0] - r) / CELL).floor().max(0.0) as usize,
+            (((c[0] + r) / CELL).ceil() as usize).min(gw),
+        );
+        let (y0, y1) = (
+            ((c[1] - r) / CELL).floor().max(0.0) as usize,
+            (((c[1] + r) / CELL).ceil() as usize).min(gh),
+        );
         for y in y0..y1 {
             for x in x0..x1 {
                 let q = [(x as f32 + 0.5) * CELL, (y as f32 + 0.5) * CELL];
@@ -213,7 +219,11 @@ impl Beach {
         let crab = &mut self.crabs[k];
         crab.heading = best.1;
         // everything round already sifted: it wanders less far
-        crab.reach = if best.0 > 0.6 { (reach * 0.7).max(2.0) } else { reach };
+        crab.reach = if best.0 > 0.6 {
+            (reach * 0.7).max(2.0)
+        } else {
+            reach
+        };
     }
 
     /// A footstep (or a finger) at `p`: the crabs near feel it at once, the nearest first.
@@ -221,7 +231,8 @@ impl Beach {
         let t = self.t;
         for c in &mut self.crabs {
             let d = ((c.p[0] - p[0]).powi(2) + (c.p[1] - p[1]).powi(2)).sqrt();
-            if d < FEEL_CM * reach && matches!(c.state, State::Feed | State::Home | State::Peek(_)) {
+            if d < FEEL_CM * reach && matches!(c.state, State::Feed | State::Home | State::Peek(_))
+            {
                 let at = t + d / 80.0;
                 c.scared = Some(c.scared.map_or(at, |s| s.min(at)));
             }
@@ -338,10 +349,9 @@ impl Beach {
         }
     }
 
-    fn crab_step(&mut self, k: usize, dt: f32) {
+    /// A crab that has seen or felt something bolts when its moment comes, and its neighbours see it go.
+    fn fright(&mut self, k: usize, c: &mut Crab) {
         let t = self.t;
-        let mut c = self.crabs[k];
-        c.moving = 0.0;
         if let Some(at) = c.scared {
             if t >= at && !matches!(c.state, State::Hidden(_)) {
                 c.scared = None;
@@ -364,6 +374,51 @@ impl Beach {
                 c.scared = None;
             }
         }
+    }
+
+    /// Out along its spoke: eating the sand under it, rolling a ball behind it now and then, home at the
+    /// spoke's end.
+    fn feed(&mut self, c: &mut Crab, dt: f32) {
+        let t = self.t;
+        let dir = [c.heading.cos(), c.heading.sin()];
+        let step = FEED_CM_S * dt;
+        c.p = [c.p[0] + dir[0] * step, c.p[1] + dir[1] * step];
+        c.facing = c.heading;
+        c.moving = 0.4;
+        Self::mark(&mut self.worked, self.gw, self.gh, c.p, 0.45, 1.0);
+        self.dirty = true;
+        if t >= c.next_ball {
+            c.next_ball = t + self.rng.range(0.75, 1.05);
+            c.side = -c.side;
+            let perp = [-dir[1], dir[0]];
+            let r = self.rng.range(0.13, 0.18) * c.size;
+            let back = self.rng.range(0.6, 0.75);
+            let lat = c.side * self.rng.range(0.08, 0.2);
+            let p = [
+                c.p[0] - dir[0] * back + perp[0] * lat,
+                c.p[1] - dir[1] * back + perp[1] * lat,
+            ];
+            self.pellets.push(Pellet {
+                p,
+                r,
+                born: t,
+                shade: self.rng.range(-1.0, 1.0),
+                gone: -1.0,
+            });
+            self.laid.push(p);
+        }
+        let out = ((c.p[0] - c.home[0]).powi(2) + (c.p[1] - c.home[1]).powi(2)).sqrt();
+        let off = c.p[0] < 0.5 || c.p[1] < 0.5 || c.p[0] > self.w - 0.5 || c.p[1] > self.h - 0.5;
+        if out >= c.reach || off {
+            c.state = State::Home;
+        }
+    }
+
+    fn crab_step(&mut self, k: usize, dt: f32) {
+        let t = self.t;
+        let mut c = self.crabs[k];
+        c.moving = 0.0;
+        self.fright(k, &mut c);
         match c.state {
             State::Hidden(until) => {
                 c.p = c.home;
@@ -381,42 +436,13 @@ impl Beach {
                     c.next_ball = t + self.rng.range(0.6, 1.2);
                 }
             }
-            State::Feed => {
-                let dir = [c.heading.cos(), c.heading.sin()];
-                let step = FEED_CM_S * dt;
-                c.p = [c.p[0] + dir[0] * step, c.p[1] + dir[1] * step];
-                c.facing = c.heading;
-                c.moving = 0.4;
-                Self::mark(&mut self.worked, self.gw, self.gh, c.p, 0.45, 1.0);
-                self.dirty = true;
-                if t >= c.next_ball {
-                    c.next_ball = t + self.rng.range(0.75, 1.05);
-                    c.side = -c.side;
-                    let perp = [-dir[1], dir[0]];
-                    let r = self.rng.range(0.13, 0.18) * c.size;
-                    let back = self.rng.range(0.6, 0.75);
-                    let lat = c.side * self.rng.range(0.08, 0.2);
-                    let p = [
-                        c.p[0] - dir[0] * back + perp[0] * lat,
-                        c.p[1] - dir[1] * back + perp[1] * lat,
-                    ];
-                    self.pellets.push(Pellet {
-                        p,
-                        r,
-                        born: t,
-                        shade: self.rng.range(-1.0, 1.0),
-                        gone: -1.0,
-                    });
-                    self.laid.push(p);
-                }
-                let out = ((c.p[0] - c.home[0]).powi(2) + (c.p[1] - c.home[1]).powi(2)).sqrt();
-                let off = c.p[0] < 0.5 || c.p[1] < 0.5 || c.p[0] > self.w - 0.5 || c.p[1] > self.h - 0.5;
-                if out >= c.reach || off {
-                    c.state = State::Home;
-                }
-            }
+            State::Feed => self.feed(&mut c, dt),
             State::Home | State::Flee => {
-                let speed = if c.state == State::Flee { FLEE_CM_S } else { RUN_CM_S };
+                let speed = if c.state == State::Flee {
+                    FLEE_CM_S
+                } else {
+                    RUN_CM_S
+                };
                 let d = [c.home[0] - c.p[0], c.home[1] - c.p[1]];
                 let l = (d[0] * d[0] + d[1] * d[1]).sqrt();
                 c.moving = if c.state == State::Flee { 1.0 } else { 0.7 };
@@ -435,7 +461,10 @@ impl Beach {
                         c.next_ball = t + self.rng.range(0.4, 0.9);
                     }
                 } else {
-                    c.p = [c.p[0] + d[0] / l * speed * dt, c.p[1] + d[1] / l * speed * dt];
+                    c.p = [
+                        c.p[0] + d[0] / l * speed * dt,
+                        c.p[1] + d[1] / l * speed * dt,
+                    ];
                 }
             }
         }
@@ -454,7 +483,11 @@ mod tests {
         for _ in 0..1200 {
             b.step(0.05);
         }
-        assert!(b.pellets.len() > b.crabs.len() * 10, "{} balls", b.pellets.len());
+        assert!(
+            b.pellets.len() > b.crabs.len() * 10,
+            "{} balls",
+            b.pellets.len()
+        );
         let out = b.crabs.iter().filter(|c| c.state == State::Feed).count();
         assert!(out > b.crabs.len() / 3);
         let c = b.crabs[0].p;
