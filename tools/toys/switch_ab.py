@@ -3,7 +3,7 @@ once with rule i switched off, and prints the mean difference between the two ru
 seconds after the switch (0-255, the whole frame). A switch that barely moves these numbers does nothing a
 reader could see, and doesn't belong on the switches panel (the switches mark, docs/kit.md).
 
-    python3 tools/toys/switch_ab.py <toy> <rule count> [--at T] [--after 1,2,4,8] [--size 390x844] [--restore json] [--then '[events]']
+    python3 tools/toys/switch_ab.py <toy> <rule count> [--at T] [--after 1,2,4,8] [--size 390x844] [--restore json] [--then '[events]'] [--keep dir]
 
 Run from the repository's root after `cargo build --release` in toys/ and `tools/toys/assets.py <toy>`.
 """
@@ -23,12 +23,14 @@ def play(toy: str, plan: dict, out: Path, size: str) -> None:
     p = out.with_suffix(".json")
     p.write_text(json.dumps(plan))
     exe = Path("toys/target/release") / f"{toy}-check"
-    subprocess.run(
+    r = subprocess.run(
         [str(exe), "play", str(p), str(out), "--size", size, "--ppp", "1", "--no-tap-check"],
-        check=True,
         capture_output=True,
-        cwd=".",
+        text=True,
+        check=False,
     )
+    if r.returncode:
+        raise SystemExit(f"{exe}: {r.stdout[-2000:]}{r.stderr[-2000:]}")
 
 
 def diff(a: Path, b: Path) -> float:
@@ -47,6 +49,8 @@ def main() -> None:
     ap.add_argument("--restore", help="the toy's saved state to start from, as a plan's \"restore\"")
     ap.add_argument("--then", default="[]", help="events after the switch, JSON (a touch, say)")
     a = ap.parse_args()
+    if a.at < 0.5:
+        ap.error("--at is at least 0.5 (the panel opens 0.4 s before the switch)")
     global AFTER
     AFTER = [float(x) if '.' in x else int(x) for x in a.after.split(",")]
     shots = [{"t": a.at + s, "name": f"s{s}"} for s in AFTER]

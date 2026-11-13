@@ -69,7 +69,7 @@ def rules(img, text, k, top=False):
 
 
 def glass(img, box, k, radius, tint=0.75):
-    """UIKit's ultra-thin dark material with the shell's tint (0.62 alpha; the switches' panel 0.3), over
+    """UIKit's ultra-thin dark material with the shell's tint (0.62 alpha; the switches' panel 0.3, drawn as 0.4), over
     `box` (pixels)."""
     g = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
     g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), tint)

@@ -307,11 +307,13 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// its foot 60 points above the screen's; a row a rule, its label right-aligned beside a switch at
     /// three quarters size. tools/kit/shell_text.py draws the same on the shots.
     func layoutSwitches() {
-        let pad: CGFloat = 10, gap: CGFloat = 8, row: CGFloat = 30
-        let toggle = switchCells.first?.1.frame.size ?? CGSize(width: 38, height: 23)
-        let most = min(bounds.width - 32, 320) - 2 * pad - gap - toggle.width
+        let pad: CGFloat = 10, gap: CGFloat = 8
+        // a row grows with the reader's text size
+        let row = max(30, ceil(switchCells.first?.0.font.lineHeight ?? 0) + 12)
+        let toggleSize = switchCells.first?.1.frame.size ?? CGSize(width: 38, height: 23)
+        let most = min(bounds.width - 32, 320) - 2 * pad - gap - toggleSize.width
         let labelW = min(switchCells.map { ceil($0.0.intrinsicContentSize.width) }.max() ?? 0, most)
-        let w = pad + labelW + gap + toggle.width + pad
+        let w = pad + labelW + gap + toggleSize.width + pad
         let h = pad + row * CGFloat(switchCells.count) + pad - 6
         switches.frame = CGRect(x: bounds.width - 16 - w, y: bounds.height - 60 - h, width: w, height: h)
         for (i, (label, toggle)) in switchCells.enumerated() {
