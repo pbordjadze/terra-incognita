@@ -362,9 +362,18 @@ impl Net {
 }
 
 /// An f64 that sorts (no NaN reaches it).
-#[derive(PartialEq, PartialOrd)]
 struct OrdF(f64);
+impl PartialEq for OrdF {
+    fn eq(&self, o: &Self) -> bool {
+        self.cmp(o).is_eq()
+    }
+}
 impl Eq for OrdF {}
+impl PartialOrd for OrdF {
+    fn partial_cmp(&self, o: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(o))
+    }
+}
 impl Ord for OrdF {
     fn cmp(&self, o: &Self) -> std::cmp::Ordering {
         self.0.total_cmp(&o.0)

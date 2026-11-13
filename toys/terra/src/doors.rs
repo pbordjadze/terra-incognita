@@ -300,13 +300,10 @@ impl Life {
                 out.push([q[0] + ox, q[1] + oy]);
             }
         };
-        match self.doors[i].id {
-            "whales" => {
-                for ll in self.whale_spots().into_iter().flatten() {
-                    add([ll.lon, ll.lat]);
-                }
+        if self.doors[i].id == "whales" {
+            for ll in self.whale_spots().into_iter().flatten() {
+                add([ll.lon, ll.lat]);
             }
-            _ => {}
         }
         out
     }

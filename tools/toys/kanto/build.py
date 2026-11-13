@@ -25,6 +25,7 @@ Pillow and pyshp.
 """
 import csv
 import io
+import itertools
 import json
 import math
 import sys
@@ -71,8 +72,10 @@ def shapes(cache, name):
         r = shapefile.Reader(shp=io.BytesIO(f.read(stem + '.shp')), shx=io.BytesIO(f.read(stem + '.shx')),
                              dbf=io.BytesIO(f.read(stem + '.dbf')))
         for sh in r.iterShapes():
-            parts = list(sh.parts) + [len(sh.points)]
-            for a, b in zip(parts, parts[1:]):
+            if sh is None:
+                continue
+            parts = [*sh.parts, len(sh.points)]
+            for a, b in itertools.pairwise(parts):
                 yield sh.points[a:b]
 
 

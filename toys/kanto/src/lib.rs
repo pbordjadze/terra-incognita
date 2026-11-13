@@ -8,7 +8,7 @@
 pub mod net;
 
 use net::{Net, Tube};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::gpu::textures::{decode, Texture};
 use toy_kit::paint::Painter;
@@ -52,11 +52,6 @@ struct Plate {
 #[derive(Deserialize)]
 struct Town {
     cell: [f32; 2],
-}
-
-#[derive(Serialize, Deserialize)]
-struct Saved {
-    t: f64,
 }
 
 pub struct Kanto {
@@ -237,7 +232,9 @@ impl Kanto {
             return;
         };
         let at = self.net.nodes[n as usize].at;
-        if (at[0] - c[0]).hypot(at[1] - c[1]) > SPACING * 2.0 || self.net.food.contains(&n) {
+        // not near the agar, already a flake, or ground the sheet never reaches (cut off by the light)
+        let far = (at[0] - c[0]).hypot(at[1] - c[1]) > SPACING * 2.0;
+        if far || self.net.food.contains(&n) || !self.net.nodes[n as usize].reach.is_finite() {
             return;
         }
         if self.fed.len() >= MAX_FED {
@@ -279,7 +276,10 @@ fn smooth(net: &Net, shown: &mut Vec<[f32; 2]>) {
         .around
         .iter()
         .map(|ks| {
-            let d = ks.iter().map(|&k| net.tubes[k as usize].d).fold(0.0f32, f32::max);
+            let d = ks
+                .iter()
+                .map(|&k| net.tubes[k as usize].d)
+                .fold(0.0f32, f32::max);
             (d - 0.05).max(0.0)
         })
         .collect();
@@ -457,8 +457,9 @@ impl Toy for Kanto {
         Some([(px[0] / ppp) as f64, (px[1] / ppp) as f64])
     }
 
+    /// Nothing kept: each opening is the experiment from the start, the mold put down at Tokyo.
     fn save(&self) -> Option<String> {
-        serde_json::to_string(&Saved { t: self.t }).ok()
+        None
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, _saved: &str) {}
@@ -487,7 +488,11 @@ mod probe {
         println!("nodes {} tubes {}", net.nodes.len(), net.tubes.len());
         let t0 = std::time::Instant::now();
         let mut t = 0.0;
-        for i in 0..std::env::var("N").ok().and_then(|v| v.parse().ok()).unwrap_or(9000) {
+        for i in 0..std::env::var("N")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(9000)
+        {
             t += 1.0 / STEPS_A_SECOND;
             net.adapt(t, DT);
             if i % 1500 == 0 {
