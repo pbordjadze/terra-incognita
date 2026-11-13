@@ -22,5 +22,5 @@ by code.
 ## Drawn
 
 The template's cells (about a facet's worth of water each, fixed to the water and foreshortened as the
-surface is), the paints and their numbers, Paint by Moonlight's plum night and cream paper, the moon drawn
+surface is), the paints and their numbers, Paint by Moonlight's plum night and dark paper, the moon drawn
 larger than its half a degree, the haze, the point of land, the swell's period and length, the sound.

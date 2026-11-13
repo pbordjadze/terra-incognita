@@ -618,7 +618,7 @@ def barchans():
 
 
 def moonroad():
-    # Paint by Moonlight's plum night over a cream template lake, the low moon, and its road painted
+    # Paint by Moonlight's plum night over a dark template lake, the low moon, and its road painted
     # down the water in three paints, one cell still flashing
     img = Image.new('RGBA', (N, N), (36, 16, 46, 255))
     d = ImageDraw.Draw(img)
@@ -631,9 +631,9 @@ def moonroad():
     img = Image.alpha_composite(img, halo.filter(ImageFilter.GaussianBlur(70)))
     d = ImageDraw.Draw(img)
     d.ellipse([462, 350, 562, 450], fill=(251, 233, 184, 255))
-    d.rectangle([0, hy, N, N], fill=(244, 240, 233, 255))
+    d.rectangle([0, hy, N, N], fill=(27, 20, 37, 255))
     rnd = random.Random(333)
-    paints = [(34, 24, 52), (70, 37, 83), (50, 45, 98)]
+    paints = [(246, 242, 224), (240, 222, 184), (204, 190, 227)]
     y = hy + 6.0
     while y < N:
         h = 6 + (y - hy) * 0.11
@@ -646,10 +646,10 @@ def moonroad():
             if rnd.random() < road:
                 d.rectangle(box, fill=rnd.choice(paints) + (255,))
             else:
-                d.rectangle(box, outline=(196, 192, 198, 255), width=3)
+                d.rectangle(box, outline=(84, 71, 102, 255), width=3)
             x += w
         y += h + 4
-    d.rectangle([486, 610, 560, 640], fill=(251, 233, 184, 255))
+    d.rectangle([486, 610, 560, 640], fill=(255, 250, 232, 255))
     return img
 
 

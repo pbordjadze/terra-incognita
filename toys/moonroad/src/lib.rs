@@ -1,6 +1,6 @@
 //! Moon Road (a working title), in homage to Paint by Moonlight: Lake Superior from the beach at
-//! moonrise, the water a numbered template of facets on cream paper (`lake.rs`). The moon paints it:
-//! every facet that tilts the moon's light to your eye flashes, then keeps its paint, so the road of
+//! moonrise, the water a numbered template of facets on Paint by Moonlight's dark paper (`lake.rs`). The moon paints it:
+//! every facet that tilts the moon's light to your eye flashes, then keeps a moonlight paint, so the road of
 //! light down the water from the moon to you fills in, number by number. A tap is a gust that ruffles
 //! the water and spreads the road; a drag walks you along the shore, and the road comes with you,
 //! leaving what it painted behind. Shake for a fresh page. painting-company row 333.

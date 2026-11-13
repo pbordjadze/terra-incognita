@@ -176,13 +176,13 @@ fn barchans(p: &mut Painter, sp: &Spot, tm: f64) {
     }
 }
 
-/// Moon Road: a plum night over a cream lake, the low moon, and under it its road of painted cells,
+/// Moon Road: a plum night over a dark template lake, the low moon, and under it its road of cells painted in moonlight,
 /// a glint flashing in it here and there.
 fn moonroad(p: &mut Painter, sp: &Spot, tm: f64) {
     let (kf, a) = (sp.kf, sp.a);
     let at = |x: f64, y: f64| sp.at(x, y);
     sp.glass(p, [0.24, 0.13, 0.29]);
-    // the lake: the lower half of the glass, cream paper
+    // the lake: the lower half of the glass, the dark paper
     for j in 0..5 {
         let y = 0.12 + j as f64 * 0.17;
         let half = (1.0 - y * y).max(0.0).sqrt() * 0.92;
@@ -191,21 +191,21 @@ fn moonroad(p: &mut Painter, sp: &Spot, tm: f64) {
             at(half, y),
             (0.1 * sp.r * sp.k) as f32,
             kf,
-            [0.95, 0.93, 0.90, 0.95 * a],
+            [0.11, 0.08, 0.15, 0.95 * a],
         );
     }
     p.disc(at(0.0, -0.22), 3.2 * kf, 0.8 * kf, [0.98, 0.90, 0.68, a]);
     // the road: cells in the three paints, widening toward you, one flashing
-    let paints = [[0.14, 0.10, 0.21], [0.28, 0.15, 0.33], [0.20, 0.18, 0.39]];
+    let paints = [[0.97, 0.95, 0.88], [0.94, 0.87, 0.72], [0.80, 0.75, 0.89]];
     for i in 0..14 {
         let y = 0.06 + (i as f64 / 13.0).powf(1.3) * 0.82;
         let x = (hash(i as f64 + 3.0) - 0.5) * (0.06 + 0.3 * y);
         let c = paints[i % 3];
         let flash = (0.5 + 0.5 * (tm * 2.3 + i as f64 * 1.7).sin()).powi(8) as f32;
         let col = [
-            c[0] + (0.98 - c[0]) * flash,
-            c[1] + (0.90 - c[1]) * flash,
-            c[2] + (0.68 - c[2]) * flash,
+            c[0] + (1.0 - c[0]) * flash,
+            c[1] + (0.98 - c[1]) * flash,
+            c[2] + (0.92 - c[2]) * flash,
             a,
         ];
         p.disc(at(x, y), (0.8 + 2.6 * y) as f32 * kf, 0.5 * kf, col);

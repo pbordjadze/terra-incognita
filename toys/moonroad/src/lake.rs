@@ -26,6 +26,8 @@ const TOL: f64 = 0.018;
 const SWELL_M: f64 = 7.0;
 const SWELL_S: f64 = 2.1;
 const SWELL_K: f64 = 0.7;
+/// How long a cell stays bright after the moon was last in it (seconds).
+const LIT_S: f64 = 2.2;
 /// A painted cell comes in over this long (seconds).
 const PAINT_S: f64 = 0.45;
 
@@ -36,9 +38,11 @@ pub struct Cell {
     /// paint number, 1..=3
     pub paint: u8,
     pub slope: [f64; 2],
-    /// how much painted, 0..1, and how bright the moon is in it now
+    /// how much painted, 0..1; how bright the moon is in it now; and how lately it shone (the moon
+    /// now, fading over a few seconds), so the live road stays the brightest thing on the water
     pub painted: f32,
     pub glint: f32,
+    pub lit: f32,
     /// the turn of the ring this cell is now (it is a new piece of water when that changes)
     pub lap: i64,
 }
@@ -106,6 +110,7 @@ impl Lake {
                 slope: [rng.n() * CALM, rng.n() * CALM],
                 painted: 0.0,
                 glint: 0.0,
+                lit: 0.0,
                 lap: 0,
             });
         }
@@ -173,6 +178,7 @@ impl Lake {
         self.fresh.clear();
         let tau = if self.slow { TAU_S * 3.0 } else { TAU_S };
         let decay = (-dt / tau).exp();
+        let fade = (-dt / LIT_S).exp() as f32;
         let kick = (1.0 - decay * decay).sqrt();
         let (sel, cel) = MOON_EL.sin_cos();
         let omega = std::f64::consts::TAU / SWELL_S;
@@ -190,6 +196,7 @@ impl Lake {
                     // a fresh piece of water comes into the ring: unpainted
                     cell.lap = lap;
                     cell.painted = 0.0;
+                    cell.lit = 0.0;
                 }
                 let u = col as f64 + (lap * NU as i64) as f64 + cell.j[0] as f64;
                 let d = self.row_m(row, cell.j[1] as f64);
@@ -210,6 +217,7 @@ impl Lake {
                 let e = [(-s[0]) - need[0], (-s[1]) - need[1]];
                 let g = (-(e[0] * e[0] + e[1] * e[1]) / (2.0 * TOL * TOL)).exp() as f32;
                 cell.glint = g;
+                cell.lit = (cell.lit * fade).max(g);
                 if g > 0.5 && cell.painted < 0.01 {
                     self.fresh.push([x - self.x_eye, d]);
                 }
@@ -221,14 +229,14 @@ impl Lake {
         }
     }
 
-    /// The field's four numbers a cell: painted, glint, the seed across, the seed out plus two for
+    /// The field's four numbers a cell: painted, how lately lit, the seed across, the seed out plus two for
     /// each paint past the first.
     pub fn texels(&self, out: &mut Vec<[f32; 4]>) {
         out.clear();
         out.extend(self.cells.iter().map(|c| {
             [
                 c.painted,
-                c.glint,
+                c.lit,
                 c.j[0],
                 c.j[1] + 2.0 * (c.paint - 1) as f32,
             ]

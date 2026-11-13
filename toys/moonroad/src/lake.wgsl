@@ -1,18 +1,22 @@
 // Moon Road's night, in Paint by Moonlight's colours: the plum sky, the low moon, and Lake Superior
-// as a numbered template of facets (lake.rs) on cream paper, each painted where the moon has lit it.
-// A field (toy-kit field.rs): per cell (painted, glint, seed across, seed out + 2 a paint past the first).
+// as a numbered template of facets (lake.rs) on the app's dark paper, each painted in a moonlight paint
+// where the moon has lit it, so the road reads as light.
+// A field (toy-kit field.rs): per cell (painted, how lately lit, seed across, seed out + 2 a paint past the first).
 // u.p0 = (horizon y px, focal px a radian, eye along the shore m, the moon's elevation),
 // u.p1 = (DU, DV, the first row's index V0, eye height m).
 
-const PAPER = vec3<f32>(0.957, 0.941, 0.914);
-const LINE = vec3<f32>(0.56, 0.54, 0.57);
+const PAPER = vec3<f32>(0.105, 0.080, 0.145);
+const LINE = vec3<f32>(0.33, 0.28, 0.40);
+const NUMERAL = vec3<f32>(0.47, 0.42, 0.54);
 const MOONLIGHT = vec3<f32>(0.985, 0.915, 0.72);
+const FLASH = vec3<f32>(1.0, 0.975, 0.90);
 
 fn paint_of(k: i32) -> vec3<f32> {
-  // the lake's three paints: an inkpot, a plum, an indigo
-  if (k == 0) { return vec3<f32>(0.135, 0.095, 0.205); }
-  if (k == 1) { return vec3<f32>(0.275, 0.145, 0.325); }
-  return vec3<f32>(0.195, 0.175, 0.385);
+  // the lake's three moonlight paints: a marshmallow, a candle wax, a pale lilac
+  // (one family, near in value: the road reads as one light)
+  if (k == 0) { return vec3<f32>(0.93, 0.90, 0.80); }
+  if (k == 1) { return vec3<f32>(0.92, 0.84, 0.67); }
+  return vec3<f32>(0.84, 0.81, 0.89);
 }
 
 fn seg(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
@@ -85,8 +89,9 @@ fn sky(px: vec2<f32>) -> vec3<f32> {
   col = mix(col, mc, disc);
   // the far shore of the bay, a low dark point to the right
   let xs = px.x / u.size.x;
-  let ridge = hy - u.scale * (3.0 + 9.0 * smoothstep(0.70, 0.86, xs) - 2.5 * smoothstep(0.88, 1.0, xs) + 1.2 * noise2(vec2<f32>(xs * 40.0, 1.0)));
-  if (px.y > ridge && xs > 0.62) {
+  let rise = smoothstep(0.60, 0.70, xs);
+  let ridge = hy - u.scale * rise * (3.0 + 9.0 * smoothstep(0.70, 0.86, xs) - 2.5 * smoothstep(0.88, 1.0, xs) + 1.2 * noise2(vec2<f32>(xs * 40.0, 1.0)));
+  if (px.y > ridge && rise > 0.0) {
     col = vec3<f32>(0.085, 0.045, 0.105);
   }
   return col;
@@ -107,7 +112,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let cellpx = (px.y - hy) * dv;
   // the haze far out: the paper and its paint go lavender-grey toward the horizon
   let haze = exp(-(px.y - hy) / (u.scale * 26.0));
-  let hazec = vec3<f32>(0.62, 0.53, 0.64);
+  let hazec = vec3<f32>(0.27, 0.16, 0.31);
   let row = uv.y - v0;
   var col = PAPER;
   if (row < f32(u.grid.y) - 1.0 && cellpx > 0.9) {
@@ -151,14 +156,18 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     }
     edge = max(edge, 0.0);
     let painted = bc.x;
-    let glint = bc.y;
+    let lit = bc.y;
     let k = i32(floor(bc.w / 2.0 + 0.001));
     let paint = paint_of(k);
-    col = mix(PAPER, paint * (0.9 + 0.25 * smoothstep(0.0, 400.0, cellpx * 8.0)), painted);
-    col = mix(col, MOONLIGHT, clamp(glint * 1.6, 0.0, 1.0));
+    // a newly painted cell flashes, then settles into its paint
+    // a painted cell settles to a soft paint; the moon in it lately lifts it toward the flash, so the
+    // live road outshines the trail it leaves
+    let settled = mix(paint, vec3<f32>(0.66, 0.62, 0.80), 0.55) * 0.66;
+    col = select(PAPER, mix(settled, paint, smoothstep(0.0, 0.6, lit)), painted > 0.0);
+    col = mix(col, FLASH, smoothstep(0.55, 1.0, lit));
     // the template's line between cells: thin, grey on paper, faint on paint; gone where cells are tiny
     let lw = 0.42 * u.scale;
-    let la = (1.0 - smoothstep(lw * 0.6, lw * 1.4, edge)) * smoothstep(3.0, 14.0, cellpx) * mix(0.34, 0.10, painted);
+    let la = (1.0 - smoothstep(lw * 0.6, lw * 1.4, edge)) * smoothstep(3.0, 14.0, cellpx) * mix(0.55, 0.16, painted);
     col = mix(col, LINE, la);
     // the paint's number, in about half the unpainted cells big enough to hold it (judged at the
     // cell's own seed, so a numeral is never cut by the row it straddles)
@@ -170,7 +179,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
       let q = vec2<f32>((uv.x - bs.x) * cw, -(uv.y - bs.y) * cellpx) / numh;
       let nd = numeral(q, k + 1) * numh;
       let ink = 1.0 - smoothstep(0.38 * u.scale, 0.9 * u.scale, nd);
-      col = mix(col, vec3<f32>(0.60, 0.585, 0.61), ink * 0.8 * (1.0 - painted * 2.0));
+      col = mix(col, NUMERAL, ink * 0.85 * (1.0 - painted * 2.0));
     }
   } else {
     // too far for the template's lines: the road's glitter alone, on the haze
@@ -178,8 +187,10 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let road = exp(-a * a / (2.0 * 0.004 * 0.004)) * (0.4 + 0.6 * noise2(vec2<f32>(px.x * 0.5 / u.scale, px.y * 2.0 / u.scale + u.time * 3.0)));
     col = mix(PAPER, MOONLIGHT, clamp(road, 0.0, 1.0));
   }
-  col = mix(col, hazec, haze * 0.75);
+  // (the haze dims the dark water more than the light on it)
+  let lum = dot(col, vec3<f32>(0.3, 0.5, 0.2));
+  col = mix(col, hazec, haze * 0.75 * (1.0 - smoothstep(0.3, 0.8, lum)));
   // the paper's grain
-  col = col * (0.985 + 0.03 * noise2(px / (u.scale * 0.9)));
+  col = col * (0.97 + 0.06 * noise2(px / (u.scale * 0.9)));
   return vec4<f32>(col, 1.0);
 }
