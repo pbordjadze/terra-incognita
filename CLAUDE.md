@@ -235,6 +235,18 @@ install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
   and a comment line with the reason directly above a `# shellcheck disable=` or `// swiftlint:disable`; a rule
   loosened for a whole tool goes in its config file with its reason. `ci/silenced.py` (in `ci/lint.sh`) holds to it.
 
+## Review
+
+The same rules as the owner's other apps (painting-company's CLAUDE.md › Review, `process/critic.md`).
+- **A fresh reader before every merge.** Before merging into `main`, a reviewer that didn't write the code
+  reads `git diff origin/main...HEAD` (the `/code-review` skill, or a subagent given the diff and the goal,
+  not the maker's reasoning). Fix what it confirms; anything large or design-level goes to the owner. The
+  merge commit's message lists what the review found and what was fixed.
+- **A fresh critic each build** for anything the owner will look at (a new toy or screen, visuals, measured
+  performance): judged from screenshots or a clip only, not the code, with the log of earlier verdicts in
+  `critics/LOG.md` on the branch. Done after 3 rounds, or two rounds running of only polish; the maker calls
+  it, with the reason in the log. Bug fixes skip the critic; the reviewer is enough.
+
 ## The runtime: one library that grows
 
 Every new experience, and every new element on the map, is built on the playground's runtime: a
