@@ -1,0 +1,23 @@
+[package]
+name = "huddle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Huddle (a working title): emperor penguins on the sea ice of Atka Bay in a winter wind; the cold edge walks round to the lee, the huddle creeps downwind, and waves of small steps run through it."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "huddle-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

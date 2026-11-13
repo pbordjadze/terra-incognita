@@ -1,0 +1,23 @@
+[package]
+name = "wave"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The Wave (a working title): Estadio Azteca at night, 87,000 phone lights; swipe the stands to stand people up, and if enough do, a Mexican wave runs round the bowl (an excitable medium)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "wave-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

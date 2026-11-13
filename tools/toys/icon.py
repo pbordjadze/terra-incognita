@@ -159,7 +159,7 @@ def carol():
         g = 1 + 0.03 * math.sin(y / 9 + rnd.random() * 0.3)
         d.line([(0, y), (N, y)], fill=(int((196 - 40 * k) * g), int((140 - 32 * k) * g), int((86 - 22 * k) * g), 255))
     atlas = Image.open(ROOT / 'toys/carol/data/pieces.png')
-    cell = atlas.crop((4 * 160, 0, 5 * 160, 160)).resize((900, 900), Image.LANCZOS)
+    cell = atlas.crop((4 * 160, 0, 5 * 160, 160)).resize((900, 900), Image.Resampling.LANCZOS)
     sil, rim = cell.split()[0], cell.split()[1]
     at = (62, 92)
     pad = Image.new('L', (N, N), 0)
@@ -381,6 +381,79 @@ def throats():
     return img
 
 
+def gradient(top, bottom):
+    img = Image.new('RGBA', (N, N))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        f = y / (N - 1)
+        d.line([0, y, N, y], fill=tuple(int(top[i] + (bottom[i] - top[i]) * f) for i in range(3)) + (255,))
+    return img
+
+
+def bats():
+    # a dusk sky, a column of bats rising from the cave, bending off as a stream; the hawk above
+    img = gradient((70, 96, 170), (246, 160, 104))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(1)
+    d.rectangle([0, 900, N, N], fill=(24, 22, 26, 255))
+    d.ellipse([430, 880, 600, 920], fill=(6, 5, 7, 255))
+    for i in range(2600):
+        h = rnd.random()
+        if h < 0.72:
+            y = 900 - h / 0.72 * 620
+            x = 515 + 40 * math.sin(y / 70) + (20 + 60 * (900 - y) / 620) * rnd.uniform(-1, 1)
+        else:
+            s = (h - 0.72) / 0.28
+            x = 520 + s * 520 + 30 * rnd.uniform(-1, 1) * (1 - s * 0.5)
+            y = 290 + 90 * s * s + 26 * rnd.uniform(-1, 1)
+        w = rnd.uniform(4, 9)
+        d.line([x - w, y - rnd.uniform(0, 4), x, y + 2, x + w, y - rnd.uniform(0, 4)], fill=(18, 14, 20, 255), width=3)
+    cx, cy = 300, 200
+    d.polygon([(cx - 150, cy - 20), (cx - 40, cy + 6), (cx, cy - 10), (cx + 40, cy + 6), (cx + 150, cy - 20),
+               (cx + 40, cy + 30), (cx + 14, cy + 70), (cx - 14, cy + 70), (cx - 40, cy + 30)], fill=(16, 12, 10, 255))
+    return img
+
+
+def huddle():
+    # emperor penguins packed in a huddle on the sea ice at night, snow streaming past, the aurora above
+    img = gradient((10, 20, 44), (64, 82, 116))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(2)
+    glow(img, [(x, 150 + 60 * math.sin(x / 140)) for x in range(-40, N + 40, 30)], 30, (60, 230, 150, 70), 40)
+    c = (512, 600)
+    for r in range(0, 330, 30):
+        n = max(1, int(2 * math.pi * r / 30))
+        for k in range(n):
+            a = k / n * math.tau + rnd.uniform(-0.1, 0.1)
+            x, y = c[0] + r * math.cos(a), c[1] + r * 0.62 * math.sin(a)
+            d.ellipse([x - 15, y - 13, x + 15, y + 13], fill=(14, 14, 18, 255))
+            d.ellipse([x - 6, y - 12, x + 6, y - 2], fill=(236, 200, 120, 255))
+    for i in range(160):
+        x, y = rnd.uniform(0, N), rnd.uniform(0, N)
+        d.line([x, y, x + 60, y + 8], fill=(220, 230, 255, 150), width=2)
+    return img
+
+
+def wave():
+    # a stadium bowl at night full of phone lights, the wave a bright arc running round it
+    img = gradient((6, 6, 14), (14, 12, 22))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(3)
+    d.ellipse([200, 360, 824, 700], fill=(30, 70, 40, 255))
+    for row in range(26):
+        rx, ry = 330 + row * 12, 190 + row * 8
+        n = int(2 * math.pi * rx / 12)
+        for k in range(n):
+            a = k / n * math.tau
+            x, y = 512 + rx * math.cos(a), 530 + ry * math.sin(a)
+            on = abs(((a - 4.2 + math.pi) % math.tau) - math.pi) < 0.35
+            col = (255, 250, 220, 255) if on else (130 + rnd.randint(0, 60), 130 + rnd.randint(0, 50), 150, 255)
+            r = 4.5 if on else 2.4
+            y -= 10 if on else 0
+            d.ellipse([x - r, y - r, x + r, y + r], fill=col)
+    return img
+
+
 def catatumbo():
     # night over a lake: a violet stroke forking down to the water, the cloud lit behind it, its reflection
     img = Image.new('RGBA', (N, N), (10, 10, 26, 255))
@@ -455,7 +528,7 @@ def barchans():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

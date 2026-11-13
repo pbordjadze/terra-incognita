@@ -1,55 +1,7 @@
-//! The small likenesses some lights hold of their scene toys (doors.rs draws the rest): a window of dark
-//! glass growing frost; lightning over a night lake; crabs' starbursts on sand; crescent dunes walking.
-//! `c` is the light's middle (pixels), `r` its radius (points) and `k` pixels a point, `kf` the same as
-//! f32, `a` its strength, `halo` its window's, `tm` the clock.
+//! The likenesses of the toys whose rule runs on the ground: lightning reaching for a night lake, crabs'
+//! starbursts on sand, crescent dunes walking.
 
-use crate::doors::Door;
-use crate::rooms;
 use toy_kit::paint::Painter;
-
-/// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 7] = [
-    "murmuration",
-    "meander",
-    "frost",
-    "throats",
-    "catatumbo",
-    "bubblers",
-    "barchans",
-];
-
-/// The lights of the scenes that came last (painting-company row 327), after doors.rs's.
-pub fn doors() -> [Door; 3] {
-    [
-        Door {
-            id: "catatumbo",
-            name: "Catatumbo",
-            at: [catatumbo::PLACE.0, catatumbo::PLACE.1],
-            tint: [0.70, 0.62, 1.0],
-            night: true,
-            degree: 1,
-            open: rooms::open::<catatumbo::Catatumbo>,
-        },
-        Door {
-            id: "bubblers",
-            name: "Bubblers",
-            at: [bubblers::PLACE.0, bubblers::PLACE.1],
-            tint: [0.90, 0.80, 0.62],
-            night: false,
-            degree: 8,
-            open: rooms::open::<bubblers::Bubblers>,
-        },
-        Door {
-            id: "barchans",
-            name: "Barchans",
-            at: [barchans::PLACE.0, barchans::PLACE.1],
-            tint: [0.93, 0.64, 0.36],
-            night: false,
-            degree: -1,
-            open: rooms::open::<barchans::Barchans>,
-        },
-    ]
-}
 
 fn smooth(a: f64, b: f64, x: f64) -> f64 {
     let t = ((x - a) / (b - a)).clamp(0.0, 1.0);
@@ -103,38 +55,10 @@ impl Spot {
 
 pub fn draw(p: &mut Painter, id: &str, sp: &Spot, tm: f64) {
     match id {
-        "frost" => frost(p, sp, tm),
         "catatumbo" => catatumbo(p, sp, tm),
         "bubblers" => bubblers(p, sp, tm),
         "barchans" => barchans(p, sp, tm),
         _ => {}
-    }
-}
-
-fn frost(p: &mut Painter, sp: &Spot, tm: f64) {
-    let (c, kf, a) = (sp.c, sp.kf, sp.a);
-    let at = |x: f64, y: f64| sp.at(x, y);
-    // a window of dark glass at -50°: frost growing on it in six-armed feathers, then fading
-    // as if a finger had warmed it, and growing back
-    sp.glass(p, [0.06, 0.10, 0.20]);
-    let ph = (tm / 9.0).rem_euclid(1.0);
-    let grow = smooth(0.0, 0.7, ph) * (1.0 - smooth(0.85, 1.0, ph));
-    let ice = [0.80, 0.90, 1.0, 0.9 * a];
-    for arm in 0..6 {
-        let ang = arm as f64 * std::f64::consts::FRAC_PI_3 + 0.3;
-        let (sa, ca) = ang.sin_cos();
-        let len = 0.85 * grow;
-        p.line(c, at(ca * len, sa * len), 0.9 * kf, 0.8, ice);
-        for b in 1..4 {
-            let along = len * b as f64 / 4.0;
-            let bl = (len - along) * 0.45;
-            let o = at(ca * along, sa * along);
-            for side in [-1.0f64, 1.0] {
-                let ba = ang + side * 1.0;
-                let tip = at(ca * along + ba.cos() * bl, sa * along + ba.sin() * bl);
-                p.line(o, tip, 0.6 * kf, 0.8, ice);
-            }
-        }
     }
 }
 

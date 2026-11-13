@@ -8,8 +8,6 @@
 //! another. Only one toy is open at a time; closing it frees it.
 
 pub mod doors;
-pub mod likeness;
-use likeness::SCENES;
 pub mod rooms;
 mod words;
 
@@ -21,7 +19,7 @@ use toy_kit::paint::Painter;
 use toy_kit::sound::{pentatonic, Bells, Note};
 use toy_kit::{Assets, Camera, Ctx, Globe, LonLat, MemoryAssets, Phase, PointerEvent, Synth, Toy};
 
-use doors::Life;
+use doors::{Life, SCENES};
 use rooms::{Room, Shared};
 
 /// The Earth mark: bottom left, as the info and rules marks are bottom right (toy-kit info.rs).

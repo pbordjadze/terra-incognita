@@ -21,6 +21,9 @@ the owner's to decide):
 | Frost: frost on a cabin window at Oymyakon; your finger is warm, wipe it and it grows back (row 218) | `frost/` | `com.pbordjadze.toy.frost` | `frost-build-<n>` |
 | Throats: side-blotched lizards on a California hillside play rock–paper–scissors; the colours turn in spirals; a finger pours a colour (row 257) | `throats/` | `com.pbordjadze.toy.throats` | `throats-build-<n>` |
 | Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
+| Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | `bats-build-<n>` |
+| Huddle: emperor penguins on Atka Bay's sea ice in a winter wind; the cold edge walks round to the lee and waves of small steps run through; a finger turns the wind | `huddle/` | `com.pbordjadze.toy.huddle` | `huddle-build-<n>` |
+| The Wave: Estadio Azteca at night, 87,000 phone lights; swipe the stands and, if enough stand, a Mexican wave runs round the bowl (an excitable medium) | `wave/` | `com.pbordjadze.toy.wave` | `wave-build-<n>` |
 | Catatumbo: lightning over Lake Maracaibo forks down to your finger by dielectric breakdown; its thunder is the bolt's own (row 327) | `catatumbo/` | `com.pbordjadze.toy.catatumbo` | `catatumbo-build-<n>` |
 | Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | `bubblers-build-<n>` |
 | Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | `barchans-build-<n>` |

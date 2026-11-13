@@ -1,0 +1,46 @@
+{
+ "_": "Bats, its light over Bracken Cave in the Texas Hill Country, the largest bat colony: a window onto the dusk, the column climbing out and streaming away. Touched, the window grows into the toy; the Earth mark, and it shrinks back into its light.",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": "bats"
+  },
+  {
+   "t": 8.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "the-light"
+  },
+  {
+   "t": 2.2,
+   "name": "window"
+  },
+  {
+   "t": 3.0,
+   "name": "growing"
+  },
+  {
+   "t": 6.5,
+   "name": "inside"
+  },
+  {
+   "t": 9.0,
+   "name": "going-back"
+  },
+  {
+   "t": 12.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 13,
+  "every": 0.1
+ }
+}

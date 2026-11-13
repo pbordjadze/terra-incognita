@@ -179,6 +179,39 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "bats-build",
+      "name": "Bats",
+      "bundleIdentifier": "com.pbordjadze.toy.bats",
+      "subtitle": "Millions of bats at dusk, and you the hawk",
+      "localizedDescription": "A summer dusk above Bracken Cave in the Texas Hill Country, where millions of free-tailed bats climb out of a sinkhole in a turning column and stream off over the hills to feed. You are the hawk: dive into them and watch the swerve ripple on down the stream. Working title; a toy in the making.",
+      "icon": "bats-icon.png",
+      "iconSource": "toys/bats/icon.png",
+      "tintColor": "#E8935A",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "huddle-build",
+      "name": "Huddle",
+      "bundleIdentifier": "com.pbordjadze.toy.huddle",
+      "subtitle": "Emperor penguins keeping warm in the wind",
+      "localizedDescription": "Emperor penguins packed on the sea ice of Atka Bay in a winter wind, seen from above. The ones on the windward edge get cold, walk round, and press in on the lee side, so the huddle turns over and creeps downwind, and now and then a wave of tiny steps runs through it. Drag to turn the wind; touch a penguin to start a wave. Working title; a toy in the making.",
+      "icon": "huddle-icon.png",
+      "iconSource": "toys/huddle/icon.png",
+      "tintColor": "#E8B04A",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "wave-build",
+      "name": "The Wave",
+      "bundleIdentifier": "com.pbordjadze.toy.wave",
+      "subtitle": "Start a Mexican wave in a stadium of phone lights",
+      "localizedDescription": "Estadio Azteca in Mexico City at night, 87,000 people, every one a phone held up as a light. Swipe along the stands and the people under your finger stand up; if enough do, a wave runs round the bowl at twenty seats a second. Too few, and it fizzles; two waves that meet wipe each other out. Working title; a toy in the making.",
+      "icon": "wave-icon.png",
+      "iconSource": "toys/wave/icon.png",
+      "tintColor": "#F2C46B",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "catatumbo-build",
       "name": "Catatumbo",
       "bundleIdentifier": "com.pbordjadze.toy.catatumbo",

@@ -7,8 +7,12 @@ use std::sync::Arc;
 use toy_kit::paint::Painter;
 use toy_kit::{Assets, Ctx, Globe, LonLat};
 
-use crate::likeness;
-use crate::rooms::{self, Room};
+use crate::rooms::Room;
+
+mod ground;
+mod likeness;
+mod places;
+pub use places::{doors, SCENES};
 
 pub type Opener = fn(&Ctx, &Arc<dyn Assets>) -> anyhow::Result<Box<dyn Room>>;
 
@@ -72,98 +76,6 @@ const FIREFLY_CITIES: [[f64; 2]; 16] = [
 ];
 
 pub const WHALES: usize = 0;
-pub const FIREFLIES: usize = 3;
-
-/// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
-/// its colour, its note), its name in tools/toys/terra/manifest.py; a likeness of its own in `paint` is
-/// optional (without one it is a breathing light of its colour).
-pub fn doors() -> Vec<Door> {
-    let mut all = vec![
-        Door {
-            id: "whales",
-            name: "Whales",
-            at: [-125.0, 30.0],
-            tint: [0.80, 0.60, 0.26],
-            night: true,
-            degree: 0,
-            open: rooms::open::<whales::Whales>,
-        },
-        Door {
-            id: "murmuration",
-            name: "Murmuration",
-            at: [murmuration::PLACE.0, murmuration::PLACE.1],
-            tint: [0.93, 0.58, 0.42],
-            night: false,
-            degree: 4,
-            open: rooms::open::<murmuration::Murmuration>,
-        },
-        Door {
-            id: "mold",
-            name: "Mold",
-            at: [21.5, 51.2],
-            tint: [0.95, 0.76, 0.28],
-            night: true,
-            degree: 2,
-            open: rooms::open::<mold::Mold>,
-        },
-        Door {
-            id: "fireflies",
-            name: "Fireflies",
-            at: [-81.5, 38.0],
-            tint: [0.62, 0.92, 0.36],
-            night: true,
-            degree: 6,
-            open: rooms::open::<fireflies::Fireflies>,
-        },
-        Door {
-            id: "bell",
-            name: "Bell",
-            at: [-73.05, -38.24],
-            tint: [0.62, 0.42, 0.22],
-            night: false,
-            degree: -2,
-            open: rooms::open::<bell::Bell>,
-        },
-        Door {
-            id: "swell",
-            name: "Swell",
-            at: [-178.0, 20.0],
-            tint: [0.20, 0.45, 0.70],
-            night: false,
-            degree: 3,
-            open: rooms::open::<swell::Swell>,
-        },
-        Door {
-            id: "meander",
-            name: "Meander",
-            at: [-67.03, -12.97],
-            tint: [0.30, 0.52, 0.62],
-            night: false,
-            degree: 7,
-            open: rooms::open::<meander::Meander>,
-        },
-        Door {
-            id: "throats",
-            name: "Throats",
-            at: [-120.85, 37.06],
-            tint: [0.93, 0.62, 0.30],
-            night: false,
-            degree: 5,
-            open: rooms::open::<throats::Throats>,
-        },
-        Door {
-            id: "frost",
-            name: "Frost",
-            at: [142.79, 63.46],
-            tint: [0.22, 0.42, 0.78],
-            night: false,
-            degree: 9,
-            open: rooms::open::<frost::Frost>,
-        },
-    ];
-    all.extend(likeness::doors());
-    all
-}
 
 /// The lights' life: what moves in them, their glints, a touch's stir, a bare tap's ring.
 pub struct Life {
@@ -748,21 +660,46 @@ impl Life {
                         }
                     }
                 }
-                "frost" | "catatumbo" | "bubblers" | "barchans" => {
-                    likeness::draw(p, d.id, &likeness::Spot::new(c, r, k, kf, a, halo), tm)
-                }
-                _ => {
-                    // a toy without a likeness of its own yet: a light of its colour, breathing
-                    let ph = (tm / 3.0 + i as f64 * 0.37).rem_euclid(1.0);
-                    p.ring(
+                "frost" => {
+                    // a window of dark glass at -50°: frost growing on it in six-armed feathers, then fading
+                    // as if a finger had warmed it, and growing back
+                    let w = a * halo;
+                    p.disc(
                         c,
-                        ((r * (0.3 + 1.2 * ph)) * k) as f32,
-                        2.1 * kf,
-                        1.2,
-                        [tint[0], tint[1], tint[2], ((1.0 - ph) * 0.85) as f32 * a],
+                        (r * 1.05 * k) as f32,
+                        (r * 0.2 * k) as f32,
+                        [0.06, 0.10, 0.20, 0.95 * w],
                     );
-                    p.disc(c, 3.6 * kf, 1.0, [tint[0], tint[1], tint[2], 0.95 * a]);
+                    let ph = (tm / 9.0).rem_euclid(1.0);
+                    let grow = smooth(0.0, 0.7, ph) * (1.0 - smooth(0.85, 1.0, ph));
+                    let ice = [0.80, 0.90, 1.0, 0.9 * a];
+                    for arm in 0..6 {
+                        let ang = arm as f64 * std::f64::consts::FRAC_PI_3 + 0.3;
+                        let (sa, ca) = ang.sin_cos();
+                        let len = r * 0.85 * grow;
+                        let tip = [c[0] + (ca * len * k) as f32, c[1] + (sa * len * k) as f32];
+                        p.line(c, tip, 0.9 * kf, 0.8, ice);
+                        for b in 1..4 {
+                            let at = len * b as f64 / 4.0;
+                            let bl = (len - at) * 0.45;
+                            let o = [c[0] + (ca * at * k) as f32, c[1] + (sa * at * k) as f32];
+                            for side in [-1.0f64, 1.0] {
+                                let ba = ang + side * 1.0;
+                                p.line(
+                                    o,
+                                    [
+                                        o[0] + (ba.cos() * bl * k) as f32,
+                                        o[1] + (ba.sin() * bl * k) as f32,
+                                    ],
+                                    0.6 * kf,
+                                    0.8,
+                                    ice,
+                                );
+                            }
+                        }
+                    }
                 }
+                _ => likeness::paint(p, d.id, c, r, k, tm, a, halo, i, tint),
             }
             // touched: it stirs (a ring of its colour going out)
             let st = t - self.stir_at[i];

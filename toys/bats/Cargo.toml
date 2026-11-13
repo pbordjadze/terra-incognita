@@ -1,0 +1,23 @@
+[package]
+name = "bats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Bats (a working title): millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream off over the hills; you are the hawk, and your dive sends a ripple down the stream."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "bats-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true
