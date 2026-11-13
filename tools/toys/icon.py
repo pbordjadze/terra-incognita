@@ -60,7 +60,6 @@ def murmuration():
     return img
 
 
-
 def fireflies():
     img = Image.new('RGBA', (N, N), (10, 14, 24, 255))
     rnd = random.Random(7)
@@ -390,7 +389,6 @@ def elkmont():
     for x, y, r in dots:
         d.ellipse([x - r * 0.6, y - r * 0.6, x + r * 0.6, y + r * 0.6], fill=(225, 255, 150, 255))
     return img
-
 
 
 def nazare():

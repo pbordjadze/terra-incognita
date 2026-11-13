@@ -77,7 +77,7 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
 
 - **Toys' conductor:** yes, on two conditions. The did-nothing tap check warns by default and fails only
   when a plan opts in. `launch_check.sh` keeps its interface. `toys/ios` stays theirs. Their first wants
-  are the iPhone's limits, GPU bytes and the budget (Mold still closes at launch on the phone), plus a
+  are the iPhone's limits, GPU bytes and the budget (Mold, since removed, then closed at launch on the phone), plus a
   loudness line and contrast-stretched shots. Merge only when all four toys are green with identical renders.
 - **Adrift's conductor:** `play-all` (built from `origin/adrift`, with `play`'s lines unchanged; they
   merge it), `--artifact` and the launch check as a job that doesn't block anything at first: yes. The GPU
@@ -113,7 +113,7 @@ One line a tool as it lands (moved here from `docs/tools.md` on Nov 3).
 | adrift-check play-all | every Adrift plan in one process, N at a time: one device and the assets' bytes shared, each plan its own App, so each plays exactly as `play` would (`tools/adrift/play_all_same.sh` proves it); `<out>/<name>.log` and `<out>/<name>/` a plan, `ok`/`FAIL` a line | `adrift-check play-all <plan-or-dir>... <out-dir> [-j N]` | `tools/adrift/touch-play.sh`, `gpu-runner.sh` |
 | Toy check: loudness, stretch | a plan with sound prints its integrated LUFS, RMS and peak; `--stretch` writes `<shot>.stretch.png`, contrast-stretched, to find faint panels and seams | `<toy>-check play … [--stretch]` | the toys' critics |
 | Toy clip | a plan rendered at 1080×1920, 30 fps, with its sound, encoded H.264 high yuv420p + AAC 48 kHz, +faststart (ready to post) | `<toy>-check clip <plan> <out.mp4>` (encodes with `bash tools/kit/clip.sh <frames-dir> <out.mp4> [fps]`) | any toy |
-| Same renders | every toy's plans played by two sets of check binaries and every PNG and WAV compared byte for byte: a kit change that must not change a look | `bash tools/kit/same_renders.sh render <bin-dir> <out>`, then `compare <a> <b>`; for a toy that differs from itself run to run (Mold), `python3 tools/kit/render_noise.py <a> <b>` against two runs of the base; `bash tools/kit/play_all_speed.sh <toy>` times play-all | kit changes |
+| Same renders | every toy's plans played by two sets of check binaries and every PNG and WAV compared byte for byte: a kit change that must not change a look | `bash tools/kit/same_renders.sh render <bin-dir> <out>`, then `compare <a> <b>`; `bash tools/kit/play_all_speed.sh <toy>` times play-all | kit changes |
 
 ## First after the reset: Paul's two asks (Nov 3, 3:45 PM ET)
 
