@@ -7,13 +7,14 @@
 #   actionlint                        the workflows (.github/actionlint.yaml), with shellcheck on their scripts
 #   SwiftLint                         the Swift (.swiftlint.yml), when `swiftlint` is on PATH
 #   ci/silenced.py                    every lint silenced in the code says why, beside it
-#   ci/sizes.py                       no source file past 800 lines; those already past it only shrink
+#   ci/ratchet.py                     file length (800), function size and complexity (100, 20; lizard) and the
+#                                     Python's types (pyright): what is past a limit may only get better
 # ci/qa/ and qa-explore.yml are generated from painting-company's shared copy and linted there.
 #
 #   bash ci/lint.sh            # everything; the exit status says whether all passed
-#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced, sizes
+#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced, ratchet
 #   bash ci/lint.sh fix        # rustfmt and ruff's safe fixes in place, then everything
-# The versions are pinned: Rust by rust-toolchain.toml, ruff, shellcheck and actionlint by
+# The versions are pinned: Rust by rust-toolchain.toml, ruff, shellcheck, actionlint, lizard and pyright by
 # tools/requirements.txt (python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt), SwiftLint
 # by SWIFTLINT in ci.yml's lint job.
 set -uo pipefail
@@ -46,8 +47,8 @@ fi
 if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = silenced ]; then
   run "every silenced lint says why" python3 ci/silenced.py
 fi
-if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = sizes ]; then
-  run "file length" python3 ci/sizes.py
+if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = ratchet ]; then
+  run "ratchet: file length, complexity, types" python3 ci/ratchet.py
 fi
 if want shell; then
   run shellcheck bash -c "git ls-files -z '*.sh' ci/hooks ':!ci/qa/*' | xargs -0 shellcheck"

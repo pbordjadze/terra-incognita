@@ -1,6 +1,6 @@
-# The source files that were already longer than ci/sizes.py's limit (800 lines) when it came in, each with
-# its ceiling: the length it may not pass. They may only shrink; `python3 ci/sizes.py --tighten` lowers the
-# ceilings. A raised ceiling or a new entry carries its reason after a `#`.
+# Source files already past ci/ratchet.py's limit of 800 lines when it came in: `path lines`, the length each may not pass.
+# They may only get better: `python3 ci/ratchet.py sizes --tighten` lowers a ceiling in the commit that improves it.
+# A raised ceiling or a new entry carries its reason after a `#` on its line.
 App/TerraIncognita/Globe/GlobeView.swift 1651
 App/TerraIncognita/Playground/PackStore.swift 995
 adrift/crates/adrift-check/src/main.rs 1238
