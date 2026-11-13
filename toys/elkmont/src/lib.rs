@@ -184,7 +184,7 @@ impl Toy for Elkmont {
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         match e.phase {
             Phase::Down => {
-                if self.lamp.is_none() {
+                if self.lamp.is_none_or(|l| l.0 == TAPPED) {
                     // the light flashes at once, then every interflash while held
                     self.lamp = Some((e.id, [e.x, e.y], self.swarm.t, 0));
                     ctx.haptic();
@@ -199,11 +199,11 @@ impl Toy for Elkmont {
             }
             Phase::Up | Phase::Cancel => {
                 if let Some(l) = self.lamp.filter(|l| l.0 == e.id) {
-                    if (2..LAMP_BURST).contains(&l.3) {
+                    if (2..LAMP_BURST).contains(&l.3) && e.phase == Phase::Up {
                         self.swarm.lamp_burst_done(self.lamp_at);
                     }
                     self.lamp = None;
-                    if l.3 == 0 {
+                    if l.3 == 0 && e.phase == Phase::Up {
                         // a tap too quick for its flash still gives one, then lets go
                         self.lamp = Some((TAPPED, l.1, l.2, 0));
                     }

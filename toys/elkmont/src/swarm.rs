@@ -33,7 +33,7 @@ const BURST_MIN: u32 = 4;
 const BURST_MAX: u32 = 8;
 /// After a burst, the rest in which nothing sets him off (s, mean and spread), measured from the
 /// burst's last flash.
-const REST_S: f64 = 2.0;
+const REST_S: f64 = 3.0;
 const REST_SPREAD: f64 = 0.45;
 /// After the rest, the mean of his own random wait (s; exponential): alone he would flash rarely.
 const WAIT_MEAN_S: f64 = 38.0;
@@ -130,6 +130,8 @@ struct Seen {
     sight: f32,
     /// A firefly's (not the watcher's light): only theirs keep the woods from being dark.
     firefly: bool,
+    /// Which male flashed (`usize::MAX` for the watcher's light): none sees his own.
+    who: usize,
 }
 
 pub struct Swarm {
@@ -249,6 +251,7 @@ impl Swarm {
             t: self.t,
             sight: SIGHT_M * 1.4,
             firefly: false,
+            who: usize::MAX,
         });
     }
 
@@ -329,15 +332,21 @@ impl Swarm {
     }
 
     /// One male in his burst: pulled into step by a flash seen, flashing when due, ending together.
-    fn burst(m: &mut Male, t: f64, saw: Option<f64>, seed: &mut u64, seen_now: &mut Vec<Seen>) {
+    fn burst(
+        m: &mut Male,
+        who: usize,
+        t: f64,
+        saw: Option<f64>,
+        seed: &mut u64,
+        seen_now: &mut Vec<Seen>,
+    ) {
         let State::Burst { next, done, most } = m.state else {
             return;
         };
-        // a flash seen just before his own next pulls it earlier (into step)
+        // a flash seen a little ahead of his own pulls his next one earlier, into step with it
         let mut next = next;
         if let Some(at) = saw {
-            let mine = next - m.interflash;
-            let ahead = mine - (at + ANSWER_S * 0.5);
+            let ahead = next - (at + m.interflash);
             if ahead > 0.0 && ahead < PULL_WINDOW_S && t - m.last_flash > FLASH_S {
                 next -= ahead * PULL;
             }
@@ -350,6 +359,7 @@ impl Swarm {
                 t: next,
                 sight: SIGHT_M,
                 firefly: true,
+                who,
             });
             // he keeps on while he sees the others flashing, from his fourth flash to his
             // most; so a burst ends together, and the rest after it starts together
@@ -359,7 +369,7 @@ impl Swarm {
                 m.dark = DARK_S + DARK_SPREAD * gauss(seed);
                 let rest = REST_S + REST_SPREAD * gauss(seed);
                 State::Resting {
-                    until: next + rest.max(3.0),
+                    until: next + rest.max(1.5),
                 }
             } else {
                 State::Burst {
@@ -407,15 +417,15 @@ impl Swarm {
         let mut seen_now: Vec<Seen> = std::mem::take(&mut self.pending);
         let mut seed = self.seed;
         let mut any_burst = false;
-        for m in self.males[..self.out].iter_mut() {
+        for (i, m) in self.males[..self.out].iter_mut().enumerate() {
             Self::fly(m, t, dt, &mut seed);
             // see, and flash
             let sees = |s: &[Seen], p: [f32; 3], fireflies: bool| -> Option<f64> {
                 s.iter()
                     .filter(|f| {
                         (f.firefly || !fireflies)
+                            && f.who != i
                             && dist2(f.pos, p) < f.sight * f.sight
-                            && dist2(f.pos, p) > 1e-6
                     })
                     .map(|f| f.t)
                     .reduce(f64::min)
@@ -444,7 +454,7 @@ impl Swarm {
                 }
                 State::Burst { .. } => {
                     any_burst = true;
-                    Self::burst(m, t, saw, &mut seed, &mut seen_now);
+                    Self::burst(m, i, t, saw, &mut seed, &mut seen_now);
                 }
             }
         }
