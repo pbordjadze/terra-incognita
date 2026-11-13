@@ -1,0 +1,28 @@
+# Source files already past ci/ratchet.py's limit of 800 lines when it came in: `path lines`, the length each may not pass.
+# They may only get better: `python3 ci/ratchet.py sizes --tighten` lowers a ceiling in the commit that improves it.
+# A raised ceiling or a new entry carries its reason after a `#` on its line.
+adrift/crates/adrift-check/src/main.rs 1238
+adrift/crates/adrift-core/src/app.rs 3540
+adrift/crates/adrift-core/src/conduct.rs 1539
+adrift/crates/adrift-core/src/look/mod.rs 1200
+adrift/crates/adrift-core/src/look/words.rs 1166
+adrift/crates/adrift-core/src/sea/tests.rs 1656
+adrift/crates/adrift-core/src/sea/wind.rs 802
+adrift/crates/adrift-core/src/sea/wind_tests.rs 908
+adrift/crates/adrift-core/src/studio.rs 2082
+adrift/crates/adrift-core/src/touch/camera.rs 1216
+adrift/crates/adrift-core/src/touch/gestures.rs 2273
+toys/carol/src/lib.rs 1345
+toys/crates/toy-kit/src/check.rs 1672
+toys/crates/toy-kit/src/globe/mod.rs 1116
+toys/crates/toy-kit/src/lib.rs 815
+toys/frost/src/lib.rs 1266
+toys/jam/src/lib.rs 1135
+toys/jam/src/town.rs 872
+toys/meander/src/toy.rs 1004
+toys/mold/src/lib.rs 997
+toys/murmuration/src/lib.rs 1155
+toys/taste/src/lib.rs 813
+toys/terra/src/doors.rs 928
+toys/terra/src/lib.rs 2083
+toys/whales/src/lib.rs 1091
