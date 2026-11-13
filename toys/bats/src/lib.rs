@@ -9,13 +9,13 @@
 pub mod colony;
 pub mod sound;
 
-use colony::{len, Colony, Stage, CAVE_Z};
+use colony::{len, Colony, Stage, CAVE_X, CAVE_Z};
 use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::paint::Painter;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Synth, Toy};
 
 /// Bats at most (the colony is millions; these are the ones drawn).
-const N: usize = 48_000;
+const N: usize = 56_000;
 /// The watcher's eye above the cave mouth's ground, metres; the view's height, degrees.
 const EYE: f32 = 14.0;
 const FOV: f32 = 75.0;
@@ -117,7 +117,9 @@ impl Bats {
             let Some((c, z)) = self.project(b.p) else {
                 continue;
             };
-            let span = BAT_SPAN * f / z * k;
+            // a jinking bat throws its wings wide: the ripple shows as a dark flicker running on
+            let jinking = colony::jinking(b);
+            let span = BAT_SPAN * f / z * k * (1.0 + 0.8 * jinking);
             let side = {
                 let h = (b.v[0] * b.v[0] + b.v[2] * b.v[2]).sqrt().max(1e-3);
                 [b.v[2] / h, 0.0, -b.v[0] / h]
@@ -143,7 +145,7 @@ impl Bats {
             };
             let fade = (-z / 2600.0).exp() * thins;
             let cover = (span / 1.6).clamp(0.12, 1.0);
-            let a = 0.92 * fade * cover;
+            let a = (0.92 * fade * cover * (1.0 + jinking)).min(1.0);
             let col = [ink[0], ink[1], ink[2], a];
             let w = (span * 0.11).clamp(0.55, 2.5);
             if span < 1.4 {
@@ -166,7 +168,7 @@ impl Bats {
             // stooping it folds its wings back
             let fold = ((speed - 14.0) / 16.0).clamp(0.0, 0.6);
             // drawn at least big enough to see under a finger, wherever it flies
-            let at_least = 30.0 * z / f;
+            let at_least = 46.0 * z / f;
             let span = (HAWK_SPAN * HAWK_DRAWN).max(at_least) * (1.0 - fold * 0.6);
             let dir = {
                 let n = (h.v[0] * h.v[0] + h.v[2] * h.v[2]).sqrt().max(1e-3);
@@ -362,7 +364,7 @@ impl Toy for Bats {
                 time: self.t as f32,
                 scale: 1.0,
                 center: [0.0, 0.0],
-                p: [f * k, pitch, dusk, EYE, CAVE_Z, 7.0, 0.0, 0.0],
+                p: [f * k, pitch, dusk, EYE, CAVE_Z, 7.0, CAVE_X, 0.0],
             },
         );
         self.paint_bats(k, f);
@@ -379,12 +381,12 @@ impl Toy for Bats {
         // the streams a little past the column's top, for the plans to dive at
         let mut v = Vec::new();
         for (k, name) in [(0, "stream"), (1, "stream2")] {
-            let (p, _) = colony::stream_at(k, 140.0);
+            let (p, _) = colony::stream_at(k, 260.0);
             if let Some((s, _)) = self.project(p) {
                 v.push((name.to_string(), [s[0] as f64, s[1] as f64]));
             }
         }
-        if let Some((s, _)) = self.project([0.0, 60.0, CAVE_Z]) {
+        if let Some((s, _)) = self.project([CAVE_X, 60.0, CAVE_Z]) {
             v.push(("column".to_string(), [s[0] as f64, s[1] as f64]));
         }
         v

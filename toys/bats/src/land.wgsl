@@ -2,7 +2,7 @@
 // by the elevation and bearing of each pixel's ray, the low hills on the horizon with their trees, the
 // scrub between, and the cave's sinkhole. A backdrop (toy-kit backdrop.rs): u.p0 = (focal length in
 // pixels, the camera's pitch up in radians, dusk 0..1, the eye's height in metres); u.p1 = (the cave's
-// distance, its radius, 0, 0).
+// distance, its radius, its offset to the right, 0).
 
 const PI: f32 = 3.14159265;
 
@@ -34,8 +34,8 @@ fn sky(el: f32, az: f32, dusk: f32) -> vec3<f32> {
   let d_az = az - sun_az;
   let toward = exp(-d_az * d_az * 1.4);
   let h = max(el, 0.0);
-  let zen_early = vec3<f32>(0.30, 0.45, 0.72);
-  let zen_late = vec3<f32>(0.07, 0.10, 0.24);
+  let zen_early = vec3<f32>(0.13, 0.20, 0.42);
+  let zen_late = vec3<f32>(0.04, 0.05, 0.14);
   let zen = mix(zen_early, zen_late, dusk);
   let band_early = vec3<f32>(1.00, 0.66, 0.38);
   let band_late = vec3<f32>(0.80, 0.36, 0.24);
@@ -43,7 +43,7 @@ fn sky(el: f32, az: f32, dusk: f32) -> vec3<f32> {
   let rose = mix(vec3<f32>(0.86, 0.56, 0.58), vec3<f32>(0.42, 0.26, 0.38), dusk);
   // the glow low in the west, the rose above it, the blue overhead
   let low = exp(-h * mix(9.0, 13.0, dusk));
-  let mid = exp(-h * 3.2);
+  let mid = exp(-h * 2.4);
   var c = mix(zen, rose, mid * (0.55 + 0.25 * toward));
   c = mix(c, band, low * (0.35 + 0.65 * toward));
   // the opposite side: the Earth's shadow, a dusky blue band rising behind
@@ -97,7 +97,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     // the west's light on it, fading with the dusk
     ground = ground * mix(1.0, 0.45, dusk) * (0.75 + 0.35 * exp(-pow(az + 0.55, 2.0)));
     // the sinkhole: a dark mouth in pale limestone
-    let cave = vec2<f32>(0.0, u.p1.x);
+    let cave = vec2<f32>(u.p1.z, u.p1.x);
     let rc = u.p1.y;
     let q = (g - cave) * vec2<f32>(1.0, 1.25);
     let rr = length(q) + 2.5 * (fbm(q * 0.25) - 0.5);

@@ -8,12 +8,14 @@
 
 use std::collections::HashMap;
 
-/// The cave mouth: straight ahead of the watcher, `CAVE_Z` metres away, at the ground (y = 0).
+/// The cave mouth: ahead of the watcher, `CAVE_Z` metres away, at the ground (y = 0).
 pub const CAVE_Z: f32 = 110.0;
+/// and a little left of straight ahead, so the streams have the sky to the right to run into
+pub const CAVE_X: f32 = -12.0;
 /// Where the column ends and the streams begin, metres above the mouth.
 pub const TOP: f32 = 125.0;
 /// How far along a stream a bat is let go (and goes back to the cave to come out again), metres.
-pub const STREAM_END: f32 = 1900.0;
+pub const STREAM_END: f32 = 2600.0;
 
 /// A stream: its heading over the ground (x, z, a unit vector), its climb a metre along, its
 /// half-width at the top and how it widens, and how much it wanders.
@@ -27,18 +29,18 @@ pub struct Stream {
 
 pub const STREAMS: [Stream; 2] = [
     Stream {
-        heading: [0.22, 0.975],
-        climb: 0.075,
+        heading: [0.80, 0.60],
+        climb: 0.13,
         width: 9.0,
-        spread: 0.016,
-        wander: 55.0,
+        spread: 0.02,
+        wander: 70.0,
     },
     Stream {
-        heading: [-0.62, 0.78],
-        climb: 0.11,
-        width: 6.0,
-        spread: 0.012,
-        wander: 35.0,
+        heading: [0.40, 0.917],
+        climb: 0.22,
+        width: 5.0,
+        spread: 0.014,
+        wander: 90.0,
     },
 ];
 
@@ -107,13 +109,24 @@ pub struct Colony {
 
 const CELL: f32 = 4.0;
 /// How near a neighbour must be to pass a swerve on, metres; and how long it takes, seconds.
-const HEAR: f32 = 3.6;
+const HEAR: f32 = 4.5;
 const REACT: [f32; 2] = [0.07, 0.16];
 /// How much of a swerve's strength a neighbour takes on.
-const PASS: f32 = 0.975;
+const PASS: f32 = 0.986;
 /// How far a jink carries a bat aside at its strongest, metres; and how long a swerve lasts.
 const JINK: f32 = 15.0;
 const QUIET: f32 = 4.0;
+/// How much of its distance from the flight's middle line a jinking bat closes.
+const PINCH: f32 = 0.9;
+
+/// How far into its jink a bat is (0 none .. 1 at its widest).
+pub fn jinking(b: &Bat) -> f32 {
+    if b.swerve < QUIET {
+        (jink(b.swerve) * b.strength / 0.7).min(1.0)
+    } else {
+        0.0
+    }
+}
 
 /// The jink's shape over time: out in a quarter second, back over a second and a half.
 fn jink(t: f32) -> f32 {
@@ -145,7 +158,7 @@ fn axis(y: f32, t: f32) -> [f32; 2] {
     let h = (y / TOP).clamp(0.0, 1.0);
     let sway = h * h * 9.0;
     [
-        0.06 * y + sway * (y / 45.0 - t * 0.21).sin(),
+        CAVE_X + 0.06 * y + sway * (y / 45.0 - t * 0.21).sin(),
         CAVE_Z + 0.04 * y + sway * 0.6 * (y / 60.0 - t * 0.17 + 1.3).cos(),
     ]
 }
@@ -224,7 +237,7 @@ impl Colony {
                 let a = self.rng.range(0.0, std::f32::consts::TAU);
                 let r = self.rng.range(0.0, 3.0);
                 let b = &mut self.bats[i];
-                b.p = [r * a.cos(), -2.0, CAVE_Z + r * a.sin()];
+                b.p = [CAVE_X + r * a.cos(), -2.0, CAVE_Z + r * a.sin()];
                 b.v = [0.0, 6.0, 0.0];
                 b.stage = Stage::Column;
                 b.swerve = QUIET;
@@ -362,6 +375,14 @@ impl Colony {
                 self.rng.range(-j, j),
             ],
         );
+        // the line the bat flies along: the column's axis, or its stream's middle
+        let centre = match b.stage {
+            Stage::Column => {
+                let a = axis(b.p[1], self.t);
+                [a[0], b.p[1], a[1]]
+            }
+            _ => stream_at(b.stream as usize, b.s).0,
+        };
         let b = &mut self.bats[i];
         b.v = v;
         b.p = add(b.p, mul(v, dt));
@@ -372,6 +393,10 @@ impl Colony {
             let g1 = jink(b.swerve);
             let dir = norm(add(b.away, [0.0, -0.6, 0.0]));
             b.p = add(b.p, mul(dir, JINK * b.strength * (g1 - g0)));
+            // and the flight closes up round its line as the swerve passes: a dark knot runs on
+            let mut inward = sub(centre, b.p);
+            inward[1] *= 0.3;
+            b.p = add(b.p, mul(inward, PINCH * b.strength.min(1.0) * (g1 - g0)));
         }
         b.wing += dt * std::f32::consts::TAU * 9.5 * b.pace;
         match b.stage {
