@@ -107,51 +107,48 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let ang = (px.y - hy) / f;
   let d = eye / tan(ang);
   let x = u.p0.z + (px.x - u.size.x * 0.5) / f * d;
-  let uv = vec2<f32>(x / (du * d), log(d) / dv);
+  // the row out (absolute: v = ln D / dv); a row's cells are du * its own distance wide, in metres
+  let v = log(d) / dv;
   // how tall a cell is here, in pixels: ~(y - horizon) * DV
   let cellpx = (px.y - hy) * dv;
   // the haze far out: the paper and its paint go lavender-grey toward the horizon
   let haze = exp(-(px.y - hy) / (u.scale * 26.0));
   let hazec = vec3<f32>(0.27, 0.16, 0.31);
-  let row = uv.y - v0;
+  let row = v - v0;
   var col = PAPER;
   if (row < f32(u.grid.y) - 1.0 && cellpx > 0.9) {
     // the nearest seed, then the distance to its cell's edge (the nearest bisector with a
-    // neighbour), in screen pixels: a unit of u is du*f wide, a unit of v cellpx tall
-    let base = floor(uv);
-    let m = vec2<f32>(du * f, cellpx);
+    // neighbour), in screen pixels from this pixel to the seed
     var best = 1e9;
-    var bc = vec4<f32>(0.0); var bs = vec2<f32>(0.0);
+    var bc = vec4<f32>(0.0); var bv = 0.0; var bid = vec2<f32>(0.0); var pb = vec2<f32>(0.0);
+    var seeds: array<vec2<f32>, 15>;
+    var n = 0;
     for (var j = -2; j <= 2; j = j + 1) {
+      let r = floor(v) + f32(j);
+      let cr = r - v0;
+      if (cr < 0.0 || cr >= f32(u.grid.y)) { continue; }
+      let w = du * exp((r + 0.5) * dv);
+      let c0 = floor(x / w);
       for (var i = -1; i <= 1; i = i + 1) {
-        let c = base + vec2<f32>(f32(i), f32(j));
-        let cr = c.y - v0;
-        if (cr < 0.0 || cr >= f32(u.grid.y)) { continue; }
-        let fc = fld(vec2<f32>(c.x, cr) + 0.5);
+        let c = c0 + f32(i);
+        let fc = fld(vec2<f32>(c, cr) + 0.5);
         let k = floor(fc.w / 2.0 + 0.001);
-        let seed = c + vec2<f32>(fc.z, fc.w - 2.0 * k);
-        let dd = (uv - seed) * m;
-        let l = dot(dd, dd);
-        if (l < best) { best = l; bc = fc; bs = seed; }
+        let sv = r + fc.w - 2.0 * k;
+        // this pixel from the seed, in pixels
+        let ps = vec2<f32>((x - (c + fc.z) * w) / d * f, (v - sv) * cellpx);
+        seeds[n] = ps; n = n + 1;
+        let l = dot(ps, ps);
+        if (l < best) { best = l; bc = fc; bv = sv; bid = vec2<f32>(c, r); pb = ps; }
       }
     }
     var edge = 1e9;
-    let pb = (uv - bs) * m;
-    for (var j = -2; j <= 2; j = j + 1) {
-      for (var i = -1; i <= 1; i = i + 1) {
-        let c = base + vec2<f32>(f32(i), f32(j));
-        let cr = c.y - v0;
-        if (cr < 0.0 || cr >= f32(u.grid.y)) { continue; }
-        let fc = fld(vec2<f32>(c.x, cr) + 0.5);
-        let k = floor(fc.w / 2.0 + 0.001);
-        let seed = c + vec2<f32>(fc.z, fc.w - 2.0 * k);
-        let ps = (uv - seed) * m;
-        let ab = pb - ps;
-        let ll = dot(ab, ab);
-        if (ll > 1e-4) {
-          // the bisector of the two seeds, as seen from this pixel
-          edge = min(edge, dot((pb + ps) * 0.5, -ab) / sqrt(ll));
-        }
+    for (var s = 0; s < n; s = s + 1) {
+      let ps = seeds[s];
+      let ab = pb - ps;
+      let ll = dot(ab, ab);
+      if (ll > 1e-4) {
+        // the bisector of the two seeds, as seen from this pixel
+        edge = min(edge, dot((pb + ps) * 0.5, -ab) / sqrt(ll));
       }
     }
     edge = max(edge, 0.0);
@@ -172,11 +169,11 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     // the paint's number, in about half the unpainted cells big enough to hold it (judged at the
     // cell's own seed, so a numeral is never cut by the row it straddles)
     let cw = du * f;
-    let seedpx = atan(eye / exp(bs.y * dv)) * f * dv;
+    let seedpx = atan(eye / exp(bv * dv)) * f * dv;
     let numh = min(7.0 * u.scale, seedpx * 0.55);
-    if (painted < 0.5 && numh > 3.4 * u.scale && cw > numh * 1.2 && hash2(bs * 1.37) < 0.42) {
+    if (painted < 0.5 && numh > 3.4 * u.scale && cw > numh * 1.2 && hash2(bid * 1.37) < 0.42) {
       // (out is up the screen)
-      let q = vec2<f32>((uv.x - bs.x) * cw, -(uv.y - bs.y) * cellpx) / numh;
+      let q = vec2<f32>(pb.x, -pb.y) / numh;
       let nd = numeral(q, k + 1) * numh;
       let ink = 1.0 - smoothstep(0.38 * u.scale, 0.9 * u.scale, nd);
       col = mix(col, NUMERAL, ink * 0.85 * (1.0 - painted * 2.0));

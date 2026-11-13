@@ -22,8 +22,13 @@ pub const PLACE: (f64, f64) = (-87.38, 46.55);
 const HORIZON: f64 = 0.41;
 /// The lens: points a radian, as a multiple of the screen's width.
 const LENS: f64 = 1.95;
-/// The moon has been painting this long when the toy opens (seconds).
-const OPENING_S: f64 = 8.0;
+/// The moon has been painting this long when the toy opens (seconds), in steps this long (big ones:
+/// the slopes' walk is exact at any step, and the opening is to be quick).
+const OPENING_S: f64 = 9.0;
+const OPENING_STEP_S: f64 = 0.15;
+/// A drag walks the water under the finger, taken at least this near and at most this far (metres),
+/// so the walk is never a crawl near the shore nor a leap toward the horizon.
+const WALK_M: [f64; 2] = [3.0, 30.0];
 /// A held finger gusts again this often (seconds).
 const HOLD_GUST_S: f64 = 0.55;
 /// At most this many notes a second from the painting.
@@ -77,9 +82,8 @@ impl Toy for MoonRoad {
         let size_pt = ctx.points();
         let mut lake = Lake::new(MoonRoad::near_m(size_pt), 0x0D0D_3E11);
         lake.slow = ctx.reduce_motion;
-        let dt = 1.0 / 30.0;
-        for _ in 0..(OPENING_S / dt) as usize {
-            lake.step(dt);
+        for _ in 0..(OPENING_S / OPENING_STEP_S) as usize {
+            lake.step(OPENING_STEP_S);
         }
         let field = Field::new(
             &ctx.gpu,
@@ -124,12 +128,18 @@ impl Toy for MoonRoad {
                 }
             }
             Phase::Move => {
-                let depth = self.out_at(p[1]).unwrap_or(40.0).min(400.0);
+                let depth = self
+                    .out_at(p[1])
+                    .unwrap_or(WALK_M[1])
+                    .clamp(WALK_M[0], WALK_M[1]);
                 let f = self.focal();
+                // only the first finger down walks; the others gust where they are
+                let first = self.fingers.first().map(|f| f.id);
                 if let Some(fi) = self.fingers.iter_mut().find(|f| f.id == e.id) {
-                    // the water under the finger stays under it: you walk the other way
-                    let dx = p[0] - fi.at[0];
-                    self.lake.x_eye -= dx / f * depth;
+                    if first == Some(e.id) {
+                        // the water under the finger stays under it: you walk the other way
+                        self.lake.x_eye -= (p[0] - fi.at[0]) / f * depth;
+                    }
                     fi.at = p;
                 }
             }
@@ -242,9 +252,9 @@ impl Toy for MoonRoad {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-            "The moon is low over Lake Superior. Only bits of water tilted just right send its light to your eye, so a road of light runs from the moon to you.",
-            "Each bit the moon lights, it paints. A gust tilts more of them, and the road spreads.",
-            "Drag to walk the shore: the road follows you.",
+            "The moon is low over Lake Superior. Only water tilted just right sends its light to your eye, so the road always points at you.",
+            "The moon paints each bit it lights. A gust tilts more, and the road spreads.",
+            "Drag to walk the shore; the road follows.",
         ]))
     }
 }

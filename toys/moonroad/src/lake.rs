@@ -1,17 +1,20 @@
 //! The lake: a template of facets laid on the water, each a little patch of wave with its own tilt.
-//! The cells are fixed to the water: across, `u = X / (DU * D)`; out, `v = ln D / DV` (metres, `X`
-//! along the shore, `D` out from it), so near cells are big on the screen and far ones small, as a
-//! real surface is. A cell's tilt wanders (an Ornstein–Uhlenbeck walk) and the swell runs through it
+//! The cells are fixed to the water in rows like bricks: out, row `v = ln D / DV` (metres, `D` out
+//! from the shore); across, each row's cells are `DU` times the row's own distance wide (metres, so
+//! they stay put on the water however far you walk), so near cells are big on the screen and far ones
+//! small, as a real surface is. A cell's tilt wanders (an Ornstein–Uhlenbeck walk) and the swell runs through it
 //! in bands toward the shore. The moon is at infinity: a cell flashes when its tilt sends the moon's
 //! light to the eye, the glitter path (Minnaert, *Light and Colour in the Outdoors*), and once
 //! flashed, it keeps its paint.
 
-/// The grid's steps (radians across at a cell's own distance; natural log out).
+/// The grid's steps (a row's cell width over its distance; natural log out).
 pub const DU: f64 = 0.034;
 pub const DV: f64 = 0.024;
 /// The grid: cells across (a ring: the shore is long) and rows out.
 pub const NU: usize = 48;
-pub const NV: usize = 340;
+pub const NV: usize = 200;
+/// Rows kept nearer than the bottom of the screen, so turning the phone never runs out of water.
+const SPARE_ROWS: i64 = 40;
 /// The eye over the water, metres (standing on the beach).
 pub const EYE_M: f64 = 1.7;
 /// The moon's elevation (radians, ~4°) and its azimuth straight ahead.
@@ -82,9 +85,13 @@ impl Rng {
     }
     /// a normal deviate
     pub fn n(&mut self) -> f64 {
-        let a = self.f().max(1e-12);
-        let b = self.f();
-        (-2.0 * a.ln()).sqrt() * (std::f64::consts::TAU * b).cos()
+        self.n2()[0]
+    }
+    /// two independent normal deviates (Box–Muller gives both for the price of one)
+    pub fn n2(&mut self) -> [f64; 2] {
+        let a = (-2.0 * self.f().max(1e-12).ln()).sqrt();
+        let (s, c) = (std::f64::consts::TAU * self.f()).sin_cos();
+        [a * c, a * s]
     }
 }
 
@@ -99,7 +106,7 @@ pub fn hash(x: u64) -> f64 {
 impl Lake {
     /// A lake whose nearest row is `near_m` out (the bottom of the screen).
     pub fn new(near_m: f64, seed: u64) -> Lake {
-        let v0 = (near_m.ln() / DV).floor() as i64 - 1;
+        let v0 = (near_m.ln() / DV).floor() as i64 - SPARE_ROWS;
         let mut rng = Rng(seed | 1);
         let mut cells = Vec::with_capacity(NU * NV);
         for i in 0..NU * NV {
@@ -107,7 +114,10 @@ impl Lake {
             cells.push(Cell {
                 j: [0.1 + 0.8 * h(1) as f32, 0.1 + 0.8 * h(2) as f32],
                 paint: 1 + (h(3) * 3.0) as u8,
-                slope: [rng.n() * CALM, rng.n() * CALM],
+                slope: {
+                    let n = rng.n2();
+                    [n[0] * CALM, n[1] * CALM]
+                },
                 painted: 0.0,
                 glint: 0.0,
                 lit: 0.0,
@@ -129,6 +139,11 @@ impl Lake {
     /// Metres out to the middle of row `row`.
     pub fn row_m(&self, row: usize, jv: f64) -> f64 {
         ((self.v0 as f64 + row as f64 + jv) * DV).exp()
+    }
+
+    /// A row's cells' width along the shore, metres.
+    pub fn width_m(&self, row: usize) -> f64 {
+        DU * self.row_m(row, 0.5)
     }
 
     /// The extra spread of slope a gust gives at (along, out) now.
@@ -184,9 +199,9 @@ impl Lake {
         let omega = std::f64::consts::TAU / SWELL_S;
         let k = std::f64::consts::TAU / SWELL_M;
         for row in 0..NV {
-            let d_row = self.row_m(row, 0.5);
+            let w = self.width_m(row);
             // the turn of the ring nearest the eye, for this row
-            let ue = self.x_eye / (DU * d_row);
+            let ue = self.x_eye / w;
             for col in 0..NU {
                 let i = row * NU + col;
                 let c = self.cells[i];
@@ -200,10 +215,11 @@ impl Lake {
                 }
                 let u = col as f64 + (lap * NU as i64) as f64 + cell.j[0] as f64;
                 let d = self.row_m(row, cell.j[1] as f64);
-                let x = u * DU * d;
+                let x = u * w;
                 let sigma = CALM + self.gusty(x, d);
-                cell.slope[0] = cell.slope[0] * decay + sigma * kick * self.rng.n();
-                cell.slope[1] = cell.slope[1] * decay + sigma * kick * self.rng.n();
+                let n = self.rng.n2();
+                cell.slope[0] = cell.slope[0] * decay + sigma * kick * n[0];
+                cell.slope[1] = cell.slope[1] * decay + sigma * kick * n[1];
                 // the swell's bands, rolling in toward the shore
                 let phase = k * d + omega * t + 0.6 * (x * 0.21).sin();
                 let swell = SWELL_K * sigma * phase.sin();
@@ -269,7 +285,7 @@ mod tests {
                 let c = &lake.cells[row * NU + col];
                 if c.painted > 0.0 {
                     let u = col as f64 + (c.lap * NU as i64) as f64;
-                    let az = (u * DU * d - lake.x_eye) / d;
+                    let az = (u * lake.width_m(row) - lake.x_eye) / d;
                     if az.abs() < 0.12 {
                         on += 1;
                     } else {
@@ -298,5 +314,33 @@ mod tests {
             lake.painted_share()
         };
         assert!(run(true) > run(false) * 1.3);
+    }
+
+    #[test]
+    fn a_long_walk_keeps_the_water_whole() {
+        // walk far along the shore: every row's cells stay the ones around the eye
+        let mut lake = Lake::new(2.5, 11);
+        for _ in 0..60 {
+            lake.step(1.0 / 30.0);
+        }
+        assert!(lake.painted_share() > 0.0);
+        for k in 0..400 {
+            lake.x_eye = (k as f64) * 25.0;
+            lake.step(1.0 / 30.0);
+        }
+        lake.x_eye = 10_000.0;
+        lake.step(1.0 / 30.0);
+        // every row's laps put the eye within half a ring of the middle
+        for row in 0..NV {
+            let ue = lake.x_eye / lake.width_m(row);
+            for col in 0..NU {
+                let c = &lake.cells[row * NU + col];
+                let u = col as f64 + (c.lap * NU as i64) as f64;
+                assert!(
+                    (u - ue).abs() <= NU as f64 * 0.5 + 1.0,
+                    "row {row} col {col}"
+                );
+            }
+        }
     }
 }

@@ -75,7 +75,8 @@ const DECAY_S: f32 = 1.6;
 impl Synth for Voice {
     fn render(&mut self, out: &mut [f32], channels: usize, rate: f64) {
         let mut wind = self.wind;
-        if let Ok(mut s) = self.shared.lock() {
+        // (the audio thread never waits: a busy lock means the notes wait a buffer)
+        if let Ok(mut s) = self.shared.try_lock() {
             for c in s.queue.drain(..) {
                 if self.live.len() >= 20 {
                     self.live.remove(0);
