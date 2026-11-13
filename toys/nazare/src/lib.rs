@@ -111,7 +111,7 @@ pub struct Nazare {
     sound: sound::Queue,
     /// a finger's start (points): the swell is sent when it lifts, so a swipe half made never asks for
     /// the short swell its length so far would give
-    drag: Option<[f64; 2]>,
+    drag: Option<(u64, [f64; 2])>,
     /// the sets' timing, in sets: shifted so a set sent breaks at the peak SET_LEAD after it is taken up,
     /// and whether one is waiting for its field
     sets_off: f64,
@@ -433,6 +433,10 @@ impl Nazare {
         let from = (-d[0]).atan2(d[1]).to_degrees().rem_euclid(360.0);
         let mid = 0.5 * (FROMS.0 + FROMS.1);
         let off = (from - mid + 180.0).rem_euclid(360.0) - 180.0;
+        // a swipe out to sea, or along the coast, sends nothing: no swell comes from the land
+        if off.abs() > 0.5 * (FROMS.1 - FROMS.0) + 40.0 {
+            return false;
+        }
         let from = (mid + off).clamp(FROMS.0, FROMS.1);
         let k = ((len - SWIPE_MIN) / (0.6 * wide)).clamp(0.0, 1.0);
         let period = PERIODS.0 + (PERIODS.1 - PERIODS.0) * k;
@@ -445,9 +449,12 @@ impl Nazare {
         let Some(i) = self.peak else {
             return;
         };
-        let tg = self.field.period * GROUP;
-        let arrive = self.t + SET_LEAD * RATE;
-        self.sets_off = (self.field.tau_group[i] - arrive) / tg;
+        let f = &self.field;
+        let tg = f.period * GROUP;
+        // on the crest nearest SET_LEAD from now, so the set's top wave is the one that breaks
+        let lead = self.t + SET_LEAD * RATE;
+        let arrive = f.tau[i] + ((lead - f.tau[i]) / f.period).round() * f.period;
+        self.sets_off = (f.tau_group[i] - arrive) / tg;
     }
 
     /// The spray where a set's wave breaks at the peak: soft white thrown up and drifting landward
@@ -582,11 +589,15 @@ impl Toy for Nazare {
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         let wide = ctx.points()[0];
         match e.phase {
-            Phase::Down => self.drag = Some([e.x, e.y]),
-            Phase::Move => {}
+            // the first finger is the swipe; a second is ignored
+            Phase::Down if self.drag.is_none() => self.drag = Some((e.id, [e.x, e.y])),
+            Phase::Down | Phase::Move => {}
             Phase::Up => {
-                if let Some(a) = self.drag.take() {
-                    self.send = self.swipe(a, [e.x, e.y], wide) || self.send;
+                if let Some((id, a)) = self.drag {
+                    if id == e.id {
+                        self.drag = None;
+                        self.send = self.swipe(a, [e.x, e.y], wide) || self.send;
+                    }
                 }
             }
             _ => self.drag = None,
@@ -598,8 +609,6 @@ impl Toy for Nazare {
         let dt = dt.min(0.1);
         self.clock += dt;
         self.t += dt * RATE;
-        let asked = (self.want.0 - self.field.period).abs() > 0.05
-            || (self.want.1 - self.field.from_deg).abs() > 0.2;
         let due = self
             .pending
             .as_ref()
@@ -610,10 +619,14 @@ impl Toy for Nazare {
                     self.field = field;
                     self.upload(&ctx.gpu, &data);
                     self.peak = self.find_peak();
-                    self.last_w = 0.0;
+                    // no crash for the swell merely changing under the peak
+                    self.last_w = 1.0;
                 }
             }
         }
+        // (after any take-up, so a swell just taken up is not asked for again)
+        let asked = (self.want.0 - self.field.period).abs() > 0.05
+            || (self.want.1 - self.field.from_deg).abs() > 0.2;
         if asked && self.pending.is_none() {
             self.ask();
         }

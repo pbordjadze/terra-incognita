@@ -10,11 +10,11 @@
  "shots": [
   {"t": 2, "name": "open"},
   {"t": 9, "name": "before"},
-  {"t": 13.4, "name": "set-breaks"},
-  {"t": 17, "name": "northwest"},
+  {"t": 17.4, "name": "set-breaks"},
+  {"t": 19, "name": "northwest"},
   {"t": 24, "name": "short-west"},
-  {"t": 33.4, "name": "southwest-set"},
-  {"t": 39, "name": "southwest"}
+  {"t": 37.3, "name": "southwest-set"},
+  {"t": 39.5, "name": "southwest"}
  ],
  "audio": true
 }
