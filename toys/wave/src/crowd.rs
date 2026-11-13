@@ -52,7 +52,13 @@ pub struct Crowd {
     rng: Rng,
     /// people standing now
     pub active: usize,
+    /// The three rules, each on or off (the switches mark; `RULES`): stand when enough round you
+    /// stand, sit back down, wait a moment before standing again.
+    pub on: [bool; 3],
 }
+
+/// The rules as the switches mark names them, in `Crowd::on`'s order.
+pub const RULES: [&str; 3] = ["Stand with them", "Sit back down", "Wait a moment"];
 
 impl Crowd {
     pub fn new(seed: u64) -> Crowd {
@@ -81,6 +87,7 @@ impl Crowd {
             next: vec![0; U * V],
             rng,
             active: 0,
+            on: [true; 3],
         }
     }
 
@@ -111,17 +118,22 @@ impl Crowd {
             }
         }
         let mut active = 0;
+        let [follow, sit, wait] = self.on;
+        // (sitting back down off: whoever stands stays up; waiting off: the moment one sits, they rest)
+        let last = if wait { NA + NR } else { NA };
         for v in 0..V {
             for u in 0..U {
                 let i = v * U + u;
                 let s = self.stage[i];
-                self.next[i] = if s > 0 {
-                    if s >= NA + NR {
+                self.next[i] = if s == NA && !sit {
+                    NA
+                } else if s > 0 {
+                    if s >= last {
                         0
                     } else {
                         s + 1
                     }
-                } else if hot[u] && self.excited(u, v) {
+                } else if follow && hot[u] && self.excited(u, v) {
                     1
                 } else {
                     0

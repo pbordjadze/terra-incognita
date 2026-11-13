@@ -1,0 +1,1 @@
+{"_": "The switches mark: with only when outnumbered off, one neighbour is enough to take a rock, and the spirals dissolve into noise.", "size": [1170, 2532], "ppp": 3, "seconds": 16, "fps": 20, "events": [{"t": 3, "tap": "switches"}, {"t": 3.3, "switch": [1, false]}], "shots": [{"t": 3.2, "name": "open"}, {"t": 8, "name": "dissolving"}, {"t": 15, "name": "noise"}]}

@@ -674,12 +674,7 @@ impl Toy for Murmuration {
     }
 
     fn switches(&self) -> Vec<toy_kit::switches::Switch> {
-        let on = self.flock.on;
-        flock::RULES
-            .iter()
-            .zip(on)
-            .map(|(l, o)| toy_kit::switches::Switch::new(l, o))
-            .collect()
+        toy_kit::switches::Switch::all(&flock::RULES, &self.flock.on)
     }
 
     fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {

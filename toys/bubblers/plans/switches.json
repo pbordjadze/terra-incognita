@@ -1,0 +1,1 @@
+{"_": "The switches mark: with feed beside the last off, each crab sets off anywhere, and the starbursts become a tangle.", "size": [1170, 2532], "ppp": 3, "seconds": 41, "fps": 20, "events": [{"t": 0.5, "tap": "switches"}, {"t": 0.8, "switch": [0, false]}], "shots": [{"t": 0.7, "name": "open"}, {"t": 20, "name": "tangle"}, {"t": 40, "name": "tangled"}]}

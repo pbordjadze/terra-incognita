@@ -436,9 +436,19 @@ impl Toy for Bats {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "At dusk, millions of free-tailed bats climb out of Bracken Cave, in the Texas Hill Country, circling up in a column and streaming away to feed.",
-            "A bat that sees a hawk jinks aside, and its neighbours copy it a moment later, so the swerve runs on through the flight.",
-            "You are the hawk: dive into the bats and watch the ripple run.",
+            "When a hawk dives, the bats near it jink aside, and the swerve runs on through the flight. The three dots show the rules: switch one off to see what it does.",
+            "You are the hawk: dive into the bats.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&colony::RULES, &self.colony.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.colony.on.get_mut(i) {
+            *o = on;
+        }
     }
 }
 

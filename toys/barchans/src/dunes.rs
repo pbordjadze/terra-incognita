@@ -55,7 +55,17 @@ pub struct Dunes {
     pub shadow: Vec<f32>,
     since_shade: usize,
     stack: Vec<(i32, i32)>,
+    /// The three rules, each on or off (the switches mark; `RULES`): a grain landing rolls to the lower
+    /// side across the wind, the lee behind a crest is out of the wind, a slope past repose slides.
+    pub on: [bool; 3],
 }
+
+/// The rules as the switches mark names them, in `Dunes::on`'s order.
+pub const RULES: [&str; 3] = [
+    "Roll to the low side",
+    "Shelter behind crests",
+    "Steep slopes slide",
+];
 
 impl Dunes {
     pub fn new(w: usize, h: usize, seed: u64, wind: [f32; 2]) -> Dunes {
@@ -82,6 +92,7 @@ impl Dunes {
             shadow: vec![0.0; w * h],
             since_shade: 0,
             stack: Vec::new(),
+            on: [true; 3],
         };
         d.measure();
         for i in 0..w * h {
@@ -101,7 +112,7 @@ impl Dunes {
     #[inline]
     fn sheltered(&self, x: i32, y: i32) -> bool {
         let i = self.at(x, y);
-        self.shadow[i] > self.slabs[i] as f32
+        self.on[1] && self.shadow[i] > self.slabs[i] as f32
     }
 
     /// The shadow surface: for each cell the height of the 15° line from the crests upwind, made in
@@ -148,6 +159,9 @@ impl Dunes {
     /// Avalanches from (x, y) down to its lowest neighbour while the slope is past repose; and into
     /// it from its neighbours while they stand past repose above it.
     fn settle(&mut self, x: usize, y: usize) {
+        if !self.on[2] {
+            return;
+        }
         let (mut cx, mut cy) = (x as i32, y as i32);
         // down from here
         for _ in 0..64 {
@@ -177,6 +191,9 @@ impl Dunes {
 
     /// From above into (x, y): the neighbours past repose above it slide in, and theirs after them.
     fn fill(&mut self, x: i32, y: i32) {
+        if !self.on[2] {
+            return;
+        }
         let mut stack = std::mem::take(&mut self.stack);
         stack.clear();
         stack.push((x, y));
@@ -229,6 +246,7 @@ impl Dunes {
             shadow: vec![0.0; w * h],
             since_shade: 0,
             stack: Vec::new(),
+            on: [true; 3],
         };
         d.measure();
         d.shade();
@@ -286,7 +304,7 @@ impl Dunes {
                     let (ax, ay) = (self.wind[1].round() as i32, -self.wind[0].round() as i32);
                     let l = self.at(tx - ax, ty - ay);
                     let r = self.at(tx + ax, ty + ay);
-                    let j = if self.rng.f() > CREEP {
+                    let j = if !self.on[0] || self.rng.f() > CREEP {
                         j
                     } else if self.slabs[l] < self.slabs[j] && self.slabs[l] <= self.slabs[r] {
                         l

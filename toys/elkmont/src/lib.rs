@@ -321,12 +321,7 @@ impl Toy for Elkmont {
     }
 
     fn switches(&self) -> Vec<toy_kit::switches::Switch> {
-        let on = self.swarm.on;
-        swarm::RULES
-            .iter()
-            .zip(on)
-            .map(|(l, o)| toy_kit::switches::Switch::new(l, o))
-            .collect()
+        toy_kit::switches::Switch::all(&swarm::RULES, &self.swarm.on)
     }
 
     fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {

@@ -29,6 +29,14 @@ impl Switch {
             on,
         }
     }
+    /// A toy's rules from their labels and whether each is on (`Toy::switches`).
+    pub fn all(labels: &[&str], on: &[bool]) -> Vec<Switch> {
+        labels
+            .iter()
+            .zip(on)
+            .map(|(l, &o)| Switch::new(l, o))
+            .collect()
+    }
 }
 
 /// The mark and whether its panel shows, kept by the `Host`.

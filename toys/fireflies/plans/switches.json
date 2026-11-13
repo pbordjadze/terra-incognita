@@ -1,0 +1,1 @@
+{"_": "The switches mark: with hurry when one flashes off, each city keeps its own time and the green waves break up.", "size": [1170, 2532], "ppp": 3, "seconds": 50, "fps": 20, "events": [{"t": 20, "tap": "switches"}, {"t": 20.3, "switch": [0, false]}], "shots": [{"t": 20.2, "name": "open"}, {"t": 30, "name": "breaking"}, {"t": 49, "name": "out-of-step"}]}

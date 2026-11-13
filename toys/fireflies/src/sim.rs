@@ -94,7 +94,13 @@ pub struct Swarm {
     pub t: f64,
     pulses: BinaryHeap<Pulse>,
     rng: u64,
+    /// The rule, on or off (the switches mark; `RULES`): a flash seen hurries a firefly on. (Its blind
+    /// spell after its own flash matters as much in theory, but switched off it changes nothing you see.)
+    pub on: [bool; 1],
 }
+
+/// The rules as the switches mark names them, in `Swarm::on`'s order.
+pub const RULES: [&str; 1] = ["Hurry when one flashes"];
 
 /// A small deterministic random source (xorshift).
 pub fn rand(s: &mut u64) -> f64 {
@@ -198,6 +204,7 @@ impl Swarm {
             t: 0.0,
             pulses: BinaryHeap::new(),
             rng,
+            on: [true; 1],
         };
         for i in 0..s.flies.len() {
             s.predict(i);
@@ -278,7 +285,7 @@ impl Swarm {
                 }
                 None => {
                     let f = &self.flies[i];
-                    if (now - f.flashed) * f.freq < self.tune.refractory {
+                    if !self.on[0] || (now - f.flashed) * f.freq < self.tune.refractory {
                         continue;
                     }
                     let x = self.charge(self.phase_at(i, now)) + self.tune.eps;
