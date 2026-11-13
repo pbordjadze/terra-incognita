@@ -1,0 +1,39 @@
+Monitoring boot status for TerraIncognita-iphone (AA3BEA81-4CBD-4443-9303-704E5A46B0F6).
+[2026-11-13 05:24:57 +0000] Status=2, isTerminal=NO, Elapsed=00:43.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.managedconfiguration.migrator (MCProfile.migrator, user-agnostic)
+		Migration Elapsed:00:21 seconds
+
+[2026-11-13 05:24:58 +0000] Status=2, isTerminal=NO, Elapsed=00:44.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileGestalt.MobileGestaltMigrator (MobileGestaltMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:22 seconds
+
+[2026-11-13 05:24:59 +0000] Status=2, isTerminal=NO, Elapsed=00:45.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileSafari.migrator (MobileSafari.migrator)
+		Migration Elapsed:00:23 seconds
+
+[2026-11-13 05:25:00 +0000] Status=2, isTerminal=NO, Elapsed=00:46.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileSafari.migrator (MobileSafari.migrator)
+		Migration Elapsed:00:24 seconds
+
+[2026-11-13 05:25:01 +0000] Status=2, isTerminal=NO, Elapsed=00:47.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.dataaccess.migrator (DAAccount.migrator)
+		Migration Elapsed:00:25 seconds
+
+[2026-11-13 05:25:02 +0000] Status=2, isTerminal=NO, Elapsed=00:48.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.facetime.migrator (FaceTimeMigrator.migrator)
+		Migration Elapsed:00:26 seconds
+
+[2026-11-13 05:25:03 +0000] Status=2, isTerminal=NO, Elapsed=00:49.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.PreferencesMigrator (PreferencesMigrator.migrator)
+		Migration Elapsed:00:27 seconds
+
+[2026-11-13 05:25:04 +0000] Status=4294967295, isTerminal=YES, Elapsed=00:50.
+	Finished
+
