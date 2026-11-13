@@ -48,11 +48,15 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let ax = exp(-fq.x / (2.5 + w)) * step(abs(ix - 6.0 * round(ix / 6.0)), 0.1);
     let ay = exp(-fq.y / (2.5 + w)) * step(abs(iy - 5.0 * round(iy / 5.0)), 0.1);
     let wide = max(ax, ay);
-    var lamps = (lamp * 1.1 + glow * 0.16) * lit + wide * 0.7;
+    // and the blocks themselves: windows, signs, courtyards, a scatter of points, some white
+    let spot = floor(g / 7.0);
+    let hs = hash2(spot);
+    let pin = step(0.72, hs) * (1.0 - smoothstep(0.0, 0.5 + 1.5 * w, length(fract(g / 7.0) - 0.5 - 0.3 * (vec2<f32>(hash2(spot + vec2<f32>(1.0, 0.0)), hash2(spot + vec2<f32>(0.0, 1.0))) - 0.5)) * 7.0));
+    var lamps = (lamp * 1.0 + glow * 0.16) * lit + wide * 0.30 + pin * 0.6;
     // far away the lights merge into a glow
     let far = 1.0 - exp(-t / 1800.0);
-    var ground = vec3<f32>(0.020, 0.016, 0.018) + vec3<f32>(1.0, 0.58, 0.24) * lamps * 0.9;
-    ground = mix(ground, vec3<f32>(0.20, 0.11, 0.06), far * 0.8);
+    var ground = vec3<f32>(0.014, 0.011, 0.012) + vec3<f32>(1.0, 0.55, 0.20) * lamps * 0.45;
+    ground = mix(ground, vec3<f32>(0.11, 0.06, 0.03), far * 0.8);
     // the stadium's dark shell round the stands
     ground = mix(ground, vec3<f32>(0.012, 0.012, 0.016), 1.0 - smoothstep(0.0, 25.0, e));
     c = ground;

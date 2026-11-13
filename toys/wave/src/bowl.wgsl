@@ -58,7 +58,7 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   let up = s.r;
   let has = s.g;
   // the concrete and the people, dark; a concourse every so many rows
-  var c = vec3<f32>(0.020, 0.018, 0.024) + vec3<f32>(0.03, 0.012, 0.010) * s.b;
+  var c = vec3<f32>(0.040, 0.036, 0.044) + vec3<f32>(0.03, 0.012, 0.010) * s.b;
   let aisle = step(abs(seat.y - 20.0), 0.35) + step(abs(seat.y - 40.0), 0.35);
   c = mix(c, vec3<f32>(0.012, 0.012, 0.016), clamp(aisle, 0.0, 1.0));
   // the phone's light: a soft dot, raised and brighter as the person stands
@@ -70,12 +70,13 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   let rad = 0.16 + 0.10 * up;
   // where a seat is smaller than a pixel, its light is spread over it
   let sharp = 1.0 - smoothstep(rad - size * 0.6, rad + size * 0.6, r);
-  let spread = rad * rad * 3.14159;
-  let dot = mix(sharp, spread * 1.6, smoothstep(0.35, 1.2, size));
+  // (a pixel over several seats takes the light of the one it falls on, so the stands glitter)
+  let dot = mix(sharp, 0.5, smoothstep(0.35, 1.2, size));
   let warm = mix(vec3<f32>(1.0, 0.86, 0.66), vec3<f32>(0.80, 0.90, 1.0), s.b);
   // a phone held low sways and glints; held up, it is steady and bright
   let glint = 0.55 + 0.45 * sin(cam.time * (1.3 + 2.0 * s.b) + s.b * 40.0 + f32(id.x) * 0.7);
-  let bright = has * (0.30 + 0.30 * glint * glint + 3.4 * up);
+  let g2 = glint * glint;
+  let bright = has * (0.28 + 0.9 * g2 * g2 * g2 + 3.4 * up);
   c = c + warm * dot * bright;
   // a standing crowd glows: the light of the raised phones on the people round them, along the row
   var halo = 0.0;
@@ -83,6 +84,6 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
     let n = textureLoad(seats, vec2<i32>((id.x + k + i32(cam.grid.x)) % i32(cam.grid.x), id.y), 0);
     halo = halo + n.r * n.g * exp(-f32(k * k) / 10.0);
   }
-  c = c + warm * halo * 0.07;
+  c = c + warm * halo * 0.14;
     return vec4<f32>(c, 1.0);
 }
