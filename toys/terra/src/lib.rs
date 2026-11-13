@@ -1667,12 +1667,7 @@ impl Toy for Terra {
                     r.update(t);
                 }
                 if t - t0 >= FADE {
-                    self.state = State::Inside;
-                    if self.seen.insert(self.door) {
-                        ctx.show_info();
-                    }
-                    // the Earth's lights sleep while a toy is open
-                    self.veil.target = None;
+                    self.settle_inside(ctx);
                 }
             }
             State::Inside => {

@@ -373,7 +373,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             let fit = caption.sizeThatFits(CGSize(width: most - pad.left - pad.right, height: .greatestFiniteMagnitude))
             let w = min(ceil(fit.width), most - pad.left - pad.right), h = ceil(fit.height)
             let mid = bounds.height - safeAreaInsets.bottom - 74
-            captionGlass.frame = CGRect(x: (bounds.width - w) / 2 - pad.left, y: mid - h / 2 - pad.top, width: w + pad.left + pad.right, height: h + pad.top + pad.bottom)
+            captionGlass.frame = CGRect(x: (bounds.width - w) / 2 - pad.left, y: mid - h / 2 - pad.top,
+                                        width: w + pad.left + pad.right, height: h + pad.top + pad.bottom)
             caption.frame = CGRect(x: pad.left, y: pad.top, width: w, height: h)
             UIView.animate(withDuration: 0.25) { self.captionGlass.alpha = 1 }
             UIAccessibility.post(notification: .announcement, argument: text)
