@@ -7,6 +7,7 @@
 //! One device, one hand, one ground: every toy's globe is the kit's, so the dive is one picture becoming
 //! another. Only one toy is open at a time; closing it frees it.
 
+mod clock;
 pub mod doors;
 pub mod rooms;
 mod words;
@@ -113,6 +114,7 @@ enum State {
 #[derive(Serialize, Deserialize)]
 struct Saved {
     camera: Camera,
+    known: Option<Vec<String>>, // the toys no longer new (`doors/fresh.rs`); None: a save from before
 }
 
 /// Terra's sound: its own bells, and the open toy's sound beside them.
@@ -494,22 +496,6 @@ pub struct Terra {
     held: Vec<PointerEvent>,
 }
 
-/// The month now (0 = January), from the clock (a fixed month without one).
-fn this_month() -> u32 {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    // civil from days (Howard Hinnant's algorithm)
-    let z = (secs / 86_400) as i64 + 719_468;
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (m - 1) as u32
-}
-
 /// Where the Earth comes back to from a toy: the opening's own view, so the lights are where the reader
 /// first saw them, turned toward the toy just left only as far as keeps its light in view (55 degrees
 /// from the middle at most); painting-company row 246: newcomers came home to a turned Earth, the
@@ -628,6 +614,7 @@ impl Terra {
     /// A light was touched: it stirs and rings, its toy is made, and the camera flies to where it opens.
     fn enter(&mut self, ctx: &mut Ctx, i: usize, t: f64) {
         self.life.stir(i, t);
+        self.life.tried(i);
         let pan = ((self.life.spot(&self.globe, i).0[0] / Self::points(ctx)[0]) * 2.0 - 1.0) as f32;
         self.strike(self.life.doors[i].degree, 0.32, pan * 0.6);
         self.strike(self.life.doors[i].degree + 5, 0.12, pan * 0.6);
@@ -1383,7 +1370,7 @@ impl Toy for Terra {
             Box::new(MemoryAssets(Default::default())),
         ));
         ctx.assets = Box::new(Shared(assets.clone()));
-        let month = this_month();
+        let month = clock::this_month();
         let mut globe = Globe::new(
             &ctx.gpu,
             assets.as_ref(),
@@ -1874,14 +1861,18 @@ impl Toy for Terra {
                 zoom: camera.zoom.min(2.5),
                 ..camera
             },
+            known: Some(self.life.known()),
         })
         .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
         if let Ok(s) = serde_json::from_str::<Saved>(saved) {
+            let new = self.life.know(s.known.as_deref());
             if matches!(self.state, State::Atlas) {
-                self.globe.camera = s.camera;
+                // turned toward a toy an update brought, so its mark is in view
+                self.globe.camera =
+                    new.map_or(s.camera, |at| Camera::new(at[0], at[1], s.camera.zoom));
             }
         }
     }

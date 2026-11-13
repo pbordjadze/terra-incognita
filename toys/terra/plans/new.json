@@ -1,0 +1,5 @@
+{ "_": "New toys marked until tried (painting-company row 342): a save from before the mark (its camera alone) knows no list, so Pando and Moon Road, the two that landed just before it, open as new, the Earth turned toward Pando, each light ringed in breathing gold. Pando is touched, opened, and left by the Earth mark: its ring is gone and Moon Road's stays.",
+  "seconds": 14, "fps": 20, "strict_taps": true,
+  "restore": "{\"camera\":{\"lon\":10.0,\"lat\":20.0,\"zoom\":1.4,\"roll\":0.0}}",
+  "events": [{ "t": 3.0, "tap": "pando" }, { "t": 8.0, "tap": "earth" }],
+  "shots": [{ "t": 0.6, "name": "new-marks" }, { "t": 1.8, "name": "new-breathing" }, { "t": 13.5, "name": "pando-tried" }] }
