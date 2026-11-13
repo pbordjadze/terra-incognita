@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Plays every plan of a toy and films each, into one directory a critic is pointed at (with the plans
-# beside them, and LOG.md of earlier verdicts if given): the evidence of one critic round.
+# beside them, and a log of earlier verdicts if given): the evidence of one critic round. The briefs and
+# logs are private (the owner's company repository, terra-incognita/critics/<toy>/).
 #
 #     bash tools/toys/evidence.sh <toy> <out-dir> [LOG.md]
 set -euo pipefail
