@@ -401,15 +401,11 @@ impl Toy for Huddle {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Emperor penguins on the windward edge get cold; the ones inside stay warm.",
-                "A cold one walks round and presses in on the lee side, so the huddle creeps downwind.",
-                "Every half minute or so a wave of tiny steps runs through it.",
-                "Drag to turn the wind. Touch a penguin to start a wave.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "In the Antarctic winter, emperor penguins on Atka Bay's sea ice huddle against the wind.",
+            "The ones on the windward edge get cold and walk round to press in on the sheltered side, so the huddle turns over and creeps downwind. Now and then a wave of tiny steps runs through it.",
+            "Drag to turn the wind; touch a penguin to start a wave.",
+        ]))
     }
 }
 

@@ -434,15 +434,11 @@ impl Toy for Bats {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Free-tailed bats climb out of the cave circling, so the colony rises as a column.",
-                "At the top each follows the stream out to feed.",
-                "A bat that sees a hawk jinks aside; its neighbours copy it a moment later.",
-                "Your finger is the hawk: one dive sends a ripple down the stream.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "At dusk, millions of free-tailed bats climb out of Bracken Cave, in the Texas Hill Country, circling up in a column and streaming away to feed.",
+            "A bat that sees a hawk jinks aside, and its neighbours copy it a moment later, so the swerve runs on through the flight.",
+            "You are the hawk: dive into the bats and watch the ripple run.",
+        ]))
     }
 }
 

@@ -642,20 +642,17 @@ impl Toy for Whales {
             .map(|a| a.1)
             .unwrap_or_else(|| self.globe.spot_for(&[]));
         Some(toy_kit::info::Demo::new(
-            "Two whales singing along their real routes. Tap one.",
+            "Two whales singing on their real routes. Tap one.",
             vec![toy_kit::info::Stroke::tap(0.5, at)],
         ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "A humpback (gold rings) and a blue whale (blue) on their real routes, a day a second.",
-                "Each ring is their song, from a real recording.",
-                "Tap the sea to listen there. Far songs are faint; behind land, barely.",
-            ],
-            "Real: the songs, routes and seasons. Drawn: the whales, the rings' speed.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "Whales sing, and their songs carry for hundreds of kilometres under the sea.",
+                "Each year they swim from cold feeding seas to warm breeding seas. Here a humpback (gold rings) and a blue whale (blue rings) follow real routes, a day each second.",
+                "Tap a whale to follow it and hear its song, or tap the sea to listen from there. Far songs are faint; land blocks them.",
+        ]))
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

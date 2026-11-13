@@ -676,19 +676,17 @@ impl Toy for Murmuration {
             path: vec![c, c, [w * 0.68, h * 0.45], [w * 0.62, h * 0.38]],
         };
         Some(toy_kit::info::Demo::new(
-            "Starlings at dusk. Touch to fly as one of them.",
+            "Starlings at dusk. Hold and drag to fly among them.",
             vec![stroke],
         ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "4,000 starlings. Each watches only its seven nearest: stay close, match them, don't collide.",
-                "No one leads. When a few turn, the turn sweeps through the flock as a dark wave.",
-            ],
-            "Real: today's dusk at Ham Wall, Somerset; the seven-bird rule. Drawn: the birds, the land, the sound.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "At dusk, thousands of starlings swirl together before they settle to roost. This is today's dusk at Ham Wall, in Somerset.",
+                "Each bird watches only its seven nearest neighbours: keep close, match their heading, don't collide. No one leads.",
+                "When a few birds turn, the turn sweeps through the whole flock as a dark wave. Hold to join them; drag to steer.",
+        ]))
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

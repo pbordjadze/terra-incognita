@@ -81,7 +81,7 @@ toys/taste/src/lib.rs::update 76 26
 toys/terra/src/doors.rs::paint 409 48
 toys/terra/src/lib.rs::pointer 69 26
 toys/terra/src/lib.rs::squeeze_pointer 105 27
-toys/terra/src/lib.rs::update 238 59
+toys/terra/src/lib.rs::update 237 59
 toys/throats/src/lib.rs::new 154 1
 toys/throats/src/sim.rs::seed_pinwheels 153 25
 toys/walk/src/lib.rs::draw 226 22

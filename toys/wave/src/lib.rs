@@ -402,15 +402,11 @@ impl Toy for Wave {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Each person stands when enough of the people round them are standing, then sits.",
-                "Having just sat down, they won't stand again for a moment.",
-                "So a wave runs one way at about 20 seats a second; a few dozen must start it.",
-                "Swipe along the stands to stand people up. Too few, and it fizzles.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "A Mexican wave in Estadio Azteca, Mexico City, at night: each person stands when enough of the people round them are standing, then sits, and won't stand again for a moment.",
+            "So the wave runs one way round the bowl, about 20 seats a second. It takes a few dozen to start one.",
+            "Swipe along the stands to stand people up. Too few, and it fizzles.",
+        ]))
     }
 }
 

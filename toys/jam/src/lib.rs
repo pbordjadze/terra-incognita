@@ -988,14 +988,11 @@ impl Toy for Jam {
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "Every driver takes the way that looks quickest now.",
-                "A road slows as it fills. The long roads round never fill.",
-                "A car glows white when its way is quick, red when slow. Shake for the old roads.",
-            ],
-            "Real: the rules, and that a new road can slow everyone (Braess, 1968). Made up: the town and its cars.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "Every driver takes the way that looks quickest right now, and a road slows as it fills. The long roads round never fill.",
+                "So a new shortcut can make everyone slower.",
+                "Cars glow white when their way is quick, red when it is slow. Shake for the old roads.",
+        ]))
     }
 
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
@@ -1003,14 +1000,11 @@ impl Toy for Jam {
     }
 
     fn origins(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
+        Some(toy_kit::info::Rules::lines(&[
                 "In 1968 Dietrich Braess showed that adding a road can make every driver's trip slower, when each chooses for themselves.",
                 "Wardrop (1952): selfish drivers settle where no one gains by switching. That is not where everyone does best.",
                 "A road's time grows with its load: the traffic engineers' volume-delay curves, and a lane carries about as many cars an hour whatever its speed.",
-            ],
-            "Drawn: the town, the lake, the cars, and how fast time runs. Real: the drivers' rule and the roads' slowing.",
-        ))
+        ]))
     }
 }
 
