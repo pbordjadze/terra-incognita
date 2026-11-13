@@ -19,7 +19,6 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 whales = { path = "../whales" }
 murmuration = { path = "../murmuration" }
-kanto = { path = "../kanto" }
 elkmont = { path = "../elkmont" }
 bell = { path = "../bell" }
 nazare = { path = "../nazare" }

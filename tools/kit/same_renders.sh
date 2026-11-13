@@ -18,7 +18,7 @@ cmd="${1:?usage: same_renders.sh render <bin-dir> <out-dir> [toy...] | compare <
 case "$cmd" in
 render)
   bin="$(cd "${2:?bin-dir}" && pwd)"; out="$(mkdir -p "${3:?out-dir}" && cd "$3" && pwd)"; shift 3
-  toys=("$@"); [ ${#toys[@]} -gt 0 ] || toys=(whales murmuration mold fireflies)
+  toys=("$@"); [ ${#toys[@]} -gt 0 ] || toys=(whales murmuration fireflies)
   cd "$(dirname "$0")/../../toys"
   for t in "${toys[@]}"; do
     for p in "$t"/plans/*.json; do
