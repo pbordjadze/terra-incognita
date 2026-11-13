@@ -436,7 +436,7 @@ impl Toy for Bats {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "At dusk, millions of free-tailed bats climb out of Bracken Cave, in the Texas Hill Country, circling up in a column and streaming away to feed.",
-            "When a hawk dives, the bats near it jink aside, and the swerve runs on through the flight. The three dots show the rules: switch one off to see what it does.",
+            "When a hawk dives, the bats near it jink aside, and the swerve runs on through the flight. The three dots show the rules: switch one off, then dive again.",
             "You are the hawk: dive into the bats.",
         ]))
     }

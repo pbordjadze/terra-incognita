@@ -3,7 +3,7 @@ once with rule i switched off, and prints the mean difference between the two ru
 seconds after the switch (0-255, the whole frame). A switch that barely moves these numbers does nothing a
 reader could see, and doesn't belong on the switches panel (the switches mark, docs/kit.md).
 
-    python3 tools/toys/switch_ab.py <toy> <rule count> [--at T] [--size 390x844] [--then '[events]']
+    python3 tools/toys/switch_ab.py <toy> <rule count> [--at T] [--after 1,2,4,8] [--size 390x844] [--restore json] [--then '[events]']
 
 Run from the repository's root after `cargo build --release` in toys/ and `tools/toys/assets.py <toy>`.
 """
@@ -43,10 +43,16 @@ def main() -> None:
     ap.add_argument("--at", type=float, default=2.0)
     ap.add_argument("--size", default="390x844")
     ap.add_argument("--keep", help="a folder to keep the runs' frames in, and a sheet of them")
+    ap.add_argument("--after", default="1,2,4,8", help="seconds after the switch to compare, commas")
+    ap.add_argument("--restore", help="the toy's saved state to start from, as a plan's \"restore\"")
     ap.add_argument("--then", default="[]", help="events after the switch, JSON (a touch, say)")
     a = ap.parse_args()
+    global AFTER
+    AFTER = [float(x) if '.' in x else int(x) for x in a.after.split(",")]
     shots = [{"t": a.at + s, "name": f"s{s}"} for s in AFTER]
     base = {"seconds": a.at + max(AFTER) + 0.5, "fps": 20, "shots": shots}
+    if a.restore:
+        base["restore"] = a.restore
     with tempfile.TemporaryDirectory() as d:
         root = Path(a.keep or d)
         root.mkdir(parents=True, exist_ok=True)
@@ -56,7 +62,7 @@ def main() -> None:
         for i in range(a.rules):
             ev = open_only + [{"t": a.at, "switch": [i, False]}] + then
             play(a.toy, {**base, "events": ev}, root / f"off{i}", a.size)
-            assert (root / "on" / "s1.png").exists(), "no shots"
+            assert (root / "on" / f"s{AFTER[0]}.png").exists(), "no shots"
             row = [diff(root / "on" / f"s{s}.png", root / f"off{i}" / f"s{s}.png") for s in AFTER]
             print(a.toy, i, " ".join(f"{v:5.1f}" for v in row))
         if a.keep:
@@ -66,7 +72,7 @@ def main() -> None:
 def sheet(root: Path, rules: int) -> None:
     """Every run's frames side by side: a row a run (all on, then each rule off), a column a moment."""
     runs = ["on"] + [f"off{i}" for i in range(rules)]
-    first = Image.open(root / "on" / "s1.png")
+    first = Image.open(root / "on" / f"s{AFTER[0]}.png")
     w, h = first.size[0] // 2, first.size[1] // 2
     out = Image.new("RGB", (w * len(AFTER), h * len(runs)))
     for r, run in enumerate(runs):

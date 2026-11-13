@@ -315,7 +315,7 @@ impl Toy for Elkmont {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
             "On June nights at Elkmont, in the Great Smoky Mountains, the fireflies flash together in waves.",
-            "Each male follows three rules, and no one leads. The three dots show them: switch one off to see what it does.",
+            "Each male flashes a few times, rests until the woods go dark, then starts on the first flash he sees. The three dots show his rest: switch it off to see what it does.",
             "Hold your light low: a female may answer.",
         ]))
     }

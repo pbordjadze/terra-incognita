@@ -93,14 +93,7 @@ pub struct Beach {
     /// what happened this step, for the sound and the hand: balls laid, crabs that bolted
     pub laid: Vec<[f32; 2]>,
     pub bolted: Vec<[f32; 2]>,
-    /// The rule, on or off (the switches mark; `RULES`): each spoke starts beside the last, on the
-    /// least worked sand (off: anywhere at random). (Bolting with a neighbour shows only after the
-    /// reader's footstep, so it isn't a switch.)
-    pub on: [bool; 1],
 }
-
-/// The rules as the switches mark names them, in `Beach::on`'s order.
-pub const RULES: [&str; 1] = ["Feed beside the last"];
 
 /// The tide: it rises over the beach in this long, stands, and falls back (seconds).
 pub const TIDE_IN: f32 = 6.0;
@@ -165,7 +158,6 @@ impl Beach {
             dirty: true,
             laid: Vec::new(),
             bolted: Vec::new(),
-            on: [true; 1],
         }
     }
 
@@ -222,10 +214,6 @@ impl Beach {
         let reach = (c.reach + self.rng.range(-0.3, 1.2)).clamp(2.5, 9.0);
         let mut best = (f32::MAX, c.heading);
         for _ in 0..5 {
-            if !self.on[0] {
-                best = (0.0, self.rng.range(0.0, std::f32::consts::TAU));
-                break;
-            }
             let a = c.heading + c.turn * self.rng.range(0.45, 0.8);
             let w = self.worked_along(c.home, a, reach) + self.rng.range(0.0, 0.05);
             if w < best.0 {
