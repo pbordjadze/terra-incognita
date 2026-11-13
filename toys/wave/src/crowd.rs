@@ -7,11 +7,13 @@
 //! lean one way, so the wave runs one way round (clockwise, seen from above, as most do). A person
 //! who has stood goes through every stage and rests again.
 //!
-//! Two things the paper's model leaves out, so that a wave can end: people tire of it (each time
-//! someone stands, their threshold rises a little, and falls back over a few minutes), and nobody is
-//! quite the same twice (each moment a person's threshold wobbles a little). A wave that has been
-//! round once meets a crowd that is less keen; it thins, breaks and dies, usually within a lap or
-//! two. Two waves close behind each other tire the crowd twice as fast.
+//! Three things the paper's model leaves out, so that a wave can end: each person, having stood,
+//! is less keen to again for the next minute or so (so a second wave close behind the first
+//! fizzles); nobody is quite the same twice (each second a person's threshold wobbles a little, and
+//! the whole crowd's mood drifts); and people tire of a wave the longer it has been going (a wave
+//! carries its age from person to person, and the older it is the more it takes to join it). An
+//! old wave dims, as the least keen only half stand, then thins and dies, usually within a lap or
+//! two; a new one started by a fresh group is as young as it ever was.
 
 /// Seats round a row, and rows (about the stadium's 87,000).
 pub const U: usize = 1500;
@@ -38,13 +40,12 @@ pub const NOISE: f32 = 0.06;
 /// And the whole crowd's mood drifts, keener or flatter, by about this much over about `DRIFT_S`.
 const SWAY: f32 = 0.015;
 const DRIFT_S: f32 = 40.0;
-/// While a wave runs, the whole crowd slowly tires of it (this much more threshold a second; more
-/// when more than `ONE_WAVE` people are standing at once); once none is running they get over it
-/// with a time constant of `OVER_IT_S`.
-const BORED: f32 = 0.001;
-const ONE_WAVE: f32 = 800.0;
-const OVER_IT_S: f32 = 15.0;
-/// About how bored the crowd is when a wave can no longer go on (the tests measure it).
+/// The older a wave, the more it takes to join it: this much more threshold for each second of its
+/// age. A group that starts one is, by luck, keener or flatter: its wave starts as if up to
+/// `VERVE_S` seconds younger, or a third of that older.
+const BORED: f32 = 0.0007;
+const VERVE_S: f32 = 40.0;
+/// About how bored people are when a wave can no longer go on (the tests measure it).
 const BORED_END: f32 = 0.09;
 
 #[derive(Clone)]
@@ -79,9 +80,11 @@ pub struct Crowd {
     keen: Vec<f32>,
     /// the whole crowd's mood, added to every threshold (below zero, keener)
     pub sway: f32,
-    /// how tired of waves the whole crowd is
-    pub bored: f32,
-    ticks: u64,
+    /// the step at which the wave each person last stood in began (older: less keen to join)
+    born: Vec<i64>,
+    /// when the wave the group standing now (`stand`) starts is counted to have begun
+    group: i64,
+    ticks: i64,
     /// the kernel: (seat offset, row offset, weight)
     kernel: Vec<(i32, i32, f32)>,
     total: f32,
@@ -117,7 +120,8 @@ impl Crowd {
             mood: vec![0.0; U * V],
             keen: (0..U * V).map(|_| rng.unit()).collect(),
             sway: 0.0,
-            bored: 0.0,
+            born: vec![0; U * V],
+            group: 0,
             ticks: 0,
             kernel,
             total,
@@ -142,15 +146,20 @@ impl Crowd {
         }
     }
 
-    /// How high person `i` stands at stage `s` (0 seated .. 1 standing, arms up): fresh, everyone all
-    /// the way; as the crowd tires of a wave, more and more only half rise.
+    /// How old the wave person `i` last stood in is, seconds.
+    fn age(&self, born: i64) -> f32 {
+        (self.ticks - born).max(0) as f32 / crate::TICK_HZ as f32
+    }
+
+    /// How high person `i` stands (0 seated .. 1 standing, arms up): in a young wave everyone all
+    /// the way; as it ages, more and more, the least keen first, only half rise.
     pub fn height(&self, i: usize, frac: f32) -> f32 {
         let up = Self::up(self.stage[i], frac);
         if up == 0.0 {
             return 0.0;
         }
-        let tired = (self.bored / BORED_END).min(1.0);
-        up * ((self.keen[i] - tired * 0.9) / 0.35 + 0.25).clamp(0.3, 1.0)
+        let tired = (self.age(self.born[i]) * BORED / BORED_END).min(1.0);
+        up * ((self.keen[i] + 0.3 - tired) / 0.3).clamp(0.3, 1.0)
     }
 
     /// One step of the model.
@@ -175,8 +184,9 @@ impl Crowd {
                     } else {
                         s + 1
                     }
-                } else if hot[u] && self.excited(u, v) {
+                } else if let Some(born) = hot[u].then(|| self.excited(u, v)).flatten() {
                     self.tired[i] += FATIGUE * self.rng.range(0.3, 1.7);
+                    self.born[i] = born;
                     1
                 } else {
                     0
@@ -188,28 +198,26 @@ impl Crowd {
         self.active = active;
         // once a second, everyone gets a little keener again
         self.ticks += 1;
-        let hz = crate::TICK_HZ as u64;
-        if self.ticks.is_multiple_of(hz) {
+        let hz = crate::TICK_HZ as i64;
+        if self.ticks % hz == 0 {
             let k = (-1.0 / RECOVER_S).exp();
             self.tired.iter_mut().for_each(|t| *t *= k);
             let keep = (-1.0 / DRIFT_S).exp();
             let kick = (self.rng.unit() + self.rng.unit() + self.rng.unit() - 1.5) * 2.0;
             self.sway = self.sway * keep + SWAY * (1.0 - keep * keep).sqrt() * kick;
-            if self.active > 0 {
-                self.bored += BORED * (self.active as f32 / ONE_WAVE).max(1.0);
-            } else {
-                self.bored *= (-1.0 / OVER_IT_S).exp();
-            }
-            let sway = self.sway + self.bored;
+            let sway = self.sway;
             for m in self.mood.iter_mut() {
                 *m = sway + self.rng.range(-NOISE, NOISE);
             }
         }
     }
 
-    fn excited(&self, u: usize, v: usize) -> bool {
+    /// Whether the resting person at seat `u`, row `v` stands now, and if so when the wave they join
+    /// began (the oldest of the standing people round them).
+    fn excited(&self, u: usize, v: usize) -> Option<i64> {
         let mut sum = 0.0;
         let mut seen = self.total;
+        let mut born = i64::MAX;
         for &(du, dv, w) in &self.kernel {
             let vv = v as i32 + dv;
             if !(0..V as i32).contains(&vv) {
@@ -217,16 +225,28 @@ impl Crowd {
                 continue;
             }
             let uu = (u as i32 + du).rem_euclid(U as i32) as usize;
-            if Self::is_active(self.stage[vv as usize * U + uu]) {
+            let j = vv as usize * U + uu;
+            if Self::is_active(self.stage[j]) {
                 sum += w;
+                born = born.min(self.born[j]);
             }
         }
+        if sum == 0.0 {
+            return None;
+        }
         let i = v * U + u;
-        sum > (self.threshold[i] + self.tired[i] + self.mood[i]) * seen
+        let bored = BORED * self.age(born);
+        (sum > (self.threshold[i] + self.tired[i] + self.mood[i] + bored) * seen).then_some(born)
     }
 
-    /// The resting people within `r` seats of seat `u`, row `v` stand up (a group trying to start a
-    /// wave). Returns how many did.
+    /// A new group gets together to try to start a wave: how keen it is, by luck.
+    pub fn new_group(&mut self) {
+        let hz = crate::TICK_HZ as f32;
+        self.group = self.ticks + (self.rng.range(-VERVE_S / 3.0, VERVE_S) * hz) as i64;
+    }
+
+    /// The resting people within `r` seats of seat `u`, row `v` stand up (the group of the last
+    /// `new_group` trying to start a wave). Returns how many did.
     pub fn stand(&mut self, u: f32, v: f32, r: f32) -> usize {
         let mut n = 0;
         let k = r.ceil() as i32;
@@ -241,6 +261,7 @@ impl Crowd {
                 if self.stage[i] == 0 {
                     self.stage[i] = 1;
                     self.tired[i] += FATIGUE;
+                    self.born[i] = self.group;
                     n += 1;
                 }
             }
@@ -253,7 +274,8 @@ impl Crowd {
     pub fn somebody_tries(&mut self) -> (f32, f32) {
         let u = self.rng.range(0.0, U as f32);
         let v = self.rng.range(8.0, V as f32 - 8.0);
-        let r = if self.rng.unit() < 0.06 {
+        self.new_group();
+        let r = if self.rng.unit() < 0.04 {
             self.rng.range(2.2, 3.0)
         } else {
             self.rng.range(1.2, 2.0)
@@ -282,6 +304,7 @@ mod tests {
     #[test]
     fn a_wave_runs_clockwise_about_twenty_seats_a_second() {
         let mut c = Crowd::new(7);
+        c.new_group();
         c.stand(100.0, V as f32 * 0.5, 6.0);
         for _ in 0..10 {
             c.tick();
@@ -313,6 +336,7 @@ mod tests {
         let mut ok = 0;
         for seed in 0..20 {
             let mut c = Crowd::new(seed);
+            c.new_group();
             c.stand(300.0, 29.0, 1.6);
             for _ in 0..60 {
                 c.tick();
@@ -327,6 +351,7 @@ mod tests {
     fn lifetime(seed: u64, starts: &[(f32, f32)]) -> f32 {
         let mut c = Crowd::new(seed);
         for &(u, r) in starts {
+            c.new_group();
             c.stand(u, V as f32 * 0.5, r);
         }
         let hz = crate::TICK_HZ as f32;
@@ -374,6 +399,7 @@ mod tests {
         let hz = crate::TICK_HZ as f32;
         for seed in 0..4 {
             let mut c = Crowd::new(2 * seed);
+            c.new_group();
             c.stand(100.0, V as f32 * 0.5, 6.0);
             let mut n = 0;
             while c.active > 0 || n == 0 {
@@ -383,6 +409,7 @@ mod tests {
             let mut after = Vec::new();
             for wait in 0..12 {
                 let mut d = c.clone();
+                d.new_group();
                 d.stand(700.0, V as f32 * 0.5, 6.0);
                 for _ in 0..(hz * 15.0) as usize {
                     d.tick();
@@ -401,12 +428,12 @@ mod tests {
 
     /// A finger drawn `len` seats along row 30 (as `Wave::touch` does), on a fresh crowd: how many of
     /// 20 start a wave.
-    fn swipes(len: f32, bored: f32) -> usize {
+    fn swipes(len: f32) -> usize {
         (0..20)
             .filter(|&seed| {
                 let mut c = Crowd::new(2 * seed + 1);
-                c.bored = bored;
                 let n = (len / 2.2).ceil() as usize;
+                c.new_group();
                 for k in 0..=n {
                     c.stand(400.0 + len * k as f32 / n as f32, 30.0, 2.8);
                 }
@@ -422,7 +449,7 @@ mod tests {
     #[ignore = "a measurement"]
     fn how_often_a_swipe_starts_one() {
         for len in [10.0, 20.0, 40.0, 80.0] {
-            eprintln!("swipe {len} seats: {} of 20", swipes(len, 0.0));
+            eprintln!("swipe {len} seats: {} of 20", swipes(len));
         }
     }
 
@@ -430,16 +457,26 @@ mod tests {
     #[ignore = "a measurement"]
     fn trace_the_opening_wave() {
         let mut c = Crowd::new(0x0_1986_A2EC);
-        c.stand(U as f32 * 0.30, V as f32 * 0.5, 6.0);
+        for _ in 0..U * V {
+            if c.rand() < 0.6 {
+                c.rand();
+            }
+            c.rand();
+        }
+        c.new_group();
+        c.stand(U as f32 * 0.10, V as f32 * 0.5, 6.0);
         for n in 0..(crate::TICK_HZ * 300.0) as usize {
             c.tick();
             if n % (crate::TICK_HZ as usize * 15) == 0 {
                 eprintln!(
-                    "{:>4} s: active {:>5}, bored {:.3}, sway {:.3}",
-                    n / 28,
+                    "{:>4} s: active {:>5}, sway {:.3}, oldest age {:.0}",
+                    n / crate::TICK_HZ as usize,
                     c.active,
-                    c.bored,
-                    c.sway
+                    c.sway,
+                    (0..U * V)
+                        .filter(|&i| Crowd::is_active(c.stage[i]))
+                        .map(|i| c.age(c.born[i]))
+                        .fold(0.0, f32::max)
                 );
             }
         }
@@ -453,6 +490,7 @@ mod tests {
             for seed in 0..4 {
                 let mut c = Crowd::new(seed);
                 c.tired.fill(x);
+                c.new_group();
                 c.stand(100.0, V as f32 * 0.5, 6.0);
                 for _ in 0..(crate::TICK_HZ * 8.0) as usize {
                     c.tick();
@@ -477,10 +515,12 @@ mod tests {
     #[test]
     fn a_second_wave_close_behind_fizzles() {
         let mut c = Crowd::new(5);
+        c.new_group();
         c.stand(100.0, V as f32 * 0.5, 6.0);
         for _ in 0..(crate::TICK_HZ * 6.0) as usize {
             c.tick();
         }
+        c.new_group();
         c.stand(100.0, V as f32 * 0.5, 6.0);
         for _ in 0..(crate::TICK_HZ * 20.0) as usize {
             c.tick();
@@ -490,8 +530,40 @@ mod tests {
         let runs = (0..U).filter(|&u| row(u) && !row(u + U - 1)).count();
         eprintln!("{runs} waves 20 s later");
         assert!(
-            runs <= 1,
-            "the crowd behind the first is too tired for a second"
+            runs == 1 && c.active > 200,
+            "the first runs on; the crowd behind it is too tired for a second"
+        );
+    }
+
+    #[test]
+    fn a_swipe_ahead_of_an_old_wave_starts_a_new_one() {
+        let mut ok = 0;
+        for seed in 0..6 {
+            let mut c = Crowd::new(2 * seed + 1);
+            c.new_group();
+            c.stand(100.0, V as f32 * 0.5, 6.0);
+            for _ in 0..(crate::TICK_HZ * 60.0) as usize {
+                c.tick();
+            }
+            let front = (0..U)
+                .filter(|&u| Crowd::is_active(c.stage[(V / 2) * U + u]))
+                .max()
+                .unwrap_or(0);
+            c.new_group();
+            for k in 0..=12 {
+                c.stand((front + 150 + 3 * k) as f32, 30.0, 2.8);
+            }
+            for _ in 0..(crate::TICK_HZ * 15.0) as usize {
+                c.tick();
+            }
+            let row = |u: usize| Crowd::is_active(c.stage[(V / 2) * U + u % U]);
+            ok += ((0..U).filter(|&u| row(u) && !row(u + U - 1)).count() >= 1
+                && (front + 350..front + 650).any(|u| row(u))) as usize;
+        }
+        eprintln!("{ok} of 6 swipes ahead of a minute-old wave started one");
+        assert!(
+            ok >= 5,
+            "a fresh group's wave is young, whatever the crowd is doing"
         );
     }
 
