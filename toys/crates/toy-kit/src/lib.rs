@@ -14,6 +14,7 @@
 
 pub mod assets;
 pub mod backdrop;
+pub mod field;
 pub mod budget;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod check;

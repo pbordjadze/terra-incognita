@@ -137,6 +137,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "catatumbo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
