@@ -41,6 +41,8 @@ pub struct Penguin {
     pub frost: f32,
     /// how much wind it takes (0 sheltered .. 1 in the full wind)
     pub exposed: f32,
+    /// how squarely it faces the wind from the windward edge (0 not at all .. 1 first in line)
+    pub facing: f32,
     /// a step: seconds since it began (`STEP_S` and over: standing), and seconds until it may step
     /// again; a step heard from a neighbour, not yet taken
     pub step: f32,
@@ -132,6 +134,7 @@ impl Huddle {
                 cold: rng.range(0.0, 0.6),
                 frost: 0.0,
                 exposed: 0.0,
+                facing: 0.0,
                 step: STEP_S,
                 rest: 0.0,
                 pending: None,
@@ -226,11 +229,13 @@ impl Huddle {
         }
         for b in &mut self.birds {
             b.exposed = 0.0;
+            b.facing = 0.0;
         }
         for (_, mut v) in strips {
             v.sort_by(|a, b| a.0.total_cmp(&b.0));
             for (rank, &(_, i)) in v.iter().take(3).enumerate() {
                 self.birds[i].exposed = [1.0, 0.35, 0.1][rank];
+                self.birds[i].facing = [1.0, 0.25, 0.0][rank];
             }
         }
         // and anyone on the edge, wherever it faces, feels some of it
@@ -252,7 +257,19 @@ impl Huddle {
             1.0
         };
         b.cold = (b.cold + dt * (e * wind / 22.0 - (1.0 - e) / 50.0)).clamp(0.0, 1.4);
-        b.frost = (b.frost + dt * (e * wind * 0.05 - (1.0 - e) * 0.02)).clamp(0.0, 1.0);
+        // the frost is the wind's own mark: it builds only on a back facing into it, fast, and
+        // melts in the warmth inside; a walker keeps what it has a while
+        let front = if b.state == State::Packed {
+            b.facing
+        } else {
+            0.0
+        };
+        let melt = if b.state == State::Packed {
+            (1.0 - front) * 0.07
+        } else {
+            0.01
+        };
+        b.frost = (b.frost + dt * (front * wind * 0.16 - melt)).clamp(0.0, 1.0);
     }
 }
 

@@ -126,7 +126,7 @@ impl Huddle {
                 sheen,
             );
             if b.frost > 0.02 {
-                let fr = [0.88, 0.92, 0.98, 0.55 * b.frost];
+                let fr = [0.90, 0.94, 0.99, 0.8 * b.frost];
                 self.painter
                     .line(at(-0.09, 0.0), at(0.02, 0.0), 0.085 * s, 0.035 * s, fr);
             }
