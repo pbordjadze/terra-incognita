@@ -41,7 +41,7 @@ pub fn opening_zoom(points: [f64; 2]) -> f64 {
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-const SCENES: [&str; 4] = ["murmuration", "jam", "meander", "frost"];
+const SCENES: [&str; 4] = ["murmuration", "meander", "frost", "throats"];
 /// How close the Earth comes over a scene before it is the glass (a dive's end): as close as it goes, so the
 /// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it, its
 /// rivers coming up round the window (painting-company row 258: at 9 the window outran the ground, "an iris,
@@ -886,7 +886,7 @@ impl Terra {
     }
 
     /// How far the Earth has fallen into the open scene's own light as its window grows (`g`): the night for
-    /// a night scene (Shortcut's town), the dusk for the starlings, so the window's sky meets a ground as dark as
+    /// a night scene (none holds one now), the dusk for the starlings, so the window's sky meets a ground as dark as
     /// itself rather than a disc of evening laid on noon (painting-company row 258); none for the day scenes.
     fn dusk(&self, g: f64) -> f32 {
         let d = &self.life.doors[self.door];
