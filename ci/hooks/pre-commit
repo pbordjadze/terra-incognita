@@ -9,6 +9,8 @@
 #   ci/silenced.py  over the repository
 # A tool that isn't installed is skipped with a note (CI's lint job runs it). Skipping the hook
 # (`git commit --no-verify`) only defers the same checks to CI. Written for bash 3.2, macOS's own.
+# It checks the staged files as they are in the working tree, not as staged: a partly staged file is
+# judged by its whole working copy, and CI's lint job has the last word.
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)" || exit 1
 [ -d .venv/bin ] && PATH="$PWD/.venv/bin:$PATH"

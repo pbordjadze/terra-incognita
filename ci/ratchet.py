@@ -96,7 +96,8 @@ def types(only):
     for d in report.get('generalDiagnostics', []):
         if d.get('severity') == 'error':
             f = str(pathlib.Path(d['file']).resolve().relative_to(ROOT))
-            out[f] = (out.get(f, (0,))[0] + 1,)
+            if f in out:  # tracked files only, as CI sees them: an untracked scratch script doesn't count
+                out[f] = (out[f][0] + 1,)
     return out
 
 
