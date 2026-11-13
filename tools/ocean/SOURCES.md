@@ -1,7 +1,7 @@
 # The ocean: sources
 
 The month's currents (`Globe/ocean/`, built by `build.py`), read by Adrift. The Xcode-built Terra's
-ocean layer that first drew them was retired on November 13, 2026 (tag
+ocean layer that first drew them was retired on November 13, 2026 (branch
 `before-xcode-retirement-2026-11-13`).
 
 ## The data

@@ -15,7 +15,7 @@ SideStore source. Nothing is a web view, nothing is fetched at run time; no acco
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.
 
 The Xcode-built Terra that came first (a Metal globe with a workbench of prototypes and packs) was
-retired on November 13, 2026; it is whole at the tag `before-xcode-retirement-2026-11-13`.
+retired on November 13, 2026; it is whole on the branch `before-xcode-retirement-2026-11-13`.
 
 Map data: Natural Earth (public domain); NASA Earth Observatory's Blue Marble Next Generation (Reto
 Stöckli; public domain) for the ground, month by month, and NASA's Black Marble for its lights at

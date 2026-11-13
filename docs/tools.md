@@ -14,7 +14,7 @@ tools. Read it before you build; add to it when you do.
    that starts using one adds its user; a commit that changes a limit changes it here.
 
 The Xcode-built Terra (its Metal globe, workbench, packs, playground, previews and their tools) was
-retired on November 13, 2026; it is whole at the tag `before-xcode-retirement-2026-11-13`.
+retired on November 13, 2026; it is whole on the branch `before-xcode-retirement-2026-11-13`.
 
 ## Data: builders from sources
 

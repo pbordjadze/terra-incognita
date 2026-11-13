@@ -10,7 +10,7 @@ source. This file is the map and the rules.
 The Xcode-built Terra that came first (`App/`: a Metal globe with clouds and a moving sea, the quiet
 globe's rules, a workbench of prototypes and runtime-3 packs, the playground and its previews, the
 Persian and Wikipedia styles) was retired on November 13, 2026 with its CI, packs pipeline and tools; it
-is whole at the tag `before-xcode-retirement-2026-11-13`. The experiences retired before it are at
+is whole on the branch `before-xcode-retirement-2026-11-13`. The experiences retired before it are at
 `before-retirement-2026-10-31`.
 
 ## Documentation scope
