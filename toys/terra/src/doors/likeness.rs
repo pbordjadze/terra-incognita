@@ -69,7 +69,7 @@ pub fn paint(
         "bats" => bats(p, &l),
         "huddle" => huddle(p, &l),
         "wave" => wave(p, &l),
-        "catatumbo" | "bubblers" | "barchans" => {
+        "catatumbo" | "bubblers" | "barchans" | "pando" => {
             ground::draw(p, id, &ground::Spot::new(c, r, k, k as f32, a, halo), tm)
         }
         _ => breathing(p, &l, i, tint),

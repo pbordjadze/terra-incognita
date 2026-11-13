@@ -28,6 +28,7 @@ the owner's to decide):
 | Catatumbo: lightning over Lake Maracaibo forks down to your finger by dielectric breakdown; its thunder is the bolt's own (row 327) | `catatumbo/` | `com.pbordjadze.toy.catatumbo` | `catatumbo-build-<n>` |
 | Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | `bubblers-build-<n>` |
 | Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | `barchans-build-<n>` |
+| Pando: the aspen clone in Utah that looks like a forest and is one tree; drag to blow, tap into one stem, one leaf, its pores (row 334) | `pando/` | `com.pbordjadze.toy.pando` | `pando-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
