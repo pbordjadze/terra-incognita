@@ -104,6 +104,8 @@ struct Finger {
     last: [f64; 2],
     last_t: f64,
     travelled: f64,
+    /// Put down during a dive: never a tap (it would land on the next scale).
+    in_dive: bool,
 }
 
 pub struct Pando {
@@ -367,6 +369,7 @@ impl Toy for Pando {
                     last: [e.x, e.y],
                     last_t: e.t,
                     travelled: 0.0,
+                    in_dive: self.dive.is_some(),
                 });
                 if self.dive.is_none() && self.scale == Scale::Skin {
                     let w = ctx.width as f32;
@@ -390,14 +393,18 @@ impl Toy for Pando {
                 }
             }
             Phase::Up | Phase::Cancel => {
-                let Some(f) = self.finger.take().filter(|f| f.id == e.id) else {
+                // only the finger we follow; a second finger's lifting leaves it be
+                if self.finger.as_ref().is_none_or(|f| f.id != e.id) {
+                    return;
+                }
+                let Some(f) = self.finger.take() else {
                     return;
                 };
                 if let Some(skin) = self.skin.as_mut() {
                     skin.held = false;
                 }
                 let quick = e.t - f.down_t < TAP_S && f.travelled < TAP_PT;
-                if e.phase == Phase::Up && quick && self.dive.is_none() {
+                if e.phase == Phase::Up && quick && !f.in_dive && self.dive.is_none() {
                     let k = ctx.ppp as f32;
                     self.tap(ctx, [f.down[0] as f32 * k, f.down[1] as f32 * k]);
                 }
@@ -440,14 +447,22 @@ impl Toy for Pando {
                 }
             }
         }
-        let near = match self.shown(ctx).0 {
+        let level = |s: Scale| match s {
             Scale::Grove => 0.0,
             Scale::Stem => 1.0,
             Scale::Leaf => 2.0,
             Scale::Skin => 3.0,
         };
+        // through a dive, the sound moves between the two scales as the picture does
+        let near = match &self.dive {
+            Some(d) => {
+                let u = smooth((self.t - d.start) / d.length());
+                level(d.from) + (level(d.to) - level(d.from)) * u
+            }
+            None => level(self.scale),
+        };
         let flutter = self.one.as_ref().map_or(0.0, |o| o.leaf.twist_v);
-        let wind = if near > 0.5 {
+        let wind = if self.shown(ctx).0 != Scale::Grove {
             w
         } else {
             let s = Self::size(ctx);

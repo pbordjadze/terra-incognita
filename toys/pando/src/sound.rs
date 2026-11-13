@@ -32,7 +32,7 @@ impl Sound {
             now: Mix::default(),
             seed: 0x2545_f491,
             hiss: [[0.0; 2]; 2],
-            lo: [0.0; 2],
+            lo: [[0.0; 2]; 2],
             flap: [0.0; 2],
             level: 0.0,
             ticks: Vec::with_capacity(64),
@@ -54,7 +54,7 @@ struct Rustle {
     now: Mix,
     seed: u32,
     hiss: [[f32; 2]; 2],
-    lo: [f32; 2],
+    lo: [[f32; 2]; 2],
     flap: [f32; 2],
     level: f32,
     ticks: Vec<Tick>,
@@ -108,7 +108,7 @@ impl Synth for Rustle {
             for (c, n) in [n1, n2].into_iter().enumerate() {
                 // the grove's hiss: brighter near a stem, broader far off
                 let bright = svf(&mut self.hiss[c], n, f_hiss, 0.9);
-                let air = svf(&mut self.lo, n * 0.5, f_air, 1.2);
+                let air = svf(&mut self.lo[c], n * 0.5, f_air, 1.2);
                 let mixk = (m.near / 1.2).clamp(0.0, 1.0);
                 s[c] = self.level * (bright * (0.5 + 0.5 * mixk) + air * 0.6 * (1.0 - mixk));
             }

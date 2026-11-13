@@ -116,8 +116,8 @@ impl Skin {
             let u = age / 2.5;
             let drift = [at[0] + 0.05 * u * (hash(*s) - 0.5), at[1] - 0.04 * u];
             let a = 0.10 * (1.0 - u) * (u * 5.0).min(1.0);
-            p.glow(
-                px(drift),
+            // a soft pale disc, drawn in order, so a veil over the scene covers it
+            p.disc(
                 px(drift),
                 len(0.02 + 0.05 * u),
                 len(0.04),

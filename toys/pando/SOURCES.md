@@ -23,7 +23,7 @@ and its skin are drawn from code (src/), and they move by the rules below.
   (USDA Forest Service, *Celebrating Wildflowers: Quaking Aspen*), so the blade twists about it in the
   lightest air. Each leaf here is a twisting spring with little damping, kicked by the wind's turbulence
   with a force growing as the wind's square.
-- **How fast**: aspen leaves flutter at about three to five times a second (D. A. Roden and R. W. Pearcy,
+- **How fast**: aspen leaves flutter at about three to five times a second (J. S. Roden and R. W. Pearcy,
   "Effect of leaf flutter on the light environment of poplars", *Oecologia* 93 (1993) 201–207; J. S.
   Roden, *Trees* 17 (2003) 117–126, modelled at 3 Hz). Here each leaf's own twist is 3–5 Hz.
 - **The bark and its eyes**: green-white bark, coloured by chlorophyll in it (USDA Forest Service, above);
@@ -44,7 +44,7 @@ and its skin are drawn from code (src/), and they move by the rules below.
 - **Gusts over a canopy**: the waves that run over a windy crop or canopy ("honami"; S. Dupont et al.,
   *Journal of Fluid Mechanics* 652 (2010) 5–44). The eddies that make them are carried along at about 1.8
   times the wind at the canopy's top (after M. R. Raupach, J. J. Finnigan and Y. Brunet, *Boundary-Layer
-  Meteorology* 78 (1996) 351–382), and the gusts here travel at that speed.
+  Meteorology* 78 (1996) 351–382), and the gusts here travel at about that speed, varied from one to the next (a finger's at its own speed).
 - **How a stem sways**: trees of this size sway about once every two to four seconds (Norway maples of
   8.5–10 m at 0.29–0.56 Hz: *Dendrobiology* 64, 37–42; a modelled sycamore at 0.26 Hz: T. Jackson et
   al., 2019); each stem here sways at 0.25–0.45 Hz.
