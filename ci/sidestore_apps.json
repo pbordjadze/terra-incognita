@@ -276,6 +276,17 @@
       "iconSource": "toys/barchans/icon.png",
       "tintColor": "#E9A262",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "pando-build",
+      "name": "Pando",
+      "bundleIdentifier": "com.pbordjadze.toy.pando",
+      "subtitle": "One aspen that looks like a forest, from the grove to a leaf's pores",
+      "localizedDescription": "Pando, in Utah, looks like a forest of golden aspens but is one tree: over 40,000 stems from one root. Drag to blow and gusts run over the grove as pale waves, every leaf flipping on its flat stalk. Tap a tree, then a leaf, then closer still, to its pores, which close in your finger's shade. Working title; a toy in the making.",
+      "icon": "pando-icon.png",
+      "iconSource": "toys/pando/icon.png",
+      "tintColor": "#F2B22A",
+      "minOSVersion": "17.0"
     }
   ]
 }

@@ -617,7 +617,31 @@ def barchans():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
+def pando():
+    # one aspen leaf, round with a short tip, gold against the evening blue, on its flat stalk
+    img = Image.new('RGBA', (N, N), (40, 52, 82, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        g = y / N
+        d.line([(0, y), (N, y)], fill=(int(40 + 140 * g), int(52 + 70 * g), int(82 - 20 * g), 255))
+    cx, cy, r = N * 0.5, N * 0.56, N * 0.30
+    pts = []
+    for i in range(240):
+        t = 2 * math.pi * i / 240
+        rr = r * (1 + 0.1 * math.cos(t)) * (1 - 0.06 * math.cos(2 * t))
+        rr *= 1 + 0.3 * math.exp(-(t / 0.16) ** 2) + 0.3 * math.exp(-((t - 2 * math.pi) / 0.16) ** 2)
+        pts.append((cx + rr * math.sin(t), cy + rr * math.cos(t)))
+    d.line([(cx + 30, N * 0.04), (cx, cy - r * 0.86)], fill=(214, 160, 60, 255), width=14)
+    d.polygon(pts, fill=(246, 178, 34, 255))
+    d.line([(cx, cy - r * 0.86), (cx, cy + r * 1.2)], fill=(255, 226, 140, 255), width=8)
+    for k in range(4):
+        y0 = cy - r * 0.7 + k * r * 0.38
+        for sx in (-1, 1):
+            d.line([(cx, y0), (cx + sx * r * (0.55 - 0.08 * k), y0 + r * 0.38)], fill=(255, 214, 120, 255), width=5)
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

@@ -28,13 +28,13 @@ inside Terra they are the same toys, unchanged.
   Elkmont, Great Smoky Mountains (the toy's `PLACE`, `toys/elkmont/SOURCES.md`). Bell: Valdivia, Chile, 1960 (the first of the toy's
   great quakes). Swell: the mid-Pacific where the toy opens. Battle: Cannae, Apulia. Throats: near Los Banos,
   California (the side-blotched lizards' study population, `toys/throats/SOURCES.md`). Meander: the Rio Beni's
-  floodplain, Bolivia (the toy's Sentinel-2 scene). Frost: Oymyakon, Yakutia.
+  floodplain, Bolivia (the toy's Sentinel-2 scene). Frost: Oymyakon, Yakutia. Pando: the aspen clone by Fish Lake, Utah (the toy's `PLACE`, `toys/pando/SOURCES.md`).
 - **The cities in the mold's light**: their real longitudes and latitudes.
 
 ## Drawn
 
 - Every light's likeness of its toy: the whales' song-rings, a small flock, threads growing between cities,
-  a scatter of glows bursting together every few seconds (the fireflies' beat, quickened), a ring crossing the Earth at no
+  a scatter of glows bursting together every few seconds (the fireflies' beat, quickened), an aspen grove's gold crowns with a gust turning them pale, a ring crossing the Earth at no
   real speed, a train of crests, an engraving's two inks closing. They are pictures of the rules, not the
   toys' simulations.
 - The flights, the night falling, the crossfades, the Earth mark, the bells; a scene's window onto the toy in its

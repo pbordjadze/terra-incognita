@@ -1,5 +1,5 @@
 //! The likenesses of the toys whose rule runs on the ground: lightning reaching for a night lake, crabs'
-//! starbursts on sand, crescent dunes walking.
+//! starbursts on sand, crescent dunes walking, an aspen grove's crowns in a gust.
 
 use toy_kit::paint::Painter;
 
@@ -58,6 +58,7 @@ pub fn draw(p: &mut Painter, id: &str, sp: &Spot, tm: f64) {
         "catatumbo" => catatumbo(p, sp, tm),
         "bubblers" => bubblers(p, sp, tm),
         "barchans" => barchans(p, sp, tm),
+        "pando" => pando(p, sp, tm),
         _ => {}
     }
 }
@@ -172,5 +173,33 @@ fn barchans(p: &mut Painter, sp: &Spot, tm: f64) {
                 );
             }
         }
+    }
+}
+
+fn pando(p: &mut Painter, sp: &Spot, tm: f64) {
+    let (kf, a) = (sp.kf, sp.a);
+    // the grove's gold crowns from above in the evening, and every few seconds a gust crossing them,
+    // the leaves it passes turning their pale undersides up
+    sp.glass(p, [0.36, 0.26, 0.14]);
+    let front = (tm / 6.0).rem_euclid(1.0) * 2.8 - 1.4;
+    for i in 0..46 {
+        let n = i as f64;
+        let ang = hash(n + 0.5) * std::f64::consts::TAU;
+        let rr = hash(n + 7.1).sqrt() * 0.82;
+        let (x, y) = (ang.cos() * rr, ang.sin() * rr);
+        let g = (-((x * 0.8 + y * 0.6 - front) / 0.22).powi(2)).exp();
+        let flick = (tm * (3.0 + 2.0 * hash(n + 3.3)) * std::f64::consts::TAU + n).sin();
+        let pale = flick > 1.0 - 2.0 * (0.05 + 0.75 * g);
+        let col = if pale {
+            [0.93, 0.90, 0.72]
+        } else {
+            [0.95, 0.62 + 0.12 * hash(n + 1.9) as f32, 0.14]
+        };
+        p.disc(
+            sp.at(x, y),
+            1.4 * kf,
+            0.8,
+            [col[0], col[1], col[2], 0.95 * a],
+        );
     }
 }
