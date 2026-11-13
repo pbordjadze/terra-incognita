@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-HELD = ['whales', 'murmuration', 'elkmont', 'bell', 'nazare', 'meander', 'frost', 'throats', 'bats', 'huddle', 'wave', 'catatumbo', 'bubblers', 'barchans', 'moonroad']
+HELD = ['whales', 'murmuration', 'elkmont', 'bell', 'nazare', 'meander', 'frost', 'throats', 'bats', 'huddle', 'wave', 'catatumbo', 'bubblers', 'barchans', 'pando', 'moonroad']
 NOTE = ("Terra's own data (its rivers) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code "
         "uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Written by "
         "tools/toys/terra/manifest.py; never hand-edit.")
