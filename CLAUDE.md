@@ -223,9 +223,29 @@ install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
 - By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`
   (and qa-explore.yml's, in painting-company's shared copy), then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
 - Lint before pushing: `bash ci/lint.sh` (`fix` formats). Formatting goes in its own commit.
+- The pre-commit hook (`ci/hooks/pre-commit`: rustfmt, ruff, ShellCheck, the ratchet and silenced lints on what
+  the commit changes, in seconds) is on in every Claude Code session (`.claude/settings.json`, which also
+  rustfmts a Rust file as soon as it is written); elsewhere, `git config core.hooksPath ci/hooks`. Don't
+  `--no-verify` past it: CI's lint job fails on the same things.
+- The ratchet (`ci/ratchet.py`, in `ci/lint.sh`): no source file past 800 lines, no function past 100 lines of
+  code or a complexity of 20, no type error in the Python (pyright). Split a file or function by what it does
+  before it gets there. What was already past is in `ci/ceilings/` and may only get better (`--tighten` lowers a
+  ceiling in the commit that improves it); raising one takes a reason on its line.
 - A lint is silenced only with its reason beside it: `#[allow(...)] // why` on the same line (or the line above, where rustfmt moves it), `# noqa: CODE why`,
   and a comment line with the reason directly above a `# shellcheck disable=` or `// swiftlint:disable`; a rule
   loosened for a whole tool goes in its config file with its reason. `ci/silenced.py` (in `ci/lint.sh`) holds to it.
+
+## Review
+
+The same rules as the owner's other apps (painting-company's CLAUDE.md › Review, `process/critic.md`).
+- **A fresh reader before every merge.** Before merging into `main`, a reviewer that didn't write the code
+  reads `git diff origin/main...HEAD` (the `/code-review` skill, or a subagent given the diff and the goal,
+  not the maker's reasoning). Fix what it confirms; anything large or design-level goes to the owner. The
+  merge commit's message lists what the review found and what was fixed.
+- **A fresh critic each build** for anything the owner will look at (a new toy or screen, visuals, measured
+  performance): judged from screenshots or a clip only, not the code, with the log of earlier verdicts in
+  `critics/LOG.md` on the branch. Done after 3 rounds, or two rounds running of only polish; the maker calls
+  it, with the reason in the log. Bug fixes skip the critic; the reviewer is enough.
 
 ## The runtime: one library that grows
 
