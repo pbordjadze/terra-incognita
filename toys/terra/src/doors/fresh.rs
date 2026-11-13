@@ -1,6 +1,6 @@
 //! New lights: a toy an update brought is marked on the Earth until it has been opened once (painting-company
 //! row 342). Terra keeps, with its camera, the toys it already knew (`known`); a light whose toy is not among
-//! them wears a slow ring of moonlit gold, a second ring breathing out of it, until it is touched and its toy
+//! them wears a thin ring of deep gold, a second ring breathing out of it, until it is touched and its toy
 //! opens. A first launch knows every toy it holds (nothing is new to someone who has seen none of them).
 
 use toy_kit::paint::Painter;
@@ -12,7 +12,7 @@ use super::Life;
 const NEW_BEFORE_THE_LIST: [&str; 2] = ["pando", "moonroad"];
 
 /// The mark's gold: warm, as a lit town's sodium glow is, against the night map's cool.
-const GOLD: [f32; 3] = [1.0, 0.82, 0.45];
+const GOLD: [f32; 3] = [0.88, 0.66, 0.23];
 
 /// The ring's beat (s).
 const BEAT: f64 = 3.2;
@@ -80,13 +80,12 @@ impl Life {
         } else {
             0.65 + 0.25 * (std::f64::consts::TAU * ph).cos()
         } as f32;
-        let at = (r * 1.45 * k) as f32;
-        p.glow_ring(c, at, 2.6 * kf, 2.4 * kf, [g0, g1, g2, 0.35 * breath * a]);
-        p.ring(c, at, 1.1 * kf, 1.0, [g0, g1, g2, 0.9 * breath * a]);
+        let at = (r * 1.4 * k) as f32;
+        p.ring(c, at, 1.0 * kf, 1.0, [g0, g1, g2, 0.95 * breath * a]);
         if !still {
-            let out = (r * (1.45 + 1.3 * ph) * k) as f32;
+            let out = (r * (1.4 + 1.2 * ph) * k) as f32;
             let fade = ((1.0 - ph).powf(1.6) * 0.6) as f32 * a;
-            p.ring(c, out, 1.0 * kf, 1.2, [g0, g1, g2, fade]);
+            p.ring(c, out, 0.8 * kf, 1.2, [g0, g1, g2, fade]);
         }
     }
 }
