@@ -1239,7 +1239,7 @@ impl Toy for Frost {
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         let at = [self.pane[0] * 0.55, self.pane[1] * 0.45];
         Some(info::Demo::new(
-            "Frost on a window at −50 °C. Your finger is warm.",
+            "Frost on a window at −50 °C. Touch the glass to melt it.",
             vec![info::Stroke::drag(
                 0.4,
                 1.4,
@@ -1250,16 +1250,11 @@ impl Toy for Frost {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "The glass is a honeycomb of cells. A cell that is ice, or touches ice, takes water from the air.",
-                "Everywhere else the water spreads to the six neighbours. That alone grows six arms, each crystal at its own angle.",
-                "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
-                "Two crystals can't share water: they meet in a seam.",
-                "Your finger is warm: it melts the frost. The meltwater freezes again smooth, with nothing for frost to catch on: it creeps back only from the edge, slowly.",
-            ],
-            "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
-        ))
+        Some(info::Rules::lines(&[
+                "Frost grows as water from the air freezes onto ice already there. Each crystal branches out in six arms.",
+                "The air is damper low on the glass, so long ferns race there; higher up grow stubbier stars.",
+                "Your warm finger melts the frost. The meltwater refreezes smooth, so frost creeps back only slowly, from the edges of the clear patch.",
+        ]))
     }
 }
 

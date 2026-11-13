@@ -178,6 +178,18 @@ impl<T: Toy> Room for Inside<T> {
     }
 }
 
+impl crate::Terra {
+    /// The toy has opened and settled: the Earth's lights sleep while it is open, and on its first
+    /// opening since launch its demo plays by itself (`Ctx::show_info`).
+    pub(crate) fn settle_inside(&mut self, ctx: &mut Ctx) {
+        self.state = crate::State::Inside;
+        if self.seen.insert(self.door) {
+            ctx.show_info();
+        }
+        self.veil.target = None;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

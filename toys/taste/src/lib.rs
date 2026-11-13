@@ -753,14 +753,11 @@ impl Toy for Taste {
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "It keeps trying on a slightly different self, and now and then a very different one.",
-                "If you held forms like the new one as much as the old, it keeps it. If less, it keeps it only sometimes: the less, the more rarely. Only while your finger is on it, or just was, does it learn.",
-                "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, glowing where you held it most. Touch one of the small ones there to have it back as that one, or anywhere to come back. Pinch to see the wheel any time; shake for a new one.",
-            ],
-            "Real: nothing but your finger, and how long it rested on each form. Drawn: the creature, every form it could be, its sounds.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "It keeps trying a slightly different form, and now and then a very different one.",
+                "It keeps the new form if you held ones like it as long as the old; if less, only sometimes. It learns only while your finger rests on it.",
+                "So it lingers where you linger, yet still wanders. Pinch to see where it has been; shake for a new one.",
+        ]))
     }
 }
 

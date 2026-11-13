@@ -58,12 +58,17 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     fling, Home by over-pinch or three fingers up): a globe toy calls `globe.set_home()` once its
     opening camera is set, and lets its own camera wait while `globe.hand.busy()`.
   - `info`: the info mark. A toy's `demo()` gives its one gesture (strokes, played as real touches
-    under a ghost fingertip) and one line; the kit draws the mark bottom right, the shell the line.
-    Beside it a "?": a toy's `rules()` gives the few rules that make what is on screen and one line
-    of what is real and what is drawn (its SOURCES.md, in a sentence); the shell sets them on a dark
-    glass, closed by a tap anywhere. A toy may split that in two (Mold, the trial): `rules()` the rules
-    alone, and `origins()`, an asterisk beside the "?", where they came from and what is real and what
-    is made up; `card_at_top()` hangs the card from the top when the scene is low. Plain words, no title, nothing to do: a person can glance and go.
+    under a ghost fingertip) and one short line (under ten words: what it is and the gesture); the kit
+    draws the mark bottom right, the shell the line on a small dark glass. The demo opens by itself a
+    second into a toy's first visit (`info::First`; in Terra, each toy's first opening since launch).
+    Beside it a "?": a toy's `rules()` gives, in two to four short lines (about fifty words), the rules
+    the real thing follows (the starlings' seven nearest, a wave faster in deeper water) and how a
+    finger joins in; no "Real: … Drawn: …" line (Paul, Nov 13: a confusing paradigm; the sources stay
+    in SOURCES.md), so the note is empty. The shell sets them on a dark glass, closed by a tap anywhere.
+    A toy may split that in two (Mold, the trial): `rules()` the rules alone, and `origins()`, an
+    asterisk beside the "?", where they came from; `card_at_top()` hangs the card from the top when the
+    scene is low. Plain words, no title, nothing to do: a person can glance and go. Before the text
+    ships, a reader who knows nothing of the toy is shown its shots and text and says what it is.
     `plans/rules.json` photographs it; `python3 tools/kit/shell_text.py <out>` draws the shell's text
     on the check's shots (the Simulator's `rules.png` is the real one).
   - `paint` (soft 2D discs, rings, strokes, glows), `backdrop` (a full-screen fragment of your own),

@@ -29,7 +29,7 @@
 //!   "shots": [0.5, { "t": 3.5, "name": "pinched" }],
 //!   "film": { "from": 0, "to": 8, "every": 0.1, "fingers": true },
 //!   "audio": true,
-//!   "strict_taps": false }
+//!   "strict_taps": false, "first_info": false }
 //! ```
 //!
 //! `shots` are written as `<out>/<name or t>.png` (and, with `--stretch`, a contrast-stretched copy
@@ -93,10 +93,9 @@ pub struct Plan {
     pub shots: Vec<Shot>,
     pub film: Option<Film>,
     pub audio: bool,
-    /// Text handed to the toy's `restore` before the first frame.
-    pub restore: Option<String>,
-    /// A touch that does nothing fails the check (otherwise it is a warning).
-    pub strict_taps: bool,
+    pub restore: Option<String>, // handed to the toy's `restore` before the first frame
+    pub strict_taps: bool,       // a touch that does nothing fails the check (else a warning)
+    pub first_info: bool,        // the demo opens by itself as on a first visit (info::First)
 }
 
 /// One event of a plan. The point fields hold the places given as points; `places` holds every
@@ -756,6 +755,7 @@ impl<T: Toy> Run<T> {
         ctx.night = plan.night;
         ctx.reduce_motion = plan.reduce_motion;
         let mut host = Host::<T>::new(ctx)?;
+        host.first_info.on = plan.first_info;
         host.toy.settings(&mut host.ctx);
         if let Some(s) = &plan.restore {
             host.toy.restore(&mut host.ctx, s);
