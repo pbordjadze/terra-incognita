@@ -266,8 +266,7 @@ Retired on October 31, 2026 with the experiences whose words it stood for (paint
 The app had a switch (a W) that put Wikipedia's own words, bundled per pack as `wikipedia.json`, in
 place of the atlas's paragraphs. Packs written for it keep working: the `wikipedia` keys on
 `terra.caption.set`, `terra.panel.show` and its `sections` are accepted and ignored, a pack's
-`wikipedia.json` is not read, and `terra.settings.wikipedia` is always false. `tools/wikipedia/build.py`
-remains, with no current users; how it worked is at `before-retirement-2026-10-31`.
+`wikipedia.json` is not read, and `terra.settings.wikipedia` is always false. How it worked, and `tools/wikipedia/`, are at `before-retirement-2026-10-31`.
 
 ## Many at once (runtime 4)
 

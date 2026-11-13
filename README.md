@@ -18,8 +18,7 @@ The code:
   (`Prototypes/`, bundled or downloaded from the `packs` branch; [docs/runtime3.md](docs/runtime3.md)).
 - `App/TerraIncognita/Globe/`: the globe; its data, `Globe/`, is made by `tools/globe/build.py`.
   `Clouds/` and `Ocean/` are the sky and the sea on it; `Quiet/` the quiet globe's rules.
-- `tools/playground/`: scaffold, preview, check, pack and publish packs. `Water/` is the former web
-  study's data, kept as the source `tools/water/` builds from.
+- `tools/playground/`: scaffold, preview, check, pack and publish packs.
 - The first demo, the map drawn in characters by WebGL, is retired; it is in the history at 1f9b941.
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.

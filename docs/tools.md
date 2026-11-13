@@ -110,16 +110,12 @@ A pack's art is code, rebuilt and never hand-edited.
 
 | Tool | What it does | Run | Used by | Limits |
 | --- | --- | --- | --- | --- |
-| The one art drawer | draws a sheet in headless Chromium at 3 px a point: a canvas sheet (`.js`, 2D drawings, frames named `name-1.png …`) or an SVG sheet (`.cjs`, a Node module whose `sheet()` gives SVG markup and an index to write); `--contact` lays them all on one page | `node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png]` | no current users (its sheets, `tools/whales/art.js`, `monsoon/art.js`, `beacons/art.js`, `leadline/art.js`, `lowsea/art.js`, `vine/art.js`, `tools/herds/draw.cjs`, `tools/water/boto.cjs`, drew retired packs) | SVG only from Node; no sprite sheets (one file a frame) |
-| All the art again | every pack's art redrawn in place; a clean `git status` says a drawer change left it the same to the byte | `tools/packart/all.sh` | no current users (its packs are gone: it fails until a sheet has a pack again) | a new sheet adds its line |
+| The one art drawer | draws a sheet in headless Chromium at 3 px a point: a canvas sheet (`.js`, 2D drawings, frames named `name-1.png …`) or an SVG sheet (`.cjs`, a Node module whose `sheet()` gives SVG markup and an index to write); `--contact` lays them all on one page | `node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png]` | no current users (its sheets drew the retired packs) | SVG only from Node; no sprite sheets (one file a frame) |
 | Brush | the sheets' helpers: seeded random, smooth curves, ink under fill, glow, colour mix, the halo round a tiny figure | `window.Brush` in a sheet, `tools/packart/brush.js` | no current users | |
-| The herds' animals | one camelid drawn from parameters (inverse-kinematic legs, gaits) in every kind, look and pose; writes `herds/art.js`, the index | an SVG sheet: `node tools/packart/render.cjs tools/herds/draw.cjs Prototypes/herds` (or `node tools/herds/draw.cjs`) | no current users | 458 of the pack's 500 files |
-| The boto | a river dolphin surfacing, 24 frames; writes `boto.json` | an SVG sheet: `node tools/packart/render.cjs tools/water/boto.cjs Prototypes/gathering-of-water-alive` | no current users | |
 | Glint | the doorway's glint from afar | `python3 tools/playground/glint_png.py [png ...]` | the scaffold's template | standard library PNG |
 | Marker | the template's and hello-pack's marker | `python3 tools/playground/marker_png.py` | template, hello | standard library PNG |
 | Persian ornaments | band, braid, finial, rosette, headpiece, from geometry | `python3 tools/globe/ornament.py [--sheet out.png]` | the Persian style's code (no current users) | |
 | Plates | a look's plates, layer by layer, from its page | `node tools/plates/export.cjs <look> "<Name>"`, contract `tools/plates/kit.js` | no current users (the films' `Atlas/` is retired) | 1638 × 3545 a plate |
-| River pictures | the gatherings' doorway and glint, the Amazon's plume | `tools/water/build_pack.py`, `build_alive.py` | no current users | |
 
 ## Data: builders from sources
 
@@ -132,16 +128,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Night | `Globe/ground/night.jpg` (Black Marble) | `python3 tools/globe/night.py <cache>` | night |
 | Clouds | `CloudsSky.png`, `CloudsLand.png` (ISCCP-H), for the app and its twin | `python3 tools/clouds/build.py <cache>`; noise calibration `calibrate.py` | clouds |
 | Ocean | `OceanCurrents.png`, `OceanStream.png` (NOAA drifters) | `python3 tools/ocean/build.py <cache>` | ocean |
-| Wikipedia | `Wikipedia.json`, each pack's `wikipedia.json` | `python3 tools/wikipedia/build.py [--app] [--pack id]`, list `articles.txt` | no current users (Wikipedia's words retired) |
 | Plate data | `tools/plates/data/` GeoJSON by scale | `python3 tools/plates/build_data.py <downloads>` | no current users |
-| Herds | `Prototypes/herds/data.js`: every animal's dated way, checked against the globe's land | `python3 tools/herds/build.py` (lineages in `lineages.py`) | no current users |
-| Sight lines | `fires-across-the-sea/sight.js`: which peaks see which, over the globe's terrain | `python3 tools/beacons/build_sight.py` | no current users | ~10 km a pixel: thin ridges missed |
-| Depths | `lead-line/depths.js`: the sea's depth on a 1024 × 512 grid | `python3 tools/leadline/build_depths.py` | no current users | a cell's depth, not a point's |
-| Challenger's way | `lead-line/way.js`: stations, ports and turns, dated | `python3 tools/leadline/build_way.py` | no current users |
-| Shelves | `low-sea/shelf-*.png`: shelves under 200 m as land | `python3 tools/lowsea/build_shelves.py <NE folder>` | no current users |
-| Tethys | `sea-of-whales/tethys-*.png`: the Eocene sea over Egypt | `python3 tools/whales/build_sea.py <NE folder>` | no current users |
-| The vine | `vine/data.js`: branches with a year at each vertex, leaves along them | `python3 tools/vine/build.py` | no current users |
-| Rivers | `Water/` from RiverATLAS; the packs from it | `tools/water/build.py`, `build_pack.py`, `build_alive.py`, audit `audit_source.py` | no current users |
 
 ## Seeing it without a Mac: previews
 
@@ -152,8 +139,6 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Living check | two packs by touch side by side, front and back, one ended | `node tools/playground/check.cjs --living` | no current users (it needs two current packs) | not run by CI |
 | Pack moments (1) | a plan of waits (ms), flights, strip, play, tap by name, Open; prints the state at each shot | `node tools/playground/explore.cjs <id> <out> '<plan>'` | no current users (written with the herds) | see [One job, two tools](#one-job-two-tools) |
 | Pack moments (2) | a plan of camera, waits (s), touches and drags at places, strip, play; exit 1 on page errors | `node tools/packart/moments.cjs <id> <out> '<plan>' [--root]` | no current users (written with the rebuilt experiences) | see [One job, two tools](#one-job-two-tools) |
-| River drive | the gathering alive driven as a reader would, with assertions | `node tools/water/alive_check.cjs` | no current users | one pack's |
-| Retired river study | the former web study's interactions | `node tools/water/interaction_check.cjs <url>` | `Water/` only (no longer in the app) | |
 | Globe preview | the globe as `Globe.metal` draws it, in numpy, with names | `python3 tools/globe/preview.py out.png [--style ground --month 7]` | every globe change | names placed roughly |
 | Metal off the Mac | shaders compiled as C++ and drawn on the CPU; stacked layers; Metal beside its twin | `python3 tools/metal/metal.py shot globe+ocean+clouds out.png`, `twin clouds`; `layers.py` mirrors the layers' Swift | globe, clouds, ocean | README › What it can't vouch for: derivatives, precision, not Metal's compiler |
 | Clouds look, film | the clouds' twin over the globe preview, stills or a film | `node tools/clouds/look.cjs`, `film.cjs` (via `compose.py`) | clouds | film needs ffmpeg |
@@ -170,7 +155,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Shader check | every `.metal` compiled and its bindings, in seconds | `python3 tools/metal/metal.py check` | CI `plates` |
 | Stand-in tests | the CPU Metal's builtins; whether `twin` notices drift | `tools/metal/tests/test_metal.py`; `twin_drift.py` (slow) | CI `plates`; by hand |
 | Globe data | maps, ornaments, ground, fonts, `type.json`'s design rules (sizes, contrast) | `python3 ci/check_globe.py` | CI `plates` |
-| Syntax | `node --check`, `py_compile` on the tools | in `ci.yml` › `plates` | CI `plates` (not `tools/herds/*.cjs`, `tools/water/*.cjs`) |
+| Syntax | `node --check`, `py_compile` on the tools | in `ci.yml` › `plates` | CI `plates` |
 | UI tests | the playground (plain launch, every prototype listed, a native and a pack together, the bundled pack, remote revisions), clouds, ocean, quiet | `App/TerraIncognitaUITests/`, helpers `PlaygroundSupport.swift`; `ci/encounter_tests.sh` | CI `apple` (`[test Class]`, `[playground-check]`) |
 | Simulator shots | the playground, the globe at places and by night, the stage at places | `ci/sim_shots.sh` | CI `apple` (by hand, `[shots]`) |
 | Exploratory QA | an agent using the app through Maestro | `qa-explore.yml`, `ci/qa/` (synced from painting-company) | on request |
@@ -197,12 +182,6 @@ There is no `swift.sh`: Swift is built only by the macOS jobs.
 Found October 29, 2026 (painting-company row 178). Each says what differs and what to do. Since the
 retirement (row 195) the packs named below are at `before-retirement-2026-10-31`.
 
-- **Art drawers: `tools/packart/render.cjs`, `tools/herds/draw.cjs`, `tools/water/boto.cjs`** (merged).
-  All three drove headless Chromium to turn code into PNG frames: `render.cjs` from a browser sheet of
-  canvas drawings, the other two from SVG built in Node, each with its own Playwright loop and an
-  index the pack reads. What differed was the drawing language and the index, not the rendering, so
-  `render.cjs` now draws both kinds of sheet and the other two are SVG sheets for it; every pack's
-  art came out the same to the byte.
 - **Pack moments: `tools/playground/explore.cjs` and `tools/packart/moments.cjs`.** Both play a pack
   in the preview from a JSON plan and screenshot it; they were written the same night. `explore`
   has flights with a duration, a tap on a touchable thing by name, the chip's Open, and prints the
@@ -210,15 +189,6 @@ retirement (row 195) the packs named below are at `before-retirement-2026-10-31`
   a screen point, `--root`, play set rather than toggled, and fails on page errors. Their `wait`s
   differ (milliseconds against seconds). They should be one (`moments.cjs`, taking `explore`'s
   steps, with `wait` in seconds), its users' plans converted in the same commit.
-- **Things moved by the date by hand.** The lead line's ship and the monsoon's dhows are set on a
-  timed `path` again on every `time` event, the seconds computed from the date's rate; runtime 5's
-  dated ways (`path: { coordinates, dates }`, the herds) do exactly that in the globe, smoothly and
-  under scrubbing. The lead line's way is already dated (`way.js`) and could move onto it as it
-  stands; the monsoon's dhows sail a yearly round, which a dated way can carry as one year's dates.
-  The vine's stems, regrown by `terra.geo.set` on every `time` event, are the same idea for lines:
-  no dated geography exists yet.
-- **Script helpers repeated in packs.** `along` (six packs, and the herds' `slerp`) and `frames`
-  (six) are the first candidates for a shared script module (CLAUDE.md › Reuse first).
 - **Three hand-written PNG encoders** (`glint_png.py`, `marker_png.py`, `harness_check.cjs`'s
   fixture pictures): small and standard-library by design; worth one shared helper only when a
   fourth appears.

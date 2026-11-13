@@ -71,8 +71,7 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
     its first minute can be seen without a Mac.
 - **Wikipedia's words**, the reader's switch for Wikipedia's own words in place of the atlas's, was
   retired with the experiences whose words it stood for (painting-company row 195). A pack's
-  `wikipedia` keys are accepted and ignored, and `terra.settings.wikipedia` is always false;
-  `tools/wikipedia/` remains, with no current users.
+  `wikipedia` keys are accepted and ignored, and `terra.settings.wikipedia` is always false.
 - **The quiet globe** (`App/TerraIncognita/Quiet/`, four native prototypes, each a rule the plain globe
   takes while it runs and gives back when it ends; they run together; painting-company row 174):
   `quiet-names`, names on demand (`GlobeView.quietNames`: the one or two greatest features in view by
@@ -121,9 +120,8 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
 - **The retired experiences** (painting-company row 195): Whales in the desert, The monsoon's sails,
   Fires across the sea, The lead line, When the sea was low, The vine's long walk, The herds, A
   gathering of water (and alive), Camel and Llama, the plate films, the Persian and Wikipedia globes and
-  the still sea. Their code, packs, tests and art are at `before-retirement-2026-10-31`; the tools
-  that built them (`tools/whales/`, `monsoon/`, `beacons/`, `leadline/`, `lowsea/`, `vine/`, `herds/`,
-  `water/`, `plates/`) stay, with no current users (`docs/tools.md`).
+  the still sea. Their code, packs, tests and art are at `before-retirement-2026-10-31`; so are the tools
+  that built them; `tools/plates/` stays, with no current users (`docs/tools.md`).
 - **The clouds** (`App/TerraIncognita/Clouds/`), part of the stage: the clouds of the globe's month
   (`GlobeView.month`, the ground's; a pack's date to the day moves it), where satellites usually see
   them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could be; zooming in passes down through
