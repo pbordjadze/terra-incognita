@@ -18,8 +18,8 @@ fn sky(px: vec2<f32>) -> vec3<f32> {
   let q = vec2<f32>((px.x - u.size.x * 0.5) / u.size.x * 2.2 * depth, depth * 1.6);
   let drift = vec2<f32>(u.time * 0.012, 0.0);
   let dens = smoothstep(0.32, 0.78, fbm(q * 1.3 + drift)) * (1.0 - smoothstep(0.86, 1.0, v) * 0.6);
-  let base = mix(vec3<f32>(0.016, 0.018, 0.045), vec3<f32>(0.060, 0.045, 0.090), v);
-  var col = base + dens * vec3<f32>(0.030, 0.028, 0.050);
+  let base = mix(vec3<f32>(0.026, 0.026, 0.064), vec3<f32>(0.085, 0.064, 0.122), v);
+  var col = base + dens * vec3<f32>(0.046, 0.040, 0.074);
   // the flash: lit from inside, the thick of the cloud lit most
   let fl = u.p0.x * 1.6 * exp(-length(px - u.p0.yz) / (u.size.y * 0.32));
   let fk = u.p1.x * exp(-length(px - u.p1.yz) / (u.size.y * 0.16));

@@ -135,10 +135,18 @@ impl Catatumbo {
                 let foot = b.foot() as f64;
                 b.cells
                     .iter()
-                    .map(|c| {
-                        let lateral = (c.x as f64 - foot) * CELL_M;
+                    .enumerate()
+                    .map(|(k, c)| {
+                        // each cell nudged off the grid, so no run of the channel keeps to its
+                        // right angles (but the one that touched the water stays under the finger)
+                        let (jx, jz) = if Some(k) == b.ground {
+                            (0.0, 0.0)
+                        } else {
+                            (jitter(s.seed, k, 1), jitter(s.seed, k, 2))
+                        };
+                        let lateral = (c.x as f64 - foot + jx) * CELL_M;
                         // the cell that touched the ground is at the water (row nz - 2: the last row is the boundary)
-                        let alt = (b.nz as f64 - 2.0 - c.z as f64) * CELL_M;
+                        let alt = (b.nz as f64 - 2.0 - c.z as f64 + jz) * CELL_M;
                         self.screen(s.at[0], lateral, alt.max(0.0), s.dist)
                     })
                     .collect()
@@ -149,10 +157,11 @@ impl Catatumbo {
                 let (cx, cz) = (b.nx as f64 * 0.5, b.nz as f64 * 0.5);
                 b.cells
                     .iter()
-                    .map(|c| {
+                    .enumerate()
+                    .map(|(i, c)| {
                         [
-                            s.at[0] + (c.x as f64 - cx) * k,
-                            s.at[1] + (c.z as f64 - cz) * k * 0.35,
+                            s.at[0] + (c.x as f64 - cx + jitter(s.seed, i, 1)) * k,
+                            s.at[1] + (c.z as f64 - cz + jitter(s.seed, i, 2)) * k * 0.35,
                         ]
                     })
                     .collect()
@@ -206,7 +215,7 @@ impl Catatumbo {
         if self.t < self.next_storm {
             return;
         }
-        self.next_storm = self.t + self.rng.range(1.2, 4.5);
+        self.next_storm = self.t + self.rng.range(0.7, 2.8);
         let w = self.size_pt[0];
         let hy = self.horizon();
         if self.rng.f() < 0.4 || self.t < 1.0 {
@@ -233,6 +242,11 @@ impl Catatumbo {
         }
         l * s.power
     }
+}
+
+/// A cell's nudge off the grid (cells, -0.45..0.45), the same every frame.
+fn jitter(seed: u64, k: usize, axis: u64) -> f64 {
+    (hash(seed ^ (k as u64).wrapping_mul(0x9E37) ^ axis << 40) - 0.5) * 0.9
 }
 
 fn hash(x: u64) -> f64 {
@@ -467,26 +481,26 @@ impl Catatumbo {
             line.push(a);
             jag(a, b, s.seed ^ (k as u64) << 7, 12.0, &mut line);
             let r = (width * (0.35 + 0.9 * cur as f64)) as f32;
-            for w in line.windows(2) {
+            for (j, w) in line.windows(2).enumerate() {
                 let (pa, pb) = (w[0], w[1]);
                 let (qa, qb) = (px(pa, ppp), px(pb, ppp));
                 let violet = [0.62, 0.52, 1.0, alpha * 0.22];
                 let p = ppp as f32;
                 self.painter.glow(qa, qb, 0.0, r * 9.0 * p, violet);
-                if core {
-                    // opaque and drawn over, so the joints don't bead where segments' caps overlap
-                    // (a faint one is added instead: an opaque grey would read as a dark crack)
-                    let v = alpha.min(1.0);
-                    if v > 0.5 {
-                        self.painter
-                            .line(qa, qb, r * 0.5 * p, 0.6 * p, [v, 0.97 * v, v, 1.0]);
-                    } else {
-                        self.painter
-                            .glow(qa, qb, r * 0.4 * p, 1.0 * p, [1.0, 0.97, 1.0, v]);
-                    }
+                // the core: opaque and drawn over while bright, so the joints don't bead where the
+                // segments' caps overlap; dim, a soft glow with no hard core (which would bead too)
+                let v = if core { alpha.min(1.0) } else { alpha * 0.8 };
+                if v > 0.45 {
+                    let taper = (0.55 + 0.45 * (pb[1] / foot_y).clamp(0.0, 1.0)) as f32;
+                    self.painter
+                        .line(qa, qb, r * 0.32 * taper * p, 0.6 * p, [v, 0.97 * v, v, 1.0]);
                 } else {
                     self.painter
-                        .glow(qa, qb, r * 0.3 * p, 1.0 * p, [0.75, 0.7, 1.0, alpha]);
+                        .glow(qa, qb, 0.0, r * 1.1 * p + p, [0.9, 0.86, 1.0, v * 0.9]);
+                }
+                if core && c.main && near > 0.7 {
+                    let seed = s.seed ^ (k as u64) << 3 ^ (j as u64) << 24;
+                    self.paint_fork([pa, pb], seed, [near, foot_y], r, v, ppp);
                 }
                 // its reflection in the lake, broken by the ripples
                 if ground && pa[1] < foot_y && pb[1] < foot_y {
@@ -502,7 +516,7 @@ impl Catatumbo {
                         self.painter.glow(
                             px(ra, ppp),
                             px(rb, ppp),
-                            r * 0.4 * ppp as f32,
+                            0.0,
                             r * 3.0 * ppp as f32,
                             [0.70, 0.62, 1.0, alpha * 0.30],
                         );
@@ -543,16 +557,30 @@ impl Catatumbo {
             // the point where it meets the lake: white-hot, with a glint spread along the water
             let hot = (light * 1.2 + after * 0.2).min(1.0);
             let k = (2.0 + 3.0 * near.min(3.0)) * ppp;
-            self.painter
-                .disc(f, k as f32, (k * 0.8) as f32, [1.0, 0.98, 1.0, hot]);
-            let span = (20.0 + 70.0 * near.min(3.0)) * ppp;
             self.painter.glow(
-                [f[0] - span as f32, f[1]],
-                [f[0] + span as f32, f[1]],
-                (0.6 * ppp) as f32,
-                (5.0 * near.min(2.0) * ppp) as f32,
-                [0.9, 0.85, 1.0, hot * 0.6],
+                f,
+                [f[0] + 0.01, f[1]],
+                0.0,
+                (k * 1.8) as f32,
+                [1.0, 0.98, 1.0, hot],
             );
+            // the glint: the light caught on the ripples either side, broken and fading outward
+            let span = 14.0 + 45.0 * near.min(3.0);
+            for i in 0..14 {
+                let u = (i as f64 + 0.5) / 14.0 * 2.0 - 1.0;
+                let h = hash(s.seed ^ (i as u64) << 9 ^ (self.t * 6.0) as u64);
+                let x = s.at[0] + u * span;
+                let y = s.at[1] + (h - 0.5) * (1.0 + near) * 0.8;
+                let len = span / 14.0 * (1.3 + 0.9 * h);
+                let fade = (1.0 - u.abs()).powf(1.5) as f32;
+                self.painter.glow(
+                    px([x - len * 0.5, y], ppp),
+                    px([x + len * 0.5, y], ppp),
+                    0.0,
+                    (2.4 * near.min(2.0) * ppp) as f32,
+                    [0.9, 0.85, 1.0, hot * 0.45 * fade],
+                );
+            }
             let rr = (14.0 + 50.0 * near.min(3.0)) * ppp;
             self.painter.glow(
                 f,
@@ -561,6 +589,60 @@ impl Catatumbo {
                 rr as f32,
                 [0.85, 0.75, 1.0, (light * 0.55 + after * 0.1).min(0.9)],
             );
+        }
+    }
+}
+
+impl Catatumbo {
+    /// A short fork off the main channel of a near stroke, where the far ones show their branches in
+    /// the bolt itself: angled down and away, crooked, thinning to nothing.
+    fn paint_fork(
+        &mut self,
+        seg: [[f64; 2]; 2],
+        seed: u64,
+        near_floor: [f64; 2],
+        r: f32,
+        v: f32,
+        ppp: f64,
+    ) {
+        let [near, floor] = near_floor;
+        let [pa, pb] = seg;
+        if hash(seed) > 0.16 {
+            return;
+        }
+        let d = [pb[0] - pa[0], pb[1] - pa[1]];
+        let l = (d[0] * d[0] + d[1] * d[1]).sqrt().max(1e-3);
+        let side = if hash(seed ^ 0x55) > 0.5 { 1.0 } else { -1.0 };
+        let ang = side * (0.45 + 0.6 * hash(seed ^ 0x77));
+        let (sa, ca) = ang.sin_cos();
+        let dir = [(d[0] * ca - d[1] * sa) / l, (d[0] * sa + d[1] * ca) / l];
+        let len = (12.0 + 30.0 * hash(seed ^ 0x99)) * near.min(3.0);
+        // (never below the water it strikes)
+        let len = if dir[1] > 0.0 {
+            len.min((floor - pb[1]) / dir[1] * 0.9)
+        } else {
+            len
+        };
+        if len < 4.0 {
+            return;
+        }
+        let end = [pb[0] + dir[0] * len, pb[1] + dir[1] * len];
+        let mut line = vec![pb];
+        jag(pb, end, seed.wrapping_mul(13), 6.0, &mut line);
+        let n = line.len() as f32;
+        for (i, w) in line.windows(2).enumerate() {
+            let thin = 1.0 - i as f32 / n;
+            let (qa, qb) = (px(w[0], ppp), px(w[1], ppp));
+            let p = ppp as f32;
+            self.painter.glow(
+                qa,
+                qb,
+                (r * 0.22 * thin + 0.25) * p,
+                0.8 * p,
+                [0.92, 0.88, 1.0, v * 0.8 * thin],
+            );
+            self.painter
+                .glow(qa, qb, 0.0, r * 5.0 * p, [0.62, 0.52, 1.0, v * 0.12 * thin]);
         }
     }
 }

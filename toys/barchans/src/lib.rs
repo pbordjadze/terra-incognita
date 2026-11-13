@@ -45,6 +45,7 @@ pub struct Barchans {
     dunes: Dunes,
     field: Field,
     cells: Vec<[f32; 4]>,
+    blur: Vec<f32>,
     painter: Painter,
     sound: Sound,
     grains: Vec<Grain>,
@@ -99,6 +100,7 @@ impl Toy for Barchans {
         );
         let mut toy = Barchans {
             cells: vec![[0.0; 4]; ACROSS * down],
+            blur: vec![0.0; ACROSS * down],
             dunes,
             field,
             painter: Painter::new(&ctx.gpu),
@@ -179,7 +181,7 @@ impl Toy for Barchans {
         if let Some(f) = &self.finger {
             if t - f.still_since > 0.25 {
                 let c = self.cell([f.at[0], f.at[1]]);
-                self.dunes.pour(c, 6.0, dt * 30.0);
+                self.dunes.pour(c, 7.0, dt * 70.0);
                 if (t * 8.0).fract() < (dt as f64 * 8.0) {
                     ctx.haptic();
                 }
@@ -211,9 +213,7 @@ impl Toy for Barchans {
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         let d = &self.dunes;
-        for (c, &s) in self.cells.iter_mut().zip(&d.slabs) {
-            c[0] = s as f32 * SLAB;
-        }
+        soften(&d.slabs, d.w, d.h, &mut self.blur, &mut self.cells);
         self.field.upload(&ctx.gpu, &self.cells);
         let ppp = ctx.ppp;
         let s = (self.cell_pt * ppp) as f32;
@@ -273,6 +273,31 @@ impl Toy for Barchans {
             ],
             "",
         ))
+    }
+}
+
+/// The heights (cells) softened by a small binomial blur across and down, round the torus: the slabs'
+/// steps are the rule's grain, not the sand's shape, and would show as bands in the light.
+fn soften(slabs: &[i32], w: usize, h: usize, tmp: &mut [f32], out: &mut [[f32; 4]]) {
+    const K: [f32; 5] = [1.0 / 16.0, 4.0 / 16.0, 6.0 / 16.0, 4.0 / 16.0, 1.0 / 16.0];
+    for y in 0..h {
+        let row = &slabs[y * w..(y + 1) * w];
+        for x in 0..w {
+            let mut v = 0.0;
+            for (k, kk) in K.iter().enumerate() {
+                v += kk * row[(x + w + k - 2) % w] as f32;
+            }
+            tmp[y * w + x] = v;
+        }
+    }
+    for y in 0..h {
+        for x in 0..w {
+            let mut v = 0.0;
+            for (k, kk) in K.iter().enumerate() {
+                v += kk * tmp[((y + h + k - 2) % h) * w + x];
+            }
+            out[y * w + x][0] = v * SLAB;
+        }
     }
 }
 

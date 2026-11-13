@@ -15,11 +15,11 @@ const STICK_BARE: f32 = 0.01;
 /// The shadow behind a crest: 15°, in slabs a cell.
 const SHADOW: f32 = 0.268 / SLAB;
 /// How far a hop strays across the wind, cells (all told, either way).
-const SPREAD: f32 = 1.0;
+const SPREAD: f32 = 1.4;
 /// The young dunes across the field at the start.
 pub const GX: usize = 9;
 /// The chance a landed slab creeps to the lower side across the wind.
-const CREEP: f32 = 0.3;
+const CREEP: f32 = 0.5;
 /// The angle of repose, ~33°, in slabs a cell (a diagonal is √2 cells).
 const REPOSE: i32 = 6;
 

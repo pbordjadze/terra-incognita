@@ -21,8 +21,9 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let gy = fld(c + vec2<f32>(0.0, e)).z - fld(c - vec2<f32>(0.0, e)).z;
   // wave ripples, ~1.2 cm apart, wavering; gone where the crabs have sifted
   let wv = world.y * 4.6 + 3.2 * noise2(world * 0.13) + 1.4 * noise2(world * 0.41 + 7.0) + 0.6 * sin(world.x * 0.21);
-  let ripple = sin(wv) * (1.0 - worked) * 0.5;
-  let rslope = cos(wv) * (1.0 - worked);
+  // (strong in patches, faint between, as the last tide left them)
+  let patchy = smoothstep(0.3, 0.8, noise2(mat2x2<f32>(0.8, 0.6, -0.6, 0.8) * world * 0.09));
+  let rslope = cos(wv) * (1.0 - worked) * patchy;
   var col = vec3<f32>(0.86, 0.80, 0.69);
   let g = grain(world);
   col = col * (0.90 + 0.16 * g);
@@ -52,8 +53,12 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let edge = front + 0.6 * sin(world.x * 0.35 + u.time * 1.3) + 0.8 * noise2(vec2<f32>(world.x * 0.15, u.time * 0.4));
     if (world.y > edge) {
       let sea = vec3<f32>(0.40, 0.63, 0.62);
-      col = mix(col * vec3<f32>(0.78, 0.84, 0.84), sea, 0.10 + 0.35 * depth);
       let rw = mat2x2<f32>(0.8, 0.6, -0.6, 0.8) * world;
+      // thin and clear at the edge, the sand under it plain, greener as it deepens
+      col = mix(col * vec3<f32>(0.80, 0.86, 0.86), sea, 0.04 + 0.30 * depth);
+      // the sky's glints on its little waves
+      let gl = noise2(rw * 2.3 + vec2<f32>(u.time * 0.9, u.time * 0.5)) * noise2(world * 3.1 - vec2<f32>(0.0, u.time * 0.7));
+      col = col + vec3<f32>(0.22, 0.25, 0.25) * smoothstep(0.62, 0.8, gl) * (0.3 + 0.7 * depth);
       let caustic = noise2(rw * 0.9 + vec2<f32>(u.time * 0.6, -u.time * 0.4)) * noise2(world * 1.3 - vec2<f32>(u.time * 0.3, 0.0));
       col = col + vec3<f32>(0.10, 0.12, 0.12) * smoothstep(0.15, 0.55, caustic) * (1.0 - depth);
       let foam = exp(-(world.y - edge) * 1.1) * smoothstep(0.25, 0.8, noise2(rw * 1.7 + vec2<f32>(0.0, u.time)) * 0.6 + noise2(world * 4.3 + 3.0) * 0.25 + noise2(rw * 11.0) * 0.15);

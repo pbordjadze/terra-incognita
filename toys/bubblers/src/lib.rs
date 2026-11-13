@@ -204,14 +204,26 @@ impl Toy for Bubblers {
             if c.home[1] > front || !c.dug {
                 continue;
             }
+            // a collar of dug-out sand, lit on its far side; a soft hollow; the dark hole in it
+            let z = 0.85 + 0.3 * ((c.home[0] * 7.1 + c.home[1] * 3.3).sin() * 0.5 + 0.5);
             self.painter.disc(
-                px([c.home[0] + 0.05, c.home[1] + 0.06]),
-                0.33 * s,
-                0.12 * s,
-                [0.95, 0.9, 0.8, 0.35],
+                px([c.home[0] + 0.06, c.home[1] + 0.07]),
+                0.48 * z * s,
+                0.2 * s,
+                [0.98, 0.93, 0.82, 0.35],
             );
-            self.painter
-                .disc(px(c.home), 0.27 * s, 0.1 * s, [0.12, 0.10, 0.08, 0.9]);
+            self.painter.disc(
+                px([c.home[0] - 0.04, c.home[1] - 0.05]),
+                0.42 * z * s,
+                0.22 * s,
+                [0.45, 0.38, 0.30, 0.35],
+            );
+            self.painter.disc(
+                px([c.home[0] - 0.03, c.home[1] - 0.03]),
+                0.2 * z * s,
+                0.12 * s,
+                [0.10, 0.08, 0.06, 0.92],
+            );
         }
         // the balls: a shadow, the ball, its light
         for p in &b.pellets {
@@ -226,24 +238,30 @@ impl Toy for Bubblers {
                 continue;
             }
             let a = melt;
+            // a ball of the sand itself: dark and wet when it is rolled, paling as it dries
+            let dry = ((b.t - p.born) / 50.0).clamp(0.0, 1.0);
+            let tone = 0.05 * p.shade;
+            let wet = [0.62, 0.55, 0.45];
+            let pale = [0.86, 0.80, 0.68];
+            let col = |i: usize| wet[i] + (pale[i] - wet[i]) * dry + tone;
             self.painter.disc(
-                px([p.p[0] + r * 0.45, p.p[1] + r * 0.55]),
-                r * s,
-                r * 0.6 * s,
-                [0.30, 0.24, 0.18, 0.30 * a],
+                px([p.p[0] + r * 0.35, p.p[1] + r * 0.45]),
+                r * 1.05 * s,
+                r * 0.7 * s,
+                [0.28, 0.22, 0.16, 0.30 * a],
             );
-            let tone = 0.04 * p.shade;
             self.painter.disc(
                 px(p.p),
                 r * s,
-                0.35 * ppp,
-                [0.80 + tone, 0.74 + tone, 0.62 + tone, a],
-            );
-            self.painter.disc(
-                px([p.p[0] - r * 0.35, p.p[1] - r * 0.35]),
                 r * 0.35 * s,
-                r * 0.4 * s,
-                [1.0, 0.98, 0.92, 0.45 * a],
+                [col(0), col(1), col(2), a],
+            );
+            // the light on its upper left, the grains on it
+            self.painter.disc(
+                px([p.p[0] - r * 0.3, p.p[1] - r * 0.3]),
+                r * 0.55 * s,
+                r * 0.5 * s,
+                [1.0, 0.96, 0.88, (0.16 + 0.1 * dry) * a],
             );
         }
         // the crabs

@@ -411,9 +411,9 @@ impl Beach {
             c.next_ball = t + self.rng.range(0.19, 0.23);
             c.side = -c.side;
             let perp = [-dir[1], dir[0]];
-            let r = self.rng.range(0.13, 0.18) * c.size;
+            let r = self.rng.range(0.11, 0.2) * c.size;
             let back = self.rng.range(0.35, 0.45);
-            let lat = c.side * self.rng.range(0.0, 0.05);
+            let lat = c.side * self.rng.range(0.0, 0.07) + self.rng.range(-0.05, 0.05);
             let p = [
                 c.p[0] - dir[0] * back + perp[0] * lat,
                 c.p[1] - dir[1] * back + perp[1] * lat,
