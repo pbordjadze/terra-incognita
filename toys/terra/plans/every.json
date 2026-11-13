@@ -1,6 +1,6 @@
 {
- "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays). (The scenes' passages have their own plans: murmuration.json, scenes.json, kanto.json; Battle Ink retired, painting-company row 245.)",
- "seconds": 80.5,
+ "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays). (The scenes' passages have their own plans: murmuration.json, scenes.json, kanto.json, nazare.json; Battle Ink retired, painting-company row 245.)",
+ "seconds": 68.5,
  "fps": 10,
  "events": [
   {
@@ -82,28 +82,6 @@
   {
    "t": 64.0,
    "tap": "earth"
-  },
-  {
-   "t": 67.5,
-   "drag": [
-    [
-     110,
-     430
-    ],
-    [
-     280,
-     430
-    ]
-   ],
-   "for": 0.8
-  },
-  {
-   "t": 70.0,
-   "tap": "swell"
-  },
-  {
-   "t": 76.0,
-   "tap": "earth"
   }
  ],
  "shots": [
@@ -118,10 +96,6 @@
   {
    "t": 62.5,
    "name": "whales"
-  },
-  {
-   "t": 74.5,
-   "name": "swell"
   }
  ]
 }

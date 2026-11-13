@@ -22,7 +22,7 @@ murmuration = { path = "../murmuration" }
 kanto = { path = "../kanto" }
 elkmont = { path = "../elkmont" }
 bell = { path = "../bell" }
-swell = { path = "../swell" }
+nazare = { path = "../nazare" }
 meander = { path = "../meander" }
 frost = { path = "../frost" }
 catatumbo = { path = "../catatumbo" }

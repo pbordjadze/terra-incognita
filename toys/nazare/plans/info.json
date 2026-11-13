@@ -1,0 +1,4 @@
+{ "_": "The info mark (toy-kit info.rs): tapped, its ghost finger plays the toy's one gesture on the live scene; a tap closes it.",
+  "size": [1170, 2532], "ppp": 3, "seconds": 7, "fps": 20,
+  "events": [ { "t": 1.0, "tap": "info" }, { "t": 6.0, "tap": [195, 300], "inert": true } ],
+  "shots": [{ "t": 0.9, "name": "mark" }, { "t": 1.5, "name": "ghost" }, { "t": 2.2, "name": "answer" }, { "t": 6.5, "name": "closed" }] }

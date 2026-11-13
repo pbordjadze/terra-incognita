@@ -5,6 +5,8 @@
 use std::f64::consts::TAU;
 use toy_kit::paint::Painter;
 
+mod ground;
+
 /// Where and how a light is drawn: at `c` (pixels), `r` points across at `k` pixels a point; `tm` the
 /// time (still when motion is reduced), `a` its visibility, `halo` its window's strength.
 struct Light {
@@ -67,12 +69,9 @@ pub fn paint(
         "bats" => bats(p, &l),
         "huddle" => huddle(p, &l),
         "wave" => wave(p, &l),
-        "catatumbo" | "bubblers" | "barchans" => super::ground::draw(
-            p,
-            id,
-            &super::ground::Spot::new(c, r, k, k as f32, a, halo),
-            tm,
-        ),
+        "catatumbo" | "bubblers" | "barchans" => {
+            ground::draw(p, id, &ground::Spot::new(c, r, k, k as f32, a, halo), tm)
+        }
         _ => breathing(p, &l, i, tint),
     }
 }
