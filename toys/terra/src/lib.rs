@@ -42,8 +42,7 @@ pub fn opening_zoom(points: [f64; 2]) -> f64 {
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 /// How close the Earth comes over a scene before it is the glass (a dive's end): as close as it goes, so the
-/// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it, its
-/// rivers coming up round the window (painting-company row 258: at 9 the window outran the ground, "an iris,
+/// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it (painting-company row 258: at 9 the window outran the ground, "an iris,
 /// not a descent").
 const SCENE_ZOOM: f64 = 40.0;
 /// Pinched in this close with a scene's light on screen, the light becomes a window onto the toy itself,
@@ -655,12 +654,9 @@ impl Terra {
             }
         };
         let at = self.life.doors[i].at;
-        // a globe toy: down close over the light, where the toy will open (the whales' own framing of the
-        // pair, which is already close); a scene of its own: as close over its place as the Earth goes
+        // a globe toy: down close over the light, where the toy will open; a scene of its own: as close
+        // over its place as the Earth goes
         let to = match room.camera() {
-            // the toys whose first sight is a whole sea or the whole Earth (the whales' pair, the bell's
-            // ring round the world): down to that, the toy's own view
-            Some(own) if matches!(self.life.doors[i].id, "whales" | "bell") => own,
             Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             // a toy seen from above: down onto its place at its true scale and turn, where its first frame is
             // what the Earth shows (painting-company row 258)
@@ -758,39 +754,6 @@ impl Terra {
             return;
         }
         self.state = State::Closing { t0: t };
-    }
-
-    /// The touch that opened a light goes on into its toy: the toy is touched where the light was (the
-    /// bell rings from Chile, a whale is followed). The scenes, whose touch is a hold or a drawn line, are left to the reader.
-    fn touch_through(&mut self, t: f64) {
-        let d = &self.life.doors[self.door];
-        if !matches!(d.id, "bell" | "whales") {
-            return;
-        }
-        let Some(r) = self.room.as_mut() else { return };
-        // (Terra's Earth is at the toy's camera now, so it says where the light is for a toy that doesn't)
-        let at = if d.id == "whales" {
-            r.anchors().first().map(|a| a.1)
-        } else {
-            r.project(d.at).or_else(|| self.globe.point(d.at))
-        };
-        if let Some(p) = at {
-            let id = 9_000_000;
-            r.pointer(PointerEvent {
-                id,
-                phase: Phase::Down,
-                x: p[0],
-                y: p[1],
-                t,
-            });
-            r.pointer(PointerEvent {
-                id,
-                phase: Phase::Up,
-                x: p[0],
-                y: p[1],
-                t: t + 0.06,
-            });
-        }
     }
 
     /// Whether this finger ends a pinch that took a globe toy out past its whole Earth (as the kit's
@@ -1429,12 +1392,12 @@ impl Toy for Terra {
             ctx.ppp,
             month,
         )?;
-        // the world's rivers, more of them the closer the Earth comes (painting-company row 258)
-        globe.with_rivers(&ctx.gpu, assets.as_ref())?;
+        // (no rivers: their ink over the whole Earth read as a little creepy, Nov 13; the kit's
+        // `with_rivers` brings them back)
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
         globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
         globe.set_home();
-        let mut life = Life::new(assets.as_ref());
+        let mut life = Life::new();
         let [w, h] = ctx.points();
         life.beckon = life.nearest(&globe, [w / 2.0, h / 2.0]);
         Ok(Terra {
@@ -1656,7 +1619,6 @@ impl Toy for Terra {
                         r.update(t);
                     }
                     self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
-                    self.touch_through(t);
                     self.state = State::Opening { t0: t };
                 }
             }

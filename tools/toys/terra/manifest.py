@@ -10,14 +10,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-HELD = ['whales', 'murmuration', 'elkmont', 'bell', 'nazare', 'meander', 'frost', 'throats', 'bats', 'huddle', 'wave', 'catatumbo', 'bubblers', 'barchans']
-NOTE = ("Terra's own data (its rivers) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code "
+HELD = ['murmuration', 'elkmont', 'nazare', 'meander', 'frost', 'throats', 'bats', 'huddle', 'wave', 'catatumbo', 'bubblers', 'barchans']
+NOTE = ("Terra's own data (the globe's, and the ground round its scenes) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code "
         "uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Written by "
         "tools/toys/terra/manifest.py; never hand-edit.")
 
-# Terra's own data, beside the toys': the world's rivers (tools/toys/terra/rivers.py) and the ground round
-# the scenes it holds (tools/toys/terra/region.py); row 258
-OWN = {'rivers.bin': 'toys/terra/data/rivers.bin'}
+# Terra's own data, beside the toys': the kit's globe (Globe/: the coast, terrain, the months' ground and ice,
+# the sea floor, the night), and the ground round the scenes it holds (tools/toys/terra/region.py); row 258.
+# (The world's rivers, toys/terra/data/rivers.bin from tools/toys/terra/rivers.py, are off the globe for now.)
+OWN = {'geo.png': 'Globe/geo.png', 'terrain.png': 'Globe/terrain.png',
+       'floor.png': 'Globe/ground/floor.png', 'night.jpg': 'Globe/ground/night.jpg'}
+OWN.update({f'land-{m:02}.jpg': f'Globe/ground/{m:02}.jpg' for m in range(1, 13)})
+OWN.update({f'ice-{m:02}.png': f'Globe/ground/ice-{m:02}.png' for m in range(1, 13)})
 OWN.update({f'{n}.jpg': f'toys/terra/data/{n}.jpg' for n in ['beni', 'hamwall', 'hamwall-near']})
 files = dict(OWN)
 for toy in HELD:

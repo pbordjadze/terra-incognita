@@ -1,15 +1,13 @@
 {
-  "_": "Terra's own data (its rivers) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Written by tools/toys/terra/manifest.py; never hand-edit.",
+  "_": "Terra's own data (the globe's, and the ground round its scenes) and every file the toys Terra holds load (their manifests merged: no name differs), by the names their code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Written by tools/toys/terra/manifest.py; never hand-edit.",
   "files": {
     "beni.jpg": "toys/terra/data/beni.jpg",
-    "blue.song": "toys/whales/data/blue.song",
     "floor.bin": "toys/nazare/data/floor.bin",
     "floor.json": "toys/nazare/data/floor.json",
     "floor.png": "Globe/ground/floor.png",
     "geo.png": "Globe/geo.png",
     "hamwall-near.jpg": "toys/terra/data/hamwall-near.jpg",
     "hamwall.jpg": "toys/terra/data/hamwall.jpg",
-    "humpback.song": "toys/whales/data/humpback.song",
     "ice-01.png": "Globe/ground/ice-01.png",
     "ice-02.png": "Globe/ground/ice-02.png",
     "ice-03.png": "Globe/ground/ice-03.png",
@@ -37,8 +35,6 @@
     "night.jpg": "Globe/ground/night.jpg",
     "opening.bin": "toys/barchans/data/opening.bin",
     "plain.jpg": "toys/meander/data/plain.jpg",
-    "rivers.bin": "toys/terra/data/rivers.bin",
-    "routes.json": "toys/whales/data/routes.json",
     "terrain.png": "Globe/terrain.png"
   }
 }

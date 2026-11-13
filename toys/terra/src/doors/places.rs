@@ -33,15 +33,6 @@ pub fn doors() -> Vec<Door> {
 fn globes() -> Vec<Door> {
     vec![
         Door {
-            id: "whales",
-            name: "Whales",
-            at: [-125.0, 30.0],
-            tint: [0.80, 0.60, 0.26],
-            night: true,
-            degree: 0,
-            open: rooms::open::<whales::Whales>,
-        },
-        Door {
             id: "fireflies",
             name: "Fireflies",
             at: [elkmont::PLACE.0, elkmont::PLACE.1],
@@ -49,15 +40,6 @@ fn globes() -> Vec<Door> {
             night: true,
             degree: 6,
             open: rooms::open::<elkmont::Elkmont>,
-        },
-        Door {
-            id: "bell",
-            name: "Bell",
-            at: [-73.05, -38.24],
-            tint: [0.62, 0.42, 0.22],
-            night: false,
-            degree: -2,
-            open: rooms::open::<bell::Bell>,
         },
         Door {
             id: "swell",

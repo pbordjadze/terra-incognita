@@ -14,6 +14,5 @@ pub fn earth_rules() -> Rules {
     Rules::lines(&[
         "Every light is a toy, set where the thing it shows happens for real.",
         "Touch a light to go in. Pinch out, or touch the Earth mark at the bottom left, to come back.",
-        "Pinch in anywhere: the closer you go, the more rivers there are.",
     ])
 }
