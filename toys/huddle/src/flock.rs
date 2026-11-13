@@ -132,7 +132,7 @@ impl Huddle {
         let face = norm(wind);
         for s in spots.into_iter().take(n) {
             birds.push(Penguin {
-                p: [s[0] + rng.range(-0.06, 0.06), s[1] + rng.range(-0.06, 0.06)],
+                p: [s[0] + rng.range(-0.09, 0.09), s[1] + rng.range(-0.09, 0.09)],
                 face: turn(face, [rng.range(-1.0, 1.0), rng.range(-1.0, 1.0)], 0.5),
                 state: State::Packed,
                 cold: rng.range(0.0, 0.6),

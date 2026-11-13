@@ -250,7 +250,7 @@ impl Toy for Bats {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let gpu = &ctx.gpu;
         let mut colony = Colony::new(N, 0xBA75_0001);
-        let dt = 0.1;
+        let dt = 0.25;
         for _ in 0..(PREWARM_S / dt) as usize {
             colony.step(dt);
         }
