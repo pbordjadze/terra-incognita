@@ -1,214 +1,48 @@
 # Terra Incognita — engineering notes
 
-**Since November 4, 2026 (painting-company row 217), the Terra Incognita app is the toy that holds the
-other toys: `toys/terra/`** (Rust on the toy kit, built and released by `.github/workflows/toys.yml` as
-`terra-build-<n>` under Terra's own bundle id; `toys/README.md` › The map). It opens on the whole Earth
-with a living light for each toy (`doors.rs`); a touch dives into the toy itself, linked into Terra's one
-library (`rooms.rs`); the Earth mark or a pinch out comes back. Retired from the release with the owner's
-yes: the Xcode-built globe as the opening view (its clouds and moving sea), the caption, country tapping,
-names, the cloud and workbench buttons and the workbench, and fetching packs. Everything below — the
-Xcode app in `App/`, its globe, clouds, ocean, quiet rules, playground runtime and tools — stays whole in
-the repository and in its own CI, no longer what the SideStore source lists for Terra.
+**Terra Incognita is the toy that holds the other toys: `toys/terra/`** (Rust on the toy kit, built and
+released by `.github/workflows/toys.yml` as `terra-build-<n>` under Terra's own bundle id; painting-company
+row 217). It opens on the whole Earth with a living light for each toy (`doors.rs`); a touch dives into
+the toy itself, linked into Terra's one library (`rooms.rs`); the Earth mark or a pinch out comes back.
+Beside it are the other toys (`toys/`) and Adrift (`adrift/`), each its own app in the same SideStore
+source. This file is the map and the rules.
 
-A playground for a wandering atlas: the app opens on a live globe, the ground as satellites saw it
-this month in a light key, its sea and clouds moving, and several prototypes run on it at once,
-entered by a doorway on the globe or from a developer workbench that lists them. Every experience was
-retired on October 31, 2026 (painting-company row 195): what remains is the globe, the quiet globe's
-four rules, the runtime and its tools, so the next experience is added the usual way. The retired ones
-(every pack, the camelid, the plate films, the Persian and Wikipedia globes, the still sea and
-Wikipedia's words) are whole at `before-retirement-2026-10-31`. This file is the map and the rules.
+The Xcode-built Terra that came first (`App/`: a Metal globe with clouds and a moving sea, the quiet
+globe's rules, a workbench of prototypes and runtime-3 packs, the playground and its previews, the
+Persian and Wikipedia styles) was retired on November 13, 2026 with its CI, packs pipeline and tools; it
+is whole on the branch `before-xcode-retirement-2026-11-13`. The experiences retired before it are at
+`before-retirement-2026-10-31`.
 
 ## Documentation scope
 
-This file describes the implemented demo and its engineering constraints. For current product
-direction, read `terra-incognita/DESIGN.md` and its linked latest conversation capture in
-`pbordjadze/painting-company` before design work. Existing style descriptions and label-placement
-rules below document the implementation; they do not select the next product treatment.
-Keep design discussions and plans in that private repository.
+This file describes what is built and its engineering constraints. For product direction, read
+`terra-incognita/DESIGN.md` and its linked latest conversation capture in `pbordjadze/painting-company`
+before design work. Keep design discussions and plans in that private repository.
 
 ## Map
 
-Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one).
-
-- **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
-  workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
-  prototype's doorway on it (each with a life of its own: a glint from afar, itself closer, stirring;
-  touching one starts it where the reader is), the workbench button (top right) and, while prototypes
-  run, the chip of the one in front (its name and how many others run, Open, ✕) and its panel.
-  `Playground` holds the running `PrototypeStage`s, the one in front last (runtime 4, `docs/runtime3.md`
-  › Many at once): a touch on a stage's things brings it to the front, whose date, caption, gesture
-  scheme, historical reference and flights are the globe's; the playground merges what the stages ask of
-  the globe (`applyGlobeState`) and routes the globe's touches to them. Each stage owns everything its
-  prototype adds (markers and sprites, a pack's script, geography and pictures drawn by the globe, a
-  date, words at the foot, a panel, a style, a screen, a lens) and takes it all away when it ends, so
-  the Live counts come back exactly: that is the workbench's isolation rule. At most six run at once.
-  A lens (`openLens`, `Prototype.swift`) is a native experience on the
-  globe itself: its canvas lies over the one globe (`GlobeView.addLens`, above the names, taking no
-  touches) and drives its authored camera, its chrome lies over the playground (whose buttons and
-  caption keep their place unseen), and closing it puts back everything it set on the globe
-  (`GlobeLease`: hooks, modes, camera, chosen country, VoiceOver's words, gestures). No experience
-  makes a globe of its own (no prototype opens a lens now: the camelid, its one user, was retired).
-  `Catalog.swift` lists the native prototypes, one entry each; packs
-  (`Prototypes/<id>/`, and remote catalogs) are found by `PackStore`, and their scripts run in
-  JavaScriptCore in `PackScript.swift` (runtime 3, `Prototypes/_runtime/terra.js`; no web view). The
-  globe draws for them: `GeoLayers.swift` (geography, touchable), `GlobeImages.swift` (pictures lying
-  on the globe), `GlobeMarker` sprites (paths, frames, a look per zoom), `PackPanel.swift`. The
-  workbench's Live line counts stages, markers, globes, films and scripts: ending every prototype
-  returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
-  - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
-    `-packs-url <catalog>`.
-  - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
-  - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
-    `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
-    `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
-    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
-    `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
-    `tools/packart/render.cjs <sheet> <pack dir>` (the one art drawer) draws a sheet of canvas drawings
-    (`.js`) or of SVG built in Node (`.cjs`) into sprite frames, doorways and
-    pictures for the globe, with headless Chromium at three pixels a point, and
-    `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
-    plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
-    its first minute can be seen without a Mac.
-- **Wikipedia's words**, the reader's switch for Wikipedia's own words in place of the atlas's, was
-  retired with the experiences whose words it stood for (painting-company row 195). A pack's
-  `wikipedia` keys are accepted and ignored, and `terra.settings.wikipedia` is always false;
-  `tools/wikipedia/` remains, with no current users.
-- **The quiet globe** (`App/TerraIncognita/Quiet/`, four native prototypes, each a rule the plain globe
-  takes while it runs and gives back when it ends; they run together; painting-company row 174):
-  `quiet-names`, names on demand (`GlobeView.quietNames`: the one or two greatest features in view by
-  kind, rank and nearness to the screen's centre, and the names near a tap for eight seconds, countries
-  last); `quiet-clouds` (`CloudsLayer`, `Clouds.metal`'s `tone.z`: the clouds clear where the reader
-  looks, gathered toward the globe's rim zoomed out and the screen's edges close in, and close in the
-  noise's coarse octaves worked out rather than read from the tile, so their edges aren't faceted);
-  `night`, the Earth at night (`GlobeStyle.night`, drawn on the ground's maps with `Globe.metal`'s `N_`
-  palette and the lights of `Globe/ground/night.jpg`, built by `tools/globe/night.py` from NASA's Black
-  Marble, coming on a beat after dusk and shimmering slowly by the night's clock, `-night-time <s>` holds it;
-  the clouds a thin grey veil, the sea off); `quiet-frame` (`QuietCaption`: nothing at the foot
-  until a country is chosen, then one line). None veils the clouds or the sea (`Prototype.veils`).
-  The stand-in draws them: `metal.py shot ... --quiet 1`, `--style night`; `preview.py --style night`.
-- **The globe** (`App/TerraIncognita/Globe/`, the opening view): the whole Earth
-  drawn live. The ground (`GlobeStyle.base`, the plain globe's since October 28,
-  2026; `Globe.metal`'s `G_` palette): the month's land as NASA's Blue Marble saw it, in a light
-  key, the sea by depth with its floor's relief and the month's usual sea ice, a haze at the limb,
-  no names at the whole Earth and the land's own names (`Globe/regions.json`) before the
-  countries'; and by night (the `night` rule). Two older styles are still in the code, with no
-  prototype that chooses them (theirs were retired, painting-company row 195): Wikipedia's
-  location-map colours (WikiProject Maps), a little prettier, and the Persian, the same map in colours
-  and a frame studied from a 1529 Persian manuscript (`P_`). A change of style crossfades.
-  `Caption.swift` holds the captions' views and type (once the plate films').
-  - `Globe.metal`: one fragment per pixel inverts the orthographic projection and samples the
-    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; the
-    styles mixed by their uniforms. `tools/globe/preview.py` is the same, line for line, in
-    numpy (`--style persian`, `--style ground --month 7`; iPad-sized by default): change both
-    together, and look at the preview before CI.
-  - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
-    tapping a country (lit from the country map `ids.png`), the names (pictures with their halos
-    drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
-    the Persian style, a headpiece with the name in its cartouche), and an active prototype's
-    invitation above it. Made at launch and kept (its maps decoded once), paused while a screen
-    or the workbench covers it.
-  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and GEBCO, as NASA Visible Earth's imagery (its
-    docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
-    textures are uploaded as decoded, without colour management, which would bend the distances.
-    The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
-    `tools/globe/ornament.py` (its docstring is their layout; no source image is used), and
-    `type.json` is the type (Design rules). The ground's maps (`Globe/ground/`: twelve months'
-    land, their sea ice, the sea floor) and `regions.json` are built by `tools/globe/ground.py`
-    (its docstring is their layout and sources); GlobeView reads them only once the style is chosen.
-  - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
-    (the ground's month)
-    (`-globe` is accepted and changes nothing: the globe is always the opening view).
-- **The retired experiences** (painting-company row 195): Whales in the desert, The monsoon's sails,
-  Fires across the sea, The lead line, When the sea was low, The vine's long walk, The herds, A
-  gathering of water (and alive), Camel and Llama, the plate films, the Persian and Wikipedia globes and
-  the still sea. Their code, packs, tests and art are at `before-retirement-2026-10-31`; the tools
-  that built them (`tools/whales/`, `monsoon/`, `beacons/`, `leadline/`, `lowsea/`, `vine/`, `herds/`,
-  `water/`, `plates/`) stay, with no current users (`docs/tools.md`).
-- **The clouds** (`App/TerraIncognita/Clouds/`), part of the stage: the clouds of the globe's month
-  (`GlobeView.month`, the ground's; a pack's date to the day moves it), where satellites usually see
-  them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could be; zooming in passes down through
-  them. `CloudsLayer` is the globe's `sky`, a Metal layer of its own over the globe's drawing and
-  under everything else on it (names, markers, what experiences draw), drawn as the globe ticks (ten
-  times a second while the camera rests), so `Globe.metal` is untouched. It draws at a fraction of
-  the screen's pixels and follows the GPU's timings (the workbench's log says what a frame costs).
-  `CloudsLook.on(style)` says how they sit on each globe style: near-black shadows that darken any
-  ground, none on the Persian page, and a thin grey veil without shadows by night. The reader's switch is the cloud button beside the
-  workbench's (`CloudsSwitch`, remembered); while an experience runs they thin to a veil (`veiled`),
-  and they fade out for an authored sequence. `Clouds.metal` and its web twin
-  `tools/clouds/web/shader.js` are the same line for line: change both together (the twin is the
-  desktop preview: `tools/clouds/look.cjs` and `film.cjs` draw it over the globe's preview).
-  `tools/clouds/build.py` makes `CloudsSky.png` and `CloudsLand.png` for both; never hand-edit them;
-  `tools/clouds/SOURCES.md` separates what is measured from what is drawn. Debug: `-clouds-days <d>`
-  holds the drift, `-clouds-month <1-12>` the month.
-- **The ocean** (`App/TerraIncognita/Ocean/`), part of the stage: how the sea's surface usually
-  moves in the globe's month, measured by drifting buoys (the NOAA Global Drifter Program's
-  climatology, CC BY 4.0), drawn as the streamlines of its stream function (the water's paths,
-  closer where it runs faster) with light running along them the way it goes, and close in the
-  glitter of the light on the water and the surf at the coasts; a tap on the water rings it.
-  `OceanLayer` is the globe's `sea`, a Metal layer of its own over the globe's drawing and under the
-  sky (and so under everything the sky is under), drawn as the globe ticks (thirty times a second
-  while the camera rests); it reads the globe's own coast and the month's ice (`GlobeView.seaMaps`),
-  so `Globe.metal` is untouched. It thins while an experience runs, goes for the authored sequences
-  and the Persian page, and a stage can hide it (`stillSea()`; its prototype was retired). `Ocean.metal` and its web twin
-  `tools/ocean/web/shader.js` are the same line for line: change both together (the twin is the
-  desktop preview: `tools/ocean/look.cjs` draws it over the globe's preview). `tools/ocean/build.py`
-  makes `OceanCurrents.png` and `OceanStream.png` for both (its docstring is their layout); never
-  hand-edit them; `tools/ocean/SOURCES.md` separates what is measured from what is drawn. Debug:
-  `-ocean-time <s>` holds the drawn motion, `-ocean-month <1-12>` the month.
-- **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
-  helpers in `PlaygroundSupport.swift`): the plain launch, every prototype listed, a native rule and a
-  pack running together and ended from the chip in turn with the live counts back to the plain
-  globe's, the bundled pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling
-  back and opening offline, the quiet globe's four rules together, the clouds and the ocean.
-  `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
-  runs every UI test before publishing the ordinary SideStore update.
-- **The plate tools** (`tools/plates/`: the looks' pages, `export.cjs`, `preview.py`, and the map data
-  `tools/plates/data/` built by `build_data.py`) made the retired films' `Atlas/`; they stay, with no
-  current users. Their closest scale is a public neighbourhood (Short North): a private one never
-  comes into this public repository.
-- **The first demo**, the map in dense characters by WebGL in a web view, was retired on October 26,
-  2026. Its last state is in `main`'s history at 1f9b941 (`git show 1f9b941:Web/index.html`; also
-  `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`, `tools/build_textures.py`,
-  `tools/sprites.py`, `ci/web_check.cjs`).
-- **Metal off the Mac** (`tools/metal/`; its README says what it can't vouch for): the shaders
-  compiled as C++ by clang on Linux (`metal.py check`, a second), drawn on the CPU as the device
-  draws them (`metal.py shot globe+ocean+clouds out.png --at descent`), and set beside their twins
-  (`metal.py twin clouds`). Check a shader here before any macOS run; `layers.py` mirrors the Metal
-  layers' Swift (their bindings and uniforms): change them together.
-- **CI** (`ci/` and `.github/workflows/ci.yml`; every macOS job, here and in `toys.yml` and `adrift.yml`,
-  builds with the one Xcode `ci/xcode.sh` names, 27.2 on GitHub's `xcode-27` image, and fetches its Metal
-  toolchain if missing; `qa-explore.yml` names the same version itself; tags: `[build-only]`, `[shots]`, `[test Class]`,
-  `[playground-check]`, `[ipa]`; put them in the commit's first line). The quick ones on a free runner: `[build-only]` compiles the app
-  and its UI tests (`build-for-testing`, so a slip in a test's code fails here, not in the run that
-  tests it) in about 3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places
-  on the iPad in about 8, no Release build and no UI tests; `[test OceanEncounterTests]` runs only
-  that class (or `Class/testMethod`) on the iPad (that one: 13 minutes) (`ci/fast.py`; a run started by hand takes `places`
-  and `tests`). An untagged branch push runs every UI test on both devices: an hour and more. Main
-  ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
-  fast-forward brings the branch head's `[skip ci]` with it).
-  - `lint` (`lint.yml`, Linux, first in `ci.yml`, `toys.yml`, `adrift.yml` and `packs.yml`; their macOS jobs wait
-    for it): `ci/lint.sh`, the standard linters (Staying current).
-  - `plates`: the globe's data checked by `ci/check_globe.py`, the tools' syntax, and every Metal
-    shader by `tools/metal/metal.py check` with the stand-in's tests.
-  - `apple`: Debug and Release builds. The globe's maps and the packs are compared byte for byte
-    in the bundle. Simulator screenshots run only when the workflow is started by hand
-    (`ci/sim_shots.sh`): on the 13" iPad Pro (the primary device; `device` also takes `iphone` or
-    `both`), the playground and the globe at places.
-  - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
-    branch. CI owns that branch.
-  - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it,
-    says every 5 minutes how the run stands, and stops by itself if the run ends without a report
-    (a newer push cancels a branch's running check); `TIMEOUT=<minutes>`. `ci/shots.py <dir> <name>`
-    finds a screenshot by its name.
-  - `qa-explore.yml`, exploratory QA on request: an agent uses the app in a simulator through
-    Maestro's MCP server and reports (`refs/qa-runs/<run id>`); `ci/qa/README.md` says how. It
-    and `ci/qa/` are generated from the copy all the apps share (painting-company row 152):
-    change them there and sync, never here.
-  - `packs.yml` (Linux only): a push that changes only packs skips the macOS workflow; this one
-    validates them and, on `main`, publishes changed packs as new revisions to the `packs` branch,
-    which the app reads through raw.githubusercontent.com (`[no-publish]` holds it back). A pack
-    deleted from `Prototypes/` is retired in the branch's catalog by main's next publish (its files
-    stay; `Prototypes/README.md`).
+- **The toys and Terra** (`toys/`): the toy kit (`toys/crates/toy-kit`: the `Toy` trait, the shared
+  globe, paint, sound, the headless check), the one iOS shell (`toys/ios/`), each toy's crate, and Terra, the host that
+  links them. `toys/README.md` is their map and what a toy should be; `docs/kit.md` the kit's tools.
+- **Adrift** (`adrift/`): glass floats on the real sea, Rust on wgpu; `adrift/README.md`, its rulings
+  in `DECISIONS.md`, its sources in `SOURCES.md`.
+- **The Earth's data** (`Globe/`): the coast's and borders' distance fields (`geo.png`), terrain,
+  `ids.png` and `globe.json`, twelve months' ground and sea ice and the sea floor (`Globe/ground/`), the
+  night's lights (`night.jpg`), the month's ocean currents (`Globe/ocean/`) and Libertinus. Adrift and
+  the toys name what they borrow in their `manifest.json`. Built by `tools/globe/build.py`,
+  `ground.py`, `night.py` (Natural Earth, GEBCO, NASA's Blue and Black Marble, NSIDC) and
+  `tools/ocean/build.py` (the NOAA Global Drifter Program); their docstrings are the layouts. Rebuild,
+  never hand-edit; the textures are read as decoded, without colour management, which would bend the
+  distances.
+- **Tools** (`tools/`): `tools/toys/` and `tools/kit/` (the toys and the kit), `tools/adrift/` (Adrift's
+  data and studies), `tools/globe/` and `tools/ocean/` (the data above). Every one is listed in
+  `docs/tools.md` or `docs/kit.md`: read them before building one.
+- **CI** (`.github/workflows/`): `toys.yml` (the toys and Terra: Linux checks of every plan, then on
+  `main` or with `[toys-ipa <toy>]` an IPA on macOS, released as `<toy>-build-<n>`), `adrift.yml`
+  (Adrift, the same shape, `[adrift-ipa]`), and `lint.yml` (Linux, first in both; `ci/lint.sh`). Each
+  regenerates the SideStore source on the `sidestore` branch after a release (`ci/sidestore_publish.sh`,
+  `ci/sidestore_apps.json`); CI owns that branch. Every macOS job builds with the one Xcode `ci/xcode.sh`
+  names.
 
 ## Staying current
 
@@ -220,8 +54,8 @@ install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
   actions, pip). Take one onto a branch with a `[toys-ipa terra]` tag in its first line, let the Linux
   checks and lint pass, then merge as usual; a wgpu major goes on its own branch (it moves toy-kit's
   iPhone limits in `budget.rs` and the launch check's naga), proven by `tools/toys/same_pictures.py`.
-- By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`
-  (and qa-explore.yml's, in painting-company's shared copy), then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
+- By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`,
+  then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
 - Lint before pushing: `bash ci/lint.sh` (`fix` formats). Formatting goes in its own commit.
 - The pre-commit hook (`ci/hooks/pre-commit`: rustfmt, ruff, ShellCheck, the ratchet and silenced lints on what
   the commit changes, in seconds) is on in every Claude Code session (`.claude/settings.json`, which also
@@ -247,118 +81,16 @@ The same rules as the owner's other apps (painting-company's CLAUDE.md › Revie
   `critics/LOG.md` on the branch. Done after 3 rounds, or two rounds running of only polish; the maker calls
   it, with the reason in the log. Bug fixes skip the critic; the reviewer is enough.
 
-## The runtime: one library that grows
-
-Every new experience, and every new element on the map, is built on the playground's runtime: a
-pack using the tools the runtime offers (the plan is painting-company row 154). Built into the app
-instead: the stage itself (the globe, camera, date, caption, touch routing, workbench, downloads)
-and what every experience relies on and none owns. When in doubt, it's runtime.
-
-- **Reuse first.** Read what the runtime offers (`docs/playground.md` › The contract, and the
-  shared script modules once there are any) before building.
-- **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
-  never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
-  experience that needs it.
-- **No web views.** Nothing new runs or draws in a web view. If a tool is missing, build it
-  (script, or Swift with the next release) and let the experience wait for it. Until runtime 3
-  (pack scripts in JavaScriptCore) exists, the next new experience starts by building it.
-- **Script before native.** A tool goes in shared script when it can (it ships with packs, no
-  IPA); in Swift (a new `terra.*` capability, raising the runtime version) only when it must draw
-  or animate every frame, take touches, be fast, or reach the system. The script decides; the
-  globe draws.
-- **Whoever changes a tool updates everything that uses it, in the same change.** A tool with one
-  user may change freely; with more, only compatibly. Packs on older runtime versions keep working
-  until they have moved.
-- **A tool lands complete:** in the contract with an example, tested, mirrored in the preview
-  (`serve.cjs`) so an agent can see it without a Mac, and accessible inside the tool (VoiceOver,
-  text size, Reduce Motion).
-- **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
-  date and touches rather than taking them, and leaves nothing behind when its experience ends.
-- **Runtime 3 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
-  them. There are no web views in the app: the Aegean leaf and the river study are packs now. The
-  native prototypes move onto the runtime's tools when they are next reworked.
-
-## Design rules
-
-The globe is for reading, on the iPad first, then the iPhone. The numbers live in one spec,
-`Globe/type.json`, which `GlobeView` and `GlobeScreen` read, `tools/globe/preview.py` mirrors, and
-`ci/check_globe.py` holds to these rules (fonts bundled, sizes, contrast): change the spec, not the
-code, and let the check tell you when a choice breaks a rule.
-
-- **Scale for the reader's eye, not the pixels.** A larger screen is held further away and its
-  points are physically larger, so lines and names are drawn at a reading scale that grows with
-  the screen's shorter side (1.0 on a phone, 1.2 on the 13-inch iPad; `reading` in the spec). It
-  multiplies the names, their halos and gaps, the touch reach, and every line's width (the shader's
-  pixels per point are pixels per reading point). The reader's text size enlarges the names on
-  top, up to 1.5×. Captions follow the reader's text size only (as system text does) and run at
-  most 560 pt wide, a readable line.
-- **Hierarchy by importance.** Oceans, then seas, then countries in three sizes by label rank (the
-  most prominent largest), then capitals; claimed in that order, so when room runs short the less
-  important names give way first, never the other way round.
-- **Every name on a halo of its ground.** The sea's or the land's tone, round-joined, 1.5 reading
-  points each side, so no coast, border or graticule line crosses a letter.
-- **Contrast.** Every ink at least 4.5:1 against what is round it (WCAG AA): a name's halo, a
-  caption's ground, the cartouche's gold; large text (18 pt, or 14 pt bold, iOS points taken as
-  WCAG's) at least 3:1, which lets the Persian rubric keep the manuscript's vermilion by being set
-  large. The check computes it, and fails a spec the app couldn't read (a missing field, a style, a
-  font not in `Globe/fonts/`, which the app registers whole).
-- **Readable or not shown.** A name is fully opaque or absent; it fades only in time, never as a
-  steady half-tone because of where it is. Its cut-off near the limb has slack (shown above 0.4 of
-  facing, kept down to 0.3), so it doesn't flicker there. Nothing is under 10 pt; a title shrinking
-  to fit stops at 13 pt (the cartouche letters the shorter name, so it rarely needs to).
-- **On its ground, with room.** A name lies wholly on the globe and on screen, never on the frame,
-  the paper, the caption or the buttons (`GlobeView.keepClear`), and keeps 0.4 of its size clear
-  of any other.
-- **The globe fills its room.** As large as the space between the buttons and the caption allows,
-  frame included; that space is measured when the screen's size or the style changes, never when a
-  caption's text does, so a tap never moves the globe.
-- **Touch.** A tap on the sea within 10 reading points of a country chooses it: small islands and
-  states are smaller than a fingertip.
-- **Language.** Real names in English, in Libertinus (Uncial only for Wikipedia's seas); capitals
-  letter-spaced; no invented or decorative script.
-
-## The Persian style's sources
-
-Every choice in the Persian style traces to one of two references; nothing is a default.
-
-- **The manuscript**: LACMA's Khamsa of Nizami (M.85.237.16, Tabriz, 1529), its illuminated
-  opening and its landscapes, inspected in LACMA's scans (no pixel of them is in the app). Its
-  colours are sampled from the scans and white-balanced by one gain that makes its lead-white
-  pigment neutral (the varnish's cast is not the painter's): paper F2E4C8, lapis 5F6CA7, gold
-  A08C60, the cartouche's gold 9D8A57 (both golds then lifted, +0.10 OKLab lightness and chroma
-  x1.3, to C5AA6E and C2A862: a scan shows shell gold unlit and olive), salmon C47C66, pink
-  D1A38F, green 79A18B, light blue A2B7D0 (lapis let down with white: the hue and chroma of every
-  water tint), black 251F14, white F5F5F5, the margin's blue ink 6D6793, the text's ink 3B2C16, the
-  rubrics' vermilion DD6C51, the landscapes' meadow CCD6C8 and rocks CCBDCB (shadows A298A7).
-- **Wikipedia's map conventions** (WikiProject Maps, location and topographic maps): water C6ECFF
-  and its depth ramp from D8F2FE, coasts, rivers and water names 0978AB, borders and country
-  names 646464, land F6E1B9, the highest tint F5F4F2; country names in capitals, water names in
-  italic.
-
-How they combine: the map's tints and lines take their lightness from the Wikipedia entry for
-their kind and their hue (and chroma) from the manuscript colour for it, so the map keeps
-Wikipedia's tonal design and reads like it; a name's ink may then be darkened, never hue-shifted,
-only as far as the contrast rule needs. The frame's rulings follow the order and proportions
-measured across the opening spread's frame, from its text panel out (Globe.metal's `P_` frame).
-On the map itself, what is drawn on the paper uses the margin's vocabulary (blue ink: coasts,
-rivers, finials, the capitals' rosettes); illumination (gold, lapis, salmon) stays in the frame,
-the caption's headpiece, and the one chosen country, gilded as the cartouche. The gold is matte
-(lifted, as above, but never shining): no sheen, no shadows, no vignette (the manuscript has none).
-
 ## Rules
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;
   a commit message says what changed and why and quotes no one.
-- No network, with one deliberate exception: the workbench fetches prototype packs from its
-  configured sources while it is open, and when a pack is opened (HTTPS, plain GETs, an ephemeral
-  session, hashes checked). The globe and every bundled experience load from the bundle, and a
-  pack's script can reach nothing outside its pack. No analytics, no accounts.
-- Prototypes are additive: a new one adds a folder and an entry, and changes no other. Park, don't
-  delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
+- No network at run time, no analytics, no accounts; nothing is a web view. The one exception to
+  bundling everything is Screw's song, the reader's own file (`toys/README.md`).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
 - A tool you write to check or measure your own work (a harness, a preview, a shim) is committed
   before you finish, in `tools/` (or painting-company's when it holds anything private), its
   header saying how to run it: a scratch directory dies with its session (painting-company row 159).
-- Name, icon and listing are the owner's to decide (the icon is a placeholder).
+- Name, icon and listing are the owner's to decide.
 - Times given to the owner are Eastern (ET).

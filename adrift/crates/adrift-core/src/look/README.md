@@ -68,7 +68,7 @@ skeleton lands.
 - A float past the limb (facing under 0.3) is clipped away in the vertex shader; the Rust owns the
   slack (shown above 0.4, kept to 0.3) so nothing flickers at the rim.
 - `tools/adrift/lookbench` (a crate of its own on `adrift-core`) draws the marks with wgpu, headless,
-  over a stand-in sea from a scene `tools/adrift/study.py --scene` writes, with the maybes and the
+  over a stand-in sea from a scene `tools/adrift/study.py --scene` wrote (retired Nov 13, 2026), with the maybes and the
   drifter in place before Truth's data exists (its `main.rs` says how). The whole app is
   `adrift-check`.
 

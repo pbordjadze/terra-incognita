@@ -1,6 +1,6 @@
-# SwiftLint (https://github.com/realm/SwiftLint), its default rules, run by the lint job in ci.yml
+# SwiftLint (https://github.com/realm/SwiftLint), its default rules, run by the lint job (lint.yml)
 # (`swiftlint lint --strict`: a warning fails). Loosened only where a rule is plainly wrong for this code:
-included: [App, toys/ios, adrift/ios]
+included: [toys/ios, adrift/ios]
 identifier_name:
   min_length: 1 # drawing and geometry are written in x, y, t, dx: one and two letters are the names
 line_length:

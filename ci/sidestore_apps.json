@@ -1,5 +1,5 @@
 {
-  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; the Xcode-built Terra's ipa job, adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
   "apps": [
     {
       "tag": "terra-build",

@@ -9,8 +9,7 @@ to February 2023; CC BY 4.0), its monthly means at a quarter of a degree, from N
 (`<cache>/drifter_monthlymeans.nc`, downloaded if missing, about 350 MB). Drogued drifters follow
 the water 15 m down; the climatology combines their tracks with satellite altimetry.
 
-Out, two sheets in App/TerraIncognita/Ocean/, decoded by Ocean.metal (and read from there by its web
-twin, tools/ocean/web/, whose shader.js is the same line for line).
+Out, two sheets in Globe/ocean/, read by Adrift (adrift/data/manifest.json).
 
 OceanCurrents.png, 2888 x 1086 RGB:
 
@@ -48,8 +47,8 @@ from scipy.io import netcdf_file
 from scipy.linalg import solve_banded
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = [ROOT / 'App' / 'TerraIncognita' / 'Ocean' / 'OceanCurrents.png']
-STREAM = [ROOT / 'App' / 'TerraIncognita' / 'Ocean' / 'OceanStream.png']
+OUT = [ROOT / 'Globe' / 'ocean' / 'OceanCurrents.png']
+STREAM = [ROOT / 'Globe' / 'ocean' / 'OceanStream.png']
 Q = '%5B(0):1:(11)%5D%5B(-179.875):1:(179.875)%5D%5B(-72.875):1:(84.875)%5D'
 URL = ('https://erddap.aoml.noaa.gov/gdp/erddap/griddap/drifter_monthlymeans.nc?'
        + ','.join(v + Q for v in ('U', 'V', 'eU', 'eV')))

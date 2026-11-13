@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adrift's palette held to the contrast rule (CLAUDE.md > Design rules).
+"""Adrift's palette held to the contrast rule (WCAG AA).
 
     python3 tools/adrift/palette.py            # prints every ink's contrast against its grounds; exits 1 below the rule
     python3 tools/adrift/palette.py --md       # the same as a Markdown table (pasted into look/PALETTE.md)

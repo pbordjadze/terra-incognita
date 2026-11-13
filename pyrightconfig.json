@@ -1,11 +1,10 @@
 // pyright (standard mode) over the Python tools and checks; `python3 ci/ratchet.py types` holds each file's error
 // count to ci/ceilings/types.txt. Missing third-party imports are warnings: the tools' heavier packages (scipy,
-// rasterio, netCDF4) are installed only where a tool runs, not in CI. ci/qa/ is generated from painting-company's
-// shared copy and checked there.
+// rasterio, netCDF4) are installed only where a tool runs, not in CI.
 {
   "pythonVersion": "3.12",
   "typeCheckingMode": "standard",
-  "exclude": ["ci/qa", ".venv", "**/node_modules", "**/__pycache__"],
+  "exclude": [".venv", "**/node_modules", "**/__pycache__"],
   "reportMissingImports": "warning",
   "reportMissingModuleSource": "none"
 }

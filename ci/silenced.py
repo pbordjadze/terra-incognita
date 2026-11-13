@@ -10,7 +10,6 @@
   the reason directly above it (neither tool reads text after its directive).
 - The rules loosened for a whole tool are in its config file, each with its reason: Cargo.toml's
   [workspace.lints], ruff.toml, .swiftlint.yml, .github/actionlint.yaml.
-ci/qa/ and qa-explore.yml are generated from painting-company's shared copy and checked there.
 """
 import re
 import subprocess
@@ -24,7 +23,7 @@ COMMENT = {'.sh': re.compile(r'^\s*#(?!\s*shellcheck)\s*\S'), '.swift': re.compi
 
 def files():
     out = subprocess.run(['git', 'ls-files', '*.rs', '*.py', '*.sh', '*.swift'], capture_output=True, text=True, check=True).stdout
-    return [f for f in out.split() if not f.startswith('ci/qa/')]
+    return out.split()
 
 
 def main():

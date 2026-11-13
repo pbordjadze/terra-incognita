@@ -1,8 +1,6 @@
 # Source files already past ci/ratchet.py's limit of 800 lines when it came in: `path lines`, the length each may not pass.
 # They may only get better: `python3 ci/ratchet.py sizes --tighten` lowers a ceiling in the commit that improves it.
 # A raised ceiling or a new entry carries its reason after a `#` on its line.
-App/TerraIncognita/Globe/GlobeView.swift 1651
-App/TerraIncognita/Playground/PackStore.swift 995
 adrift/crates/adrift-check/src/main.rs 1238
 adrift/crates/adrift-core/src/app.rs 3540
 adrift/crates/adrift-core/src/conduct.rs 1539
@@ -14,12 +12,6 @@ adrift/crates/adrift-core/src/sea/wind_tests.rs 908
 adrift/crates/adrift-core/src/studio.rs 2082
 adrift/crates/adrift-core/src/touch/camera.rs 1216
 adrift/crates/adrift-core/src/touch/gestures.rs 2273
-tools/plates/kells-forest/levels.js 1074
-tools/plates/kells-night/night.js 1360
-tools/plates/sampler/levels.js 842
-tools/playground/harness/harness.js 2169
-tools/playground/playground.py 1478
-tools/playground/test_playground.py 1188
 toys/carol/src/lib.rs 1345
 toys/crates/toy-kit/src/check.rs 1672
 toys/crates/toy-kit/src/globe/mod.rs 1116
