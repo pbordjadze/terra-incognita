@@ -214,6 +214,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "elkmont"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -960,7 +972,7 @@ dependencies = [
  "bats",
  "bell",
  "bytemuck",
- "fireflies",
+ "elkmont",
  "frost",
  "huddle",
  "meander",

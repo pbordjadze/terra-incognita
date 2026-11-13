@@ -1,6 +1,6 @@
 //! The lights on Terra's Earth: one for each toy it holds, at the place where the toy is real and where
 //! it opens, each alive with a small likeness of its toy's own rule (the whales' song-rings travel their
-//! real routes, the fireflies' cities fall into step, the bell's ring crosses the globe). From afar a
+//! real routes, the fireflies' small wood flashes together, the bell's ring crosses the globe). From afar a
 //! light glints now and then; touched, it stirs.
 
 use std::sync::Arc;
@@ -53,26 +53,11 @@ const MOLD_THREADS: [(usize, usize); 10] = [
     (4, 5),
 ];
 
-// The eastern United States' cities, each a firefly, round the Great Smoky Mountains (whose fireflies
-// really do flash in step, the toy's rule says).
-const FIREFLY_CITIES: [[f64; 2]; 16] = [
-    [-74.01, 40.71],
-    [-75.17, 39.95],
-    [-77.04, 38.91],
-    [-71.06, 42.36],
-    [-84.39, 33.75],
-    [-80.84, 35.23],
-    [-86.78, 36.16],
-    [-87.63, 41.88],
-    [-83.05, 42.33],
-    [-80.00, 40.44],
-    [-83.00, 39.96],
-    [-86.16, 39.77],
-    [-90.20, 38.63],
-    [-83.92, 35.96],
-    [-78.64, 35.78],
-    [-84.51, 39.10],
-];
+// The fireflies' light: a small wood of them about Elkmont, flashing together in bursts and dark between
+// (the toy's rule, small): where each is in the light (a part of its size), and its own little lag.
+const FIREFLY_SPOTS: usize = 18;
+/// The likeness's beat (s): a burst of five flashes half a second apart, then dark.
+const FIREFLY_BEAT: f64 = 6.0;
 
 pub const WHALES: usize = 0;
 
@@ -82,9 +67,8 @@ pub struct Life {
     whales: Option<[whales::route::Route; 2]>,
     /// The miniature whales' day (they swim their real routes, a day every four seconds).
     pub whale_day: f64,
-    /// The fireflies' clocks (0..1) and their own paces.
-    flies: Vec<(f64, f64)>,
-    flies_since: f64,
+    /// The fireflies: where each is in the light (x, y, a part of its size) and its lag (s).
+    flies: Vec<(f64, f64, f64)>,
     seed: u64,
     glint_at: Vec<f64>,
     stir_at: Vec<f64>,
@@ -123,7 +107,6 @@ impl Life {
             whales,
             whale_day: WHALE_FIRST_DAY,
             flies: Vec::new(),
-            flies_since: 0.0,
             seed: 0x9E37_79B9_7F4A_7C15,
             glint_at: (0..n).map(|i| 1.5 + i as f64 * 1.37).collect(),
             stir_at: vec![-100.0; n],
@@ -137,11 +120,60 @@ impl Life {
 
     fn scatter_flies(&mut self) {
         let mut s = self.seed;
-        self.flies = FIREFLY_CITIES
-            .iter()
-            .map(|_| (rand(&mut s), 0.9 + 0.2 * rand(&mut s)))
+        self.flies = (0..FIREFLY_SPOTS)
+            .map(|_| {
+                let a = rand(&mut s) * std::f64::consts::TAU;
+                let d = rand(&mut s).sqrt() * 1.6;
+                (a.cos() * d, a.sin() * d * 0.7, rand(&mut s) * 0.25)
+            })
             .collect();
         self.seed = s;
+    }
+
+    /// The fireflies' likeness: a small wood of them in the light, flashing together, dark between.
+    #[allow(clippy::too_many_arguments)] // the light's place, size and fade, as paint has them
+    fn paint_flies(
+        &self,
+        p: &mut Painter,
+        c: [f32; 2],
+        rk: f64,
+        kf: f32,
+        tm: f64,
+        a: f32,
+        still: bool,
+    ) {
+        for &(x, y, lag) in &self.flies {
+            let q = [c[0] + (x * rk) as f32, c[1] + (y * rk) as f32];
+            let fl = if still {
+                0.3
+            } else {
+                Self::fly_light(tm, lag) as f32
+            };
+            let ink = [
+                0.22 + 0.5 * fl,
+                0.38 + 0.5 * fl,
+                0.10 + 0.1 * fl,
+                (0.35 + 0.6 * fl) * a,
+            ];
+            p.disc(q, (0.9 + 0.7 * fl) * kf, 1.0, ink);
+            p.glow(
+                q,
+                q,
+                (1.6 + 3.0 * fl) * kf,
+                3.0 * kf,
+                [0.75, 1.0, 0.35, 0.7 * fl * a],
+            );
+        }
+    }
+
+    /// A likeness firefly's light at `t`: a burst of five flashes, then dark.
+    fn fly_light(t: f64, lag: f64) -> f64 {
+        let u = (t - lag).rem_euclid(FIREFLY_BEAT);
+        if u > 2.6 {
+            return 0.0;
+        }
+        let v = (u % 0.52) / 0.16;
+        (-(v - 0.3).powi(2) * 6.0).exp()
     }
 
     fn whale_spots(&self) -> Option<[LonLat; 2]> {
@@ -158,34 +190,10 @@ impl Life {
         }
     }
 
-    pub fn update(&mut self, t: f64, dt: f64) {
+    pub fn update(&mut self, t: f64, _dt: f64) {
         // the whales swim on (a slow year: back where they started after twenty-four minutes)
         self.whale_day = WHALE_FIRST_DAY + t * 0.25;
         self.place_whales();
-        // the fireflies: each clock fills at its own pace; a neighbour's flash nudges it ahead (the
-        // toy's rule, sixteen cities strong); every forty seconds they scatter and begin again
-        if t - self.flies_since > 40.0 {
-            self.flies_since = t;
-            self.scatter_flies();
-        }
-        let n = self.flies.len() as f64;
-        let mut flashed = 0.0;
-        for f in &mut self.flies {
-            f.0 += dt * f.1 * 0.8;
-            if f.0 >= 1.0 {
-                f.0 -= 1.0;
-                flashed += 1.0;
-            }
-        }
-        if flashed > 0.0 {
-            for f in &mut self.flies {
-                // nudged ahead by each flash, more the fuller its clock already is
-                f.0 += 0.09 * flashed / n * 4.0 * f.0;
-                if f.0 >= 1.0 {
-                    f.0 = 0.999;
-                }
-            }
-        }
         self.rings.retain(|r| t - r.1 < 1.6);
         for (i, g) in self.glint_at.iter_mut().enumerate() {
             if t > *g + 1.4 {
@@ -276,7 +284,6 @@ impl Life {
                     add([ll.lon, ll.lat]);
                 }
             }
-            "fireflies" => FIREFLY_CITIES.iter().for_each(|&ll| add(ll)),
             "mold" => MOLD_CITIES.iter().for_each(|&ll| add(ll)),
             _ => {}
         }
@@ -508,56 +515,28 @@ impl Life {
                         p.disc(q, 0.95 * kf, 0.8, [0.13, 0.11, 0.15, 0.85 * a]);
                     }
                 }
-                "mold" | "fireflies" => {
-                    let cities: &[[f64; 2]] = if d.id == "mold" {
-                        &MOLD_CITIES
-                    } else {
-                        &FIREFLY_CITIES
-                    };
+                "mold" => {
                     let pts: Vec<Option<([f32; 2], f64)>> =
-                        cities.iter().map(|&ll| at(ll)).collect();
-                    if d.id == "mold" {
-                        // threads reaching city to city, growing, held, then let go
-                        for (e, &(x, y)) in MOLD_THREADS.iter().enumerate() {
-                            let (Some((pa, _)), Some((pb, _))) = (pts[x], pts[y]) else {
-                                continue;
-                            };
-                            let ph = (tm * 0.09 + e as f64 * 0.137).rem_euclid(1.0);
-                            let grow = smooth(0.0, 0.45, ph);
-                            let fade_out = 1.0 - smooth(0.82, 1.0, ph);
-                            let g = grow as f32;
-                            let tip = [pa[0] + (pb[0] - pa[0]) * g, pa[1] + (pb[1] - pa[1]) * g];
-                            let al = (fade_out as f32) * a;
-                            p.line(pa, tip, 0.95 * kf, 0.9, [0.80, 0.55, 0.06, 0.95 * al]);
-                            p.glow(pa, tip, 1.6 * kf, 2.0 * kf, [1.0, 0.78, 0.25, 0.14 * al]);
-                        }
-                        for q in pts.iter().flatten() {
-                            p.disc(q.0, 1.9 * kf, 1.0, [0.72, 0.48, 0.05, a]);
-                        }
-                    } else {
-                        for (j, q) in pts.iter().enumerate() {
-                            let Some((q, _)) = q else { continue };
-                            let clock = self.flies[j].0;
-                            let flash = (-(clock / 0.06).powi(2))
-                                .exp()
-                                .max((-((1.0 - clock) / 0.02).powi(2)).exp());
-                            let fl = if reduce_motion { 0.3 } else { flash as f32 };
-                            p.disc(
-                                *q,
-                                (1.4 + 0.8 * fl) * kf,
-                                1.0,
-                                [0.22 + 0.5 * fl, 0.38 + 0.5 * fl, 0.10 + 0.1 * fl, 0.95 * a],
-                            );
-                            p.glow(
-                                *q,
-                                *q,
-                                (2.0 + 3.5 * fl) * kf,
-                                3.5 * kf,
-                                [0.75, 1.0, 0.35, 0.7 * fl * a],
-                            );
-                        }
+                        MOLD_CITIES.iter().map(|&ll| at(ll)).collect();
+                    // threads reaching city to city, growing, held, then let go
+                    for (e, &(x, y)) in MOLD_THREADS.iter().enumerate() {
+                        let (Some((pa, _)), Some((pb, _))) = (pts[x], pts[y]) else {
+                            continue;
+                        };
+                        let ph = (tm * 0.09 + e as f64 * 0.137).rem_euclid(1.0);
+                        let grow = smooth(0.0, 0.45, ph);
+                        let fade_out = 1.0 - smooth(0.82, 1.0, ph);
+                        let g = grow as f32;
+                        let tip = [pa[0] + (pb[0] - pa[0]) * g, pa[1] + (pb[1] - pa[1]) * g];
+                        let al = (fade_out as f32) * a;
+                        p.line(pa, tip, 0.95 * kf, 0.9, [0.80, 0.55, 0.06, 0.95 * al]);
+                        p.glow(pa, tip, 1.6 * kf, 2.0 * kf, [1.0, 0.78, 0.25, 0.14 * al]);
+                    }
+                    for q in pts.iter().flatten() {
+                        p.disc(q.0, 1.9 * kf, 1.0, [0.72, 0.48, 0.05, a]);
                     }
                 }
+                "fireflies" => self.paint_flies(p, c, r * k, kf, tm, a, reduce_motion),
                 "bell" | "swell" => {
                     // rings on the sphere about the place: the bell's one, crossing the whole Earth;
                     // the swell's train of crests, slower and close
