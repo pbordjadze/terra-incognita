@@ -179,6 +179,17 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "kanto-build",
+      "name": "Kanto",
+      "bundleIdentifier": "com.pbordjadze.toy.kanto",
+      "subtitle": "A slime mold that designs Tokyo's railways",
+      "localizedDescription": "The 2010 experiment where a slime mold, put down at Tokyo on a plate with oat flakes at the region's towns, grew a network of tubes much like the region's railways. Watch it spread, find the towns and thin to a network, and the real railways come up under it. Tap to lay another flake. Working title; a toy in the making.",
+      "icon": "kanto-icon.png",
+      "iconSource": "toys/kanto/icon.png",
+      "tintColor": "#F2C33A",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "elkmont-build",
       "name": "Elkmont",
       "bundleIdentifier": "com.pbordjadze.toy.elkmont",

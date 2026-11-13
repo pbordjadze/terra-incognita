@@ -33,9 +33,10 @@
     "land-10.jpg": "Globe/ground/10.jpg",
     "land-11.jpg": "Globe/ground/11.jpg",
     "land-12.jpg": "Globe/ground/12.jpg",
-    "mold-ground.png": "toys/mold/data/ground.png",
     "night.jpg": "Globe/ground/night.jpg",
     "plain.jpg": "toys/meander/data/plain.jpg",
+    "plate.json": "toys/kanto/data/plate.json",
+    "plate.png": "toys/kanto/data/plate.png",
     "rivers.bin": "toys/terra/data/rivers.bin",
     "routes.json": "toys/whales/data/routes.json",
     "terrain.png": "Globe/terrain.png"

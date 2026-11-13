@@ -413,6 +413,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "kanto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -975,8 +987,8 @@ dependencies = [
  "elkmont",
  "frost",
  "huddle",
+ "kanto",
  "meander",
- "mold",
  "murmuration",
  "serde",
  "serde_json",

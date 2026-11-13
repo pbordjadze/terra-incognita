@@ -1,0 +1,34 @@
+{
+ "_": "A flake laid where the network doesn't reach (on the Boso peninsula, south-east of the bay) once the network has formed: a tube thickens out to it from the nearest town, and the network reroutes to take it in; the railways go down while it does.",
+ "seconds": 170,
+ "fps": 10,
+ "events": [
+  {
+   "t": 130.0,
+   "tap": {
+    "lonlat": [
+     140.15,
+     35.25
+    ]
+   }
+  }
+ ],
+ "shots": [
+  {
+   "t": 129.5,
+   "name": "before"
+  },
+  {
+   "t": 140,
+   "name": "reaching"
+  },
+  {
+   "t": 155,
+   "name": "rerouted"
+  },
+  {
+   "t": 169,
+   "name": "after"
+  }
+ ]
+}

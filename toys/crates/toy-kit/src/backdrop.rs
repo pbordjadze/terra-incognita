@@ -45,6 +45,17 @@ pub struct Backdrop {
 impl Backdrop {
     /// `body` defines `fn backdrop(px, world) -> vec4<f32>`.
     pub fn new(gpu: &Gpu, label: &str, body: &str) -> Backdrop {
+        Backdrop::build(gpu, label, body, None)
+    }
+
+    /// As `new`, with one picture the body reads as `tex` through `samp` (linear, clamped): a map, a
+    /// plate, a photograph under the scene.
+    pub fn textured(gpu: &Gpu, label: &str, body: &str, tex: &wgpu::TextureView) -> Backdrop {
+        let head = "@group(0) @binding(1) var tex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\n";
+        Backdrop::build(gpu, label, &format!("{head}{body}"), Some(tex))
+    }
+
+    fn build(gpu: &Gpu, label: &str, body: &str, tex: Option<&wgpu::TextureView>) -> Backdrop {
         let src = format!("{body}\n{PRELUDE}");
         let shader = gpu.shader(label, &src);
         let uniform = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -53,28 +64,67 @@ impl Backdrop {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let mut layout = vec![wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        }];
+        let sampler = tex.map(|_| {
+            gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+                label: Some(label),
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::MipmapFilterMode::Linear,
+                ..Default::default()
+            })
+        });
+        if tex.is_some() {
+            layout.push(wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                count: None,
+            });
+            layout.push(wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            });
+        }
         let bgl = gpu
             .device
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some(label),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
+                entries: &layout,
             });
+        let mut entries = vec![wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniform.as_entire_binding(),
+        }];
+        if let (Some(view), Some(samp)) = (tex, sampler.as_ref()) {
+            entries.push(wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::TextureView(view),
+            });
+            entries.push(wgpu::BindGroupEntry {
+                binding: 2,
+                resource: wgpu::BindingResource::Sampler(samp),
+            });
+        }
         let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(label),
             layout: &bgl,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform.as_entire_binding(),
-            }],
+            entries: &entries,
         });
         let pipeline = gpu.fullscreen_pipeline(label, &shader, &[&bgl], None);
         Backdrop {
