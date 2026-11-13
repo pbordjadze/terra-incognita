@@ -558,7 +558,7 @@ mod tests {
             }
             let row = |u: usize| Crowd::is_active(c.stage[(V / 2) * U + u % U]);
             ok += ((0..U).filter(|&u| row(u) && !row(u + U - 1)).count() >= 1
-                && (front + 350..front + 650).any(|u| row(u))) as usize;
+                && (front + 350..front + 650).any(row)) as usize;
         }
         eprintln!("{ok} of 6 swipes ahead of a minute-old wave started one");
         assert!(
