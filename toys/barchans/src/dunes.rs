@@ -304,6 +304,11 @@ impl Dunes {
         }
     }
 
+    /// The slabs at a cell.
+    pub fn height_at(&self, c: [f32; 2]) -> i32 {
+        self.slabs[self.at(c[0] as i32, c[1] as i32)]
+    }
+
     /// Sand poured in a disc (cells), `amount` slabs at the middle.
     pub fn pour(&mut self, c: [f32; 2], r: f32, amount: f32) {
         let ri = r.ceil() as i32;

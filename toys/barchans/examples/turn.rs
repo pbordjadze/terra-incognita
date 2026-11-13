@@ -8,7 +8,7 @@ use barchans::{SEED, TRADE};
 fn main() {
     let a: Vec<String> = std::env::args().collect();
     let out = std::path::PathBuf::from(a.get(1).cloned().unwrap_or(".".into()));
-    let marks: Vec<usize> = a[2..].iter().filter_map(|s| s.parse().ok()).collect();
+    let marks: Vec<usize> = a.iter().skip(2).filter_map(|s| s.parse().ok()).collect();
     let bytes = std::fs::read("barchans/data/opening.bin").expect("the opening field");
     let mut d = Dunes::from_bytes(&bytes, SEED, TRADE).expect("a dune field");
     d.wind = [1.0, 0.0];

@@ -64,7 +64,6 @@ struct Grid {
     phi: Vec<f64>,
     /// fixed: on the channel (0) or a boundary
     fixed: Vec<bool>,
-    owner: Vec<usize>,
 }
 
 impl Grid {
@@ -168,7 +167,6 @@ impl Bolt {
             nz,
             phi: vec![0.0; nx * nz],
             fixed: vec![false; nx * nz],
-            owner: vec![usize::MAX; nx * nz],
         };
         // the lake (bottom row, grid z = 0 is the top here: row nz-1 is the water) at 1, the sides
         // falling linearly from it to the cloud, the top row (the cloud base) at 0
@@ -194,7 +192,6 @@ impl Bolt {
         let seed_i = g.idx(x0, 1);
         g.fixed[seed_i] = true;
         g.phi[seed_i] = 0.0;
-        g.owner[seed_i] = 0;
         cells[0].z = 1.0;
         g.relax_near(x0, 1, 12, FIRST_SWEEPS);
         let mut cands = Vec::new();
@@ -219,7 +216,6 @@ impl Bolt {
             });
             g.fixed[i] = true;
             g.phi[i] = 0.0;
-            g.owner[i] = k;
             if z >= nz - 2 {
                 ground = Some(k);
                 break;
@@ -247,7 +243,6 @@ impl Bolt {
             nz,
             phi: vec![1.0; nx * nz],
             fixed: vec![false; nx * nz],
-            owner: vec![usize::MAX; nx * nz],
         };
         for z in 0..nz {
             for x in 0..nx {
@@ -261,7 +256,6 @@ impl Bolt {
         let s = g.idx(x0, z0);
         g.fixed[s] = true;
         g.phi[s] = 0.0;
-        g.owner[s] = 0;
         let mut cells = vec![Cell {
             x: x0 as f32,
             z: z0 as f32,
@@ -292,7 +286,6 @@ impl Bolt {
             });
             g.fixed[i] = true;
             g.phi[i] = 0.0;
-            g.owner[i] = k;
             if x <= 1 || z <= 1 || x >= nx - 2 || z >= nz - 2 {
                 break;
             }
@@ -354,6 +347,49 @@ impl Bolt {
         self.ground
             .map(|k| self.cells[k].x)
             .unwrap_or(self.nx as f32 * 0.5)
+    }
+}
+
+/// Strokes grown ahead, off the frame's thread: growing one takes tens of milliseconds, more than a
+/// frame. The worker grows them in its seeds' order and keeps two ready; `take` takes the next (waiting
+/// for it only when strokes come faster than it grows them), so the sequence is the same however the
+/// threads run. On the web, where there are no threads, it grows them when asked.
+pub struct Brewer {
+    #[cfg(not(target_arch = "wasm32"))]
+    rx: std::sync::mpsc::Receiver<(u64, Bolt)>,
+    rng: Rng,
+}
+
+impl Brewer {
+    pub fn new(seed: u64) -> Brewer {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let (tx, rx) = std::sync::mpsc::sync_channel(2);
+            let mut rng = Rng(seed | 1);
+            std::thread::spawn(move || loop {
+                let s = rng.next_u64();
+                if tx.send((s, Bolt::strike(s))).is_err() {
+                    break;
+                }
+            });
+            Brewer {
+                rx,
+                rng: Rng(seed | 1),
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        Brewer { rng: Rng(seed | 1) }
+    }
+
+    /// The next stroke and its seed.
+    pub fn take(&mut self) -> (u64, Bolt) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Ok(b) = self.rx.recv() {
+            return b;
+        }
+        // (no worker: grow it here)
+        let s = self.rng.next_u64();
+        (s, Bolt::strike(s))
     }
 }
 

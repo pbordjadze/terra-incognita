@@ -87,6 +87,8 @@ impl Synth for Voice {
             // the song: a drone at the pitch, with a slow waver and its overtones
             self.wob += 0.00002 * (self.noise() - self.wob * 0.01);
             self.phase += (self.now.pitch as f64 * (1.0 + self.wob as f64 * 0.5)) * dt;
+            // (kept to one turn, so an hour's drone is as clean as a minute's)
+            self.phase = self.phase.fract();
             let p = (self.phase * std::f64::consts::TAU) as f32;
             let drone =
                 (p.sin() + 0.45 * (2.0 * p).sin() + 0.2 * (3.0 * p).sin() + 0.1 * (5.0 * p).sin())

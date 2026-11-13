@@ -9,7 +9,7 @@
 pub mod bolt;
 pub mod sound;
 
-use bolt::{Bolt, Rng, CELL_M, NZ};
+use bolt::{Bolt, Brewer, Rng, CELL_M, NZ};
 use sound::{Pulse, Thunder, SOUND_MS};
 use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::paint::Painter;
@@ -65,6 +65,7 @@ pub struct Catatumbo {
     next_storm: f64,
     flicker: (f64, [f64; 2], f64),
     reduce_motion: bool,
+    brewer: Brewer,
 }
 
 impl Catatumbo {
@@ -92,7 +93,7 @@ impl Catatumbo {
     fn strike_at(&mut self, ctx: &mut Ctx, p: [f64; 2], finger: Option<u64>, power: f32) {
         let seed = self.rng.next_u64();
         if p[1] > self.horizon() + 1.0 {
-            let bolt = Bolt::strike(seed);
+            let (seed, bolt) = self.brewer.take();
             let dist = self.distance_at(p[1]);
             self.strikes.push(Strike {
                 kind: Kind::Ground,
@@ -202,12 +203,12 @@ impl Catatumbo {
                 amp: (0.7 * strength as f64 * (220.0 / d).min(1.6)) as f32
                     * if first { 1.0 } else { 0.5 }
                     * s.power,
-                tau: (0.03 + d / 9_000.0) as f32,
+                tau: (0.03 + d / 9_000.0).min(0.6) as f32,
                 bright: (1.0 - d / 2500.0).clamp(0.0, 1.0) as f32,
                 pan: (x / d) as f32,
             });
         }
-        out
+        sound::gather(out, 140)
     }
 
     /// The storm on its own: far strokes and flickers in the deck now and then.
@@ -288,6 +289,7 @@ impl Toy for Catatumbo {
             next_storm: 0.3,
             flicker: (-10.0, [0.0, 0.0], 0.0),
             reduce_motion: ctx.reduce_motion,
+            brewer: Brewer::new(0xCA7A_7B30),
         })
     }
 

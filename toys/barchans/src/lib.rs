@@ -172,19 +172,25 @@ impl Toy for Barchans {
         let dt = (dt as f32).min(0.1);
         // the wind turns toward where the finger sent it, over a second or so
         let w = self.dunes.wind;
-        let k = (dt * 2.2).min(1.0);
-        let mut nw = [
-            w[0] + (self.want[0] - w[0]) * k,
-            w[1] + (self.want[1] - w[1]) * k,
-        ];
-        let l = (nw[0] * nw[0] + nw[1] * nw[1]).sqrt().max(1e-4);
-        nw = [nw[0] / l, nw[1] / l];
+        // (by angle, so it turns even when sent straight back the way it came)
+        let (a, b) = (w[1].atan2(w[0]), self.want[1].atan2(self.want[0]));
+        let mut turn = b - a;
+        if turn > std::f32::consts::PI {
+            turn -= std::f32::consts::TAU;
+        } else if turn < -std::f32::consts::PI {
+            turn += std::f32::consts::TAU;
+        }
+        let a = a + turn * (dt * 2.2).min(1.0);
+        let nw = [a.cos(), a.sin()];
         self.dunes.wind = nw;
         // a finger held still pours sand
         if let Some(f) = &self.finger {
             if t - f.still_since > 0.25 {
                 let c = self.cell([f.at[0], f.at[1]]);
-                self.dunes.pour(c, 7.0, dt * 70.0);
+                // (a heap only so tall: past it the sand runs off down its sides)
+                if self.dunes.height_at(c) < 160 {
+                    self.dunes.pour(c, 7.0, dt * 70.0);
+                }
                 if (t * 8.0).fract() < (dt as f64 * 8.0) {
                     ctx.haptic();
                 }
