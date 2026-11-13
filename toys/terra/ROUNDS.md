@@ -116,3 +116,6 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   true size over the reeds, the eye tipping to the horizon as it comes down), in Murmuration itself; a newcomer
   who pinches (two of two tapped and never pinched). Before the release: two fingers inside a scene stay the
   toy's unless they close in (Meander takes several fingers, row 253; plan `meander-two`, strict).
+- Nov 13, 2026 (owner's word): Shortcut's light over Stuttgart taken off the Earth and Throats' put on, over the
+  hills near Los Banos, California, a window onto the sunlit hillside with the three throats' colours chasing
+  round in a spiral. Shortcut stays its own app. Plan `throats` (was `jam`).
