@@ -4,10 +4,9 @@ use super::Door;
 use crate::rooms;
 
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 14] = [
+pub const SCENES: [&str; 13] = [
     "murmuration",
     "fireflies",
-    "mold",
     "swell",
     "meander",
     "frost",
@@ -43,15 +42,6 @@ fn globes() -> Vec<Door> {
             night: true,
             degree: 0,
             open: rooms::open::<whales::Whales>,
-        },
-        Door {
-            id: "mold",
-            name: "Mold",
-            at: [kanto::PLACE.0, kanto::PLACE.1],
-            tint: [0.95, 0.76, 0.28],
-            night: true,
-            degree: 2,
-            open: rooms::open::<kanto::Kanto>,
         },
         Door {
             id: "fireflies",

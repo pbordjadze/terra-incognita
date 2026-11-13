@@ -65,7 +65,6 @@ toys/meander/src/sim.rs::step 102 11
 toys/meander/src/toy.rs::draw 291 29
 toys/meander/src/toy.rs::new 120 4
 toys/meander/src/toy.rs::pointer 110 20
-toys/mold/src/lib.rs::new 369 14
 toys/murmuration/src/flock.rs::nearest 57 21
 toys/murmuration/src/flock.rs::step 141 28
 toys/murmuration/src/lib.rs::draw 155 15
