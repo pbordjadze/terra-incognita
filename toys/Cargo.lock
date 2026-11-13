@@ -552,6 +552,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "moonroad"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "moxcms"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1037,6 +1048,7 @@ dependencies = [
  "huddle",
  "kanto",
  "meander",
+ "moonroad",
  "murmuration",
  "nazare",
  "serde",

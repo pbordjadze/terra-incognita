@@ -1,5 +1,5 @@
 //! The likenesses of the toys whose rule runs on the ground: lightning reaching for a night lake, crabs'
-//! starbursts on sand, crescent dunes walking.
+//! starbursts on sand, crescent dunes walking, the moon painting its road down a lake.
 
 use toy_kit::paint::Painter;
 
@@ -58,6 +58,7 @@ pub fn draw(p: &mut Painter, id: &str, sp: &Spot, tm: f64) {
         "catatumbo" => catatumbo(p, sp, tm),
         "bubblers" => bubblers(p, sp, tm),
         "barchans" => barchans(p, sp, tm),
+        "moonroad" => moonroad(p, sp, tm),
         _ => {}
     }
 }
@@ -172,5 +173,41 @@ fn barchans(p: &mut Painter, sp: &Spot, tm: f64) {
                 );
             }
         }
+    }
+}
+
+/// Moon Road: a plum night over a cream lake, the low moon, and under it its road of painted cells,
+/// a glint flashing in it here and there.
+fn moonroad(p: &mut Painter, sp: &Spot, tm: f64) {
+    let (kf, a) = (sp.kf, sp.a);
+    let at = |x: f64, y: f64| sp.at(x, y);
+    sp.glass(p, [0.24, 0.13, 0.29]);
+    // the lake: the lower half of the glass, cream paper
+    for j in 0..5 {
+        let y = 0.12 + j as f64 * 0.17;
+        let half = (1.0 - y * y).max(0.0).sqrt() * 0.92;
+        p.line(
+            at(-half, y),
+            at(half, y),
+            (0.1 * sp.r * sp.k) as f32,
+            kf,
+            [0.95, 0.93, 0.90, 0.95 * a],
+        );
+    }
+    p.disc(at(0.0, -0.22), 3.2 * kf, 0.8 * kf, [0.98, 0.90, 0.68, a]);
+    // the road: cells in the three paints, widening toward you, one flashing
+    let paints = [[0.14, 0.10, 0.21], [0.28, 0.15, 0.33], [0.20, 0.18, 0.39]];
+    for i in 0..14 {
+        let y = 0.06 + (i as f64 / 13.0).powf(1.3) * 0.82;
+        let x = (hash(i as f64 + 3.0) - 0.5) * (0.06 + 0.3 * y);
+        let c = paints[i % 3];
+        let flash = (0.5 + 0.5 * (tm * 2.3 + i as f64 * 1.7).sin()).powi(8) as f32;
+        let col = [
+            c[0] + (0.98 - c[0]) * flash,
+            c[1] + (0.90 - c[1]) * flash,
+            c[2] + (0.68 - c[2]) * flash,
+            a,
+        ];
+        p.disc(at(x, y), (0.8 + 2.6 * y) as f32 * kf, 0.5 * kf, col);
     }
 }

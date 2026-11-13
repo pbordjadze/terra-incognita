@@ -4,7 +4,7 @@ use super::Door;
 use crate::rooms;
 
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 13] = [
+pub const SCENES: [&str; 14] = [
     "murmuration",
     "fireflies",
     "mold",
@@ -18,6 +18,7 @@ pub const SCENES: [&str; 13] = [
     "catatumbo",
     "bubblers",
     "barchans",
+    "moonroad",
 ];
 
 /// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
@@ -27,6 +28,7 @@ pub const SCENES: [&str; 13] = [
 pub fn doors() -> Vec<Door> {
     let mut all = globes();
     all.extend(scenes());
+    all.extend(homages());
     all
 }
 
@@ -175,4 +177,17 @@ fn scenes() -> Vec<Door> {
             open: rooms::open::<barchans::Barchans>,
         },
     ]
+}
+
+/// The scenes made in homage to the owner's other apps: Moon Road, after Paint by Moonlight.
+fn homages() -> Vec<Door> {
+    vec![Door {
+        id: "moonroad",
+        name: "Moon Road",
+        at: [moonroad::PLACE.0, moonroad::PLACE.1],
+        tint: [0.98, 0.90, 0.68],
+        night: true,
+        degree: 10,
+        open: rooms::open::<moonroad::MoonRoad>,
+    }]
 }

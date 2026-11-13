@@ -256,6 +256,17 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "moonroad-build",
+      "name": "Moon Road",
+      "bundleIdentifier": "com.pbordjadze.toy.moonroad",
+      "subtitle": "The moon paints its road down Lake Superior",
+      "localizedDescription": "Moonrise over Lake Superior, the water a numbered template on cream paper. Only the bits of water tilted just right send the moon's light to your eye, and each one the moon lights, it paints, so the road of light from the moon to you fills in, number by number. Tap for a gust and the road spreads; drag to walk the shore and the road follows you. Shake for a fresh page. Working title; a toy in the making.",
+      "icon": "moonroad-icon.png",
+      "iconSource": "toys/moonroad/icon.png",
+      "tintColor": "#F6E2AE",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "bubblers-build",
       "name": "Bubblers",
       "bundleIdentifier": "com.pbordjadze.toy.bubblers",
