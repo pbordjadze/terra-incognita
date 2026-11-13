@@ -1,0 +1,25 @@
+[package]
+name = "elkmont"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Elkmont (a working title): the synchronous fireflies in the woods at Elkmont, Great Smoky Mountains, on a June night."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "elkmont-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

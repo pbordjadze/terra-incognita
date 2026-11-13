@@ -6,6 +6,7 @@ its entry here, or writes icon.png by its own tool; the name and the final icon 
     python3 tools/toys/icon.py [<toy> ...]      # every toy's when none is named
 """
 import itertools
+import json
 import math
 import random
 import sys
@@ -381,6 +382,57 @@ def throats():
     return img
 
 
+def elkmont():
+    # a dark wood at night, its trunks against a green glow, fireflies flashing low among them
+    img = Image.new('RGBA', (N, N), (8, 11, 14, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        g = max(0.0, 1.0 - abs(y - N * 0.58) / (N * 0.32))
+        d.line([(0, y), (N, y)], fill=(int(10 + 40 * g), int(14 + 80 * g), int(12 + 20 * g), 255))
+    rnd = random.Random(1106)
+    for _ in range(14):
+        x = rnd.uniform(0, N)
+        w = rnd.uniform(14, 60)
+        d.rectangle([x - w / 2, 0, x + w / 2, N], fill=(6, 9, 10, 255))
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    dots = [(rnd.uniform(40, N - 40), N * 0.58 + rnd.gauss(0, N * 0.09), rnd.uniform(4, 13)) for _ in range(70)]
+    for x, y, r in dots:
+        gd.ellipse([x - r * 3, y - r * 3, x + r * 3, y + r * 3], fill=(150, 220, 60, 90))
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(img)
+    for x, y, r in dots:
+        d.ellipse([x - r * 0.6, y - r * 0.6, x + r * 0.6, y + r * 0.6], fill=(225, 255, 150, 255))
+    return img
+
+
+def kanto():
+    # a dark plate, a yellow network of tubes joining the plate's real oat flakes (its towns)
+    img = Image.new('RGBA', (N, N), (20, 17, 13, 255))
+    towns = json.loads((ROOT / 'toys' / 'kanto' / 'data' / 'plate.json').read_text())['towns']
+    cells = [t['cell'] for t in towns]
+    x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells)
+    y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells)
+    k = N * 0.78 / max(x1 - x0, y1 - y0)
+    pts = [(N / 2 + (c[0] - (x0 + x1) / 2) * k, N / 2 + (c[1] - (y0 + y1) / 2) * k) for c in cells]
+    edges = set()
+    for i, (x, y) in enumerate(pts):
+        near = sorted(range(len(pts)), key=lambda j: (pts[j][0] - x) ** 2 + (pts[j][1] - y) ** 2)[1:3]
+        for j in near:
+            edges.add((min(i, j), max(i, j)))
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    for i, j in edges:
+        gd.line([pts[i], pts[j]], fill=(255, 200, 40, 130), width=34)
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(img)
+    for i, j in edges:
+        d.line([pts[i], pts[j]], fill=(255, 204, 41, 255), width=16 if 0 in (i, j) else 10)
+    for x, y in pts:
+        d.ellipse([x - 11, y - 11, x + 11, y + 11], fill=(236, 220, 180, 255))
+    return img
+
+
 def gradient(top, bottom):
     img = Image.new('RGBA', (N, N))
     d = ImageDraw.Draw(img)
@@ -528,7 +580,7 @@ def barchans():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

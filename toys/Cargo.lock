@@ -247,6 +247,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "elkmont"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -431,6 +443,18 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "kanto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
 ]
 
 [[package]]
@@ -996,11 +1020,11 @@ dependencies = [
  "bubblers",
  "bytemuck",
  "catatumbo",
- "fireflies",
+ "elkmont",
  "frost",
  "huddle",
+ "kanto",
  "meander",
- "mold",
  "murmuration",
  "serde",
  "serde_json",

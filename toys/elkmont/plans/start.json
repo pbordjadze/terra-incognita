@@ -1,0 +1,63 @@
+{
+ "_": "First sight: dusk in the woods at Elkmont, a few fireflies flashing; more come out and their bursts fall together; then a light held low in a dark spell gives a burst like a male's, and the females near it answer from the leaf litter.",
+ "seconds": 92,
+ "fps": 30,
+ "events": [
+  {
+   "t": 80.0,
+   "down": [
+    170,
+    600
+   ],
+   "id": 1
+  },
+  {
+   "t": 84.0,
+   "up": [
+    170,
+    600
+   ],
+   "id": 1
+  }
+ ],
+ "shots": [
+  {
+   "t": 2.0,
+   "name": "dusk"
+  },
+  {
+   "t": 30.0,
+   "name": "coming-out"
+  },
+  {
+   "t": 75.77,
+   "name": "burst"
+  },
+  {
+   "t": 76.8,
+   "name": "burst-late"
+  },
+  {
+   "t": 79.5,
+   "name": "dark"
+  },
+  {
+   "t": 81.08,
+   "name": "light"
+  },
+  {
+   "t": 85.86,
+   "name": "answer"
+  },
+  {
+   "t": 88.23,
+   "name": "burst-again"
+  }
+ ],
+ "audio": true,
+ "film": {
+  "from": 70,
+  "to": 92,
+  "every": 0.0333
+ }
+}
