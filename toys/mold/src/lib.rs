@@ -775,7 +775,7 @@ impl Toy for Mold {
         Some(toy_kit::info::Rules::lines(&[
                 "A slime mold is one huge cell with no brain, creeping out to find food.",
                 "It follows food and its own slime trails, so busy paths grow thicker and the rest fade away.",
-                "What is left is a web of short routes between its food: here, the world's city lights. Tap anywhere to drop more food.",
+                "Its food here is the world's city lights. Tap anywhere to drop more.",
         ]))
     }
 

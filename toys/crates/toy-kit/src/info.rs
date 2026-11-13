@@ -318,9 +318,13 @@ pub struct First {
     pub on: bool,
     /// A real finger came down (the reader is already in: the start's demo stays shut).
     pub touched: bool,
+    /// The real fingers down now (a demo waits for them to lift: its ghost would play among them).
+    down: Vec<u64>,
     /// The toy's first frame, and whether the start's demo is done with.
     began: Option<f64>,
     done: bool,
+    /// A toy's ask, waiting for the fingers to lift and any card to close (until `FIRST_WAIT` passes).
+    asked: Option<f64>,
 }
 
 impl Default for First {
@@ -328,14 +332,32 @@ impl Default for First {
         First {
             on: true,
             touched: false,
+            down: Vec::new(),
             began: None,
             done: false,
+            asked: None,
+        }
+    }
+}
+
+impl First {
+    /// A real finger, as the host is handed it (never the ghost's).
+    pub fn finger(&mut self, e: &PointerEvent) {
+        match e.phase {
+            Phase::Down => {
+                self.touched = true;
+                self.down.push(e.id);
+            }
+            Phase::Up | Phase::Cancel => self.down.retain(|&i| i != e.id),
+            Phase::Move => {}
         }
     }
 }
 
 /// How long after the toy's first frame its demo opens by itself.
 const FIRST_AFTER: f64 = 1.0;
+/// How long a toy's ask waits for the fingers to lift or a card to close before it lapses.
+const FIRST_WAIT: f64 = 3.0;
 
 // the info marks' side of the host
 impl<T: crate::Toy> crate::Host<T> {
@@ -346,13 +368,24 @@ impl<T: crate::Toy> crate::Host<T> {
         if !f.on {
             return;
         }
+        if asked {
+            f.asked = Some(t);
+        }
         let began = *f.began.get_or_insert(t);
         let start = !f.done && t - began >= FIRST_AFTER;
         if start {
             f.done = true;
         }
-        if (asked || (start && !f.touched && self.toy.info_at_start())) && !self.info.is_open() {
+        let free = f.down.is_empty() && !self.info.is_open();
+        let waiting = f.asked.is_some_and(|a| t - a <= FIRST_WAIT);
+        if waiting && free {
+            f.asked = None;
             self.open_info(t);
+        } else if !waiting {
+            f.asked = None;
+            if start && !f.touched && free && self.toy.info_at_start() {
+                self.open_info(t);
+            }
         }
     }
 

@@ -429,9 +429,7 @@ impl<T: Toy> Host<T> {
         // shows closes the card and is the button's too: one tap, not two (painting-company row 246: five
         // of six newcomers tapped Terra's Earth mark with the rules up, and it only closed them). A toy
         // without buttons keeps the rule that a closing tap is nobody's.
-        if e.phase == Phase::Down {
-            self.first_info.touched = true;
-        }
+        self.first_info.finger(&e);
         if e.phase == Phase::Down && self.info.is_open() {
             let pts = self.toy.buttons(&self.ctx);
             if pts

@@ -431,7 +431,7 @@ impl Toy for Throats {
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         let s = self.size_pt;
         Some(info::Demo::new(
-            "Lizards on a California hillside. Each dot is one; draw to add more.",
+            "Each dot is a lizard. Draw to add more.",
             vec![info::Stroke::drag(
                 0.4,
                 1.4,
@@ -445,7 +445,7 @@ impl Toy for Throats {
         Some(info::Rules::lines(&[
                 "On California hillsides, male side-blotched lizards have orange, blue or yellow throats. Each dot here is one lizard guarding its patch.",
                 "Orange beats blue, blue beats yellow, yellow beats orange, like rock, paper, scissors. A lizard loses its patch when too many neighbours have the colour that beats it.",
-                "Nothing wins for long: the colours chase round in spirals. Each stroke you draw pours in the next colour.",
+                "Nothing wins for long: the colours chase each other in spirals. Each stroke you draw pours in the next colour.",
         ]))
     }
 }

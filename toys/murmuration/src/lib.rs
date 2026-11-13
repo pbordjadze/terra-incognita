@@ -685,7 +685,7 @@ impl Toy for Murmuration {
         Some(toy_kit::info::Rules::lines(&[
                 "At dusk, thousands of starlings swirl together before they settle to roost. This is today's dusk at Ham Wall, in Somerset.",
                 "Each bird watches only its seven nearest neighbours: keep close, match their heading, don't collide. No one leads.",
-                "When a few birds turn, the turn sweeps through the whole flock as a dark wave. Hold a finger down to fly as one of them; drag to steer.",
+                "When a few birds turn, the turn sweeps through the whole flock as a dark wave. Hold to join them; drag to steer.",
         ]))
     }
 

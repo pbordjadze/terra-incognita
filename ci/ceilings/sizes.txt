@@ -18,7 +18,7 @@ toys/crates/toy-kit/src/globe/mod.rs 1116
 toys/frost/src/lib.rs 1261
 toys/jam/src/lib.rs 1129
 toys/jam/src/town.rs 872
-toys/meander/src/toy.rs 1002
+toys/meander/src/toy.rs 1001
 toys/mold/src/lib.rs 988
 toys/murmuration/src/lib.rs 1153
 toys/taste/src/lib.rs 810

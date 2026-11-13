@@ -990,7 +990,6 @@ impl Toy for Meander {
         Some(toy_kit::info::Rules::lines(&[
                 "A river wears away the outside of each bend and leaves sand on the inside, so its bends keep growing. About twenty years pass each second.",
                 "When a loop's neck closes, the river cuts through and the loop is left behind as a lake. The dark crescents are real old lakes on Bolivia's Rio Beni.",
-                "Push the river with your finger, and the bend you made keeps growing.",
         ]))
     }
 

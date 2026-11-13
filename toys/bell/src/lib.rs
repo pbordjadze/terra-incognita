@@ -380,7 +380,6 @@ impl Toy for Bell {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
                 "After a great earthquake the whole Earth rings like a bell for days, far too low to hear.",
-                "It rings only in its own notes, like a bell.",
                 "Here it is sped up a million times, so you can hear it. The bands are the ground rising and falling; where you strike sets which notes ring.",
         ]))
     }

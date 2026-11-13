@@ -552,7 +552,7 @@ impl Toy for Swell {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
                 "A tsunami runs as fast as a jet over the deep ocean, and slows to a car's speed in the shallows.",
-                "So it bends round islands, grows tall near coasts, and bounces back.",
+                "So it bends around islands, rises near coasts, and bounces back.",
                 "Here, each second is an hour.",
         ]))
     }

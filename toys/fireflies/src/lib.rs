@@ -403,7 +403,7 @@ impl Toy for Fireflies {
             [-46.63, -23.55],
         ]);
         Some(toy_kit::info::Demo::new(
-            "Every city light a firefly. Tap a crowd to scatter it.",
+            "Each city light is a firefly. Tap to knock them out of step.",
             vec![toy_kit::info::Stroke::tap(0.5, at)],
         ))
     }
