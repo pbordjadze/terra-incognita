@@ -29,28 +29,30 @@ pub struct Door {
     pub open: Opener,
 }
 
-// Europe's cities the mold's light joins (lon, lat), and the threads between them.
-const MOLD_CITIES: [[f64; 2]; 8] = [
-    [13.40, 52.52], // Berlin
-    [21.01, 52.23], // Warsaw
-    [14.42, 50.09], // Prague
-    [25.28, 54.69], // Vilnius
-    [27.56, 53.90], // Minsk
-    [30.52, 50.45], // Kyiv
-    [16.37, 48.21], // Vienna
-    [19.04, 47.50], // Budapest
+// The mold's light: a small network of the Kanto plain's towns round Tokyo (east, south of the light's
+// middle, in its radii; Tokyo, Saitama, Chiba, Yokohama, Sagamihara, Utsunomiya, Mito, Takasaki), its
+// tubes growing town to town, held, then let go.
+const MOLD_KNOTS: [[f64; 2]; 8] = [
+    [0.0, 0.25],
+    [-0.02, 0.03],
+    [0.35, 0.34],
+    [-0.03, 0.51],
+    [-0.36, 0.37],
+    [0.15, -0.63],
+    [0.62, -0.41],
+    [-0.54, -0.39],
 ];
 const MOLD_THREADS: [(usize, usize); 10] = [
-    (0, 2),
     (0, 1),
-    (1, 3),
-    (1, 4),
+    (0, 2),
+    (0, 3),
     (3, 4),
+    (1, 4),
+    (1, 7),
     (1, 5),
+    (5, 6),
     (2, 6),
-    (6, 7),
-    (7, 5),
-    (4, 5),
+    (5, 7),
 ];
 
 // The fireflies' light: a small wood of them about Elkmont, flashing together in bursts and dark between
@@ -128,6 +130,26 @@ impl Life {
             })
             .collect();
         self.seed = s;
+    }
+
+    /// The mold's likeness: tubes reaching town to town about the light, growing, held, then let go.
+    fn paint_mold(&self, p: &mut Painter, c: [f32; 2], rk: f64, kf: f32, tm: f64, a: f32) {
+        let pts: Vec<[f32; 2]> = MOLD_KNOTS
+            .iter()
+            .map(|k| [c[0] + (k[0] * rk) as f32, c[1] + (k[1] * rk) as f32])
+            .collect();
+        for (e, &(x, y)) in MOLD_THREADS.iter().enumerate() {
+            let (pa, pb) = (pts[x], pts[y]);
+            let ph = (tm * 0.09 + e as f64 * 0.137).rem_euclid(1.0);
+            let g = smooth(0.0, 0.45, ph) as f32;
+            let al = (1.0 - smooth(0.82, 1.0, ph)) as f32 * a;
+            let tip = [pa[0] + (pb[0] - pa[0]) * g, pa[1] + (pb[1] - pa[1]) * g];
+            p.line(pa, tip, 0.95 * kf, 0.9, [0.80, 0.55, 0.06, 0.95 * al]);
+            p.glow(pa, tip, 1.6 * kf, 2.0 * kf, [1.0, 0.78, 0.25, 0.14 * al]);
+        }
+        for &q in &pts {
+            p.disc(q, 1.9 * kf, 1.0, [0.72, 0.48, 0.05, a]);
+        }
     }
 
     /// The fireflies' likeness: a small wood of them in the light, flashing together, dark between.
@@ -278,14 +300,10 @@ impl Life {
                 out.push([q[0] + ox, q[1] + oy]);
             }
         };
-        match self.doors[i].id {
-            "whales" => {
-                for ll in self.whale_spots().into_iter().flatten() {
-                    add([ll.lon, ll.lat]);
-                }
+        if self.doors[i].id == "whales" {
+            for ll in self.whale_spots().into_iter().flatten() {
+                add([ll.lon, ll.lat]);
             }
-            "mold" => MOLD_CITIES.iter().for_each(|&ll| add(ll)),
-            _ => {}
         }
         out
     }
@@ -515,27 +533,7 @@ impl Life {
                         p.disc(q, 0.95 * kf, 0.8, [0.13, 0.11, 0.15, 0.85 * a]);
                     }
                 }
-                "mold" => {
-                    let pts: Vec<Option<([f32; 2], f64)>> =
-                        MOLD_CITIES.iter().map(|&ll| at(ll)).collect();
-                    // threads reaching city to city, growing, held, then let go
-                    for (e, &(x, y)) in MOLD_THREADS.iter().enumerate() {
-                        let (Some((pa, _)), Some((pb, _))) = (pts[x], pts[y]) else {
-                            continue;
-                        };
-                        let ph = (tm * 0.09 + e as f64 * 0.137).rem_euclid(1.0);
-                        let grow = smooth(0.0, 0.45, ph);
-                        let fade_out = 1.0 - smooth(0.82, 1.0, ph);
-                        let g = grow as f32;
-                        let tip = [pa[0] + (pb[0] - pa[0]) * g, pa[1] + (pb[1] - pa[1]) * g];
-                        let al = (fade_out as f32) * a;
-                        p.line(pa, tip, 0.95 * kf, 0.9, [0.80, 0.55, 0.06, 0.95 * al]);
-                        p.glow(pa, tip, 1.6 * kf, 2.0 * kf, [1.0, 0.78, 0.25, 0.14 * al]);
-                    }
-                    for q in pts.iter().flatten() {
-                        p.disc(q.0, 1.9 * kf, 1.0, [0.72, 0.48, 0.05, a]);
-                    }
-                }
+                "mold" => self.paint_mold(p, c, r * k, kf, tm, a),
                 "fireflies" => self.paint_flies(p, c, r * k, kf, tm, a, reduce_motion),
                 "bell" | "swell" => {
                     // rings on the sphere about the place: the bell's one, crossing the whole Earth;
