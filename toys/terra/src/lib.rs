@@ -886,7 +886,7 @@ impl Terra {
     }
 
     /// How far the Earth has fallen into the open scene's own light as its window grows (`g`): the night for
-    /// a night scene (Shortcut's town), the dusk for the starlings, so the window's sky meets a ground as dark as
+    /// a night scene (none holds one now), the dusk for the starlings, so the window's sky meets a ground as dark as
     /// itself rather than a disc of evening laid on noon (painting-company row 258); none for the day scenes.
     fn dusk(&self, g: f64) -> f32 {
         let d = &self.life.doors[self.door];
