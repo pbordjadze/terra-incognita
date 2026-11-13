@@ -1,7 +1,8 @@
 //! The Wave (a working title): Estadio Azteca in Mexico City at night, 87,000 people, every one a
 //! phone held up as a light. Draw a finger along the stands and the people under it stand up; if
 //! enough do, a wave runs round the bowl at twenty seats a second, a roar following it. Too few, and
-//! it fizzles. Two waves that meet wipe each other out.
+//! it fizzles. Two waves that meet wipe each other out, and the crowd tires: after a lap or two a
+//! wave thins, dims and dies, and a second close behind the first never gets going.
 //!
 //! `crowd.rs` is the people (Farkas, Helbing & Vicsek's excitable-medium model), `bowl.rs` the
 //! stadium and the camera, `bowl.wgsl` the stands and pitch, `city.wgsl` the city round it,
@@ -20,10 +21,11 @@ use wgpu::util::DeviceExt;
 const TICK_HZ: f64 = 28.0;
 /// How many seats round a finger stand up when it touches.
 const REACH: f32 = 2.8;
-/// Seats round where a finger is first set down that stand (about one group in ten that size starts a wave).
-const TAP_REACH: f32 = 2.1;
-/// Seconds between a group somewhere trying to start one on its own (most fail).
-const TRY_S: [f32; 2] = [7.0, 16.0];
+/// Seats round where a finger is first set down that stand (a dozen or so: alone, almost never enough).
+const TAP_REACH: f32 = 1.7;
+/// Seconds between a group somewhere trying to start one on its own, while none is running (nearly
+/// all fail).
+const TRY_S: [f32; 2] = [10.0, 30.0];
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -115,6 +117,9 @@ impl Wave {
         // a finger set down stands only the few under it (too few, alone, to start one); drawn along
         // the stands, it stands everyone it passes
         let reach = if last.is_some() { REACH } else { TAP_REACH };
+        if last.is_none() {
+            self.crowd.new_group();
+        }
         // everyone along the way from the last seat to this one
         let mut du = s[0] - from[0];
         if du > U as f32 * 0.5 {
@@ -184,8 +189,10 @@ impl Toy for Wave {
                 [l as u8, (col * col * 255.0) as u8]
             })
             .collect();
-        // a wave already on its way, coming round toward the near end
-        crowd.stand(U as f32 * 0.30, V as f32 * 0.5, 6.0);
+        // a wave already on its way, coming round toward the near end (a swipe there starts one ahead
+        // of it; one behind it would meet a crowd that has only just sat down, and fizzle)
+        crowd.new_group();
+        crowd.stand(U as f32 * 0.10, V as f32 * 0.5, 6.0);
         for _ in 0..(TICK_HZ * 6.0) as usize {
             crowd.tick();
         }
@@ -269,7 +276,9 @@ impl Toy for Wave {
         if t > self.next_try {
             let r = self.crowd.rand();
             self.next_try = t + (TRY_S[0] + (TRY_S[1] - TRY_S[0]) * r) as f64;
-            self.crowd.somebody_tries();
+            if self.crowd.active == 0 {
+                self.crowd.somebody_tries();
+            }
         }
         self.sound.set(self.heard());
     }
@@ -277,8 +286,8 @@ impl Toy for Wave {
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         let gpu = &ctx.gpu;
         let frac = self.acc as f32;
-        for (i, (s, l)) in self.crowd.stage.iter().zip(&self.lights).enumerate() {
-            let up = Crowd::up(*s, frac);
+        for (i, l) in self.lights.iter().enumerate() {
+            let up = self.crowd.height(i, frac);
             self.texels[i * 4..i * 4 + 4].copy_from_slice(&[(up * 255.0) as u8, l[0], l[1], 255]);
         }
         gpu.queue.write_texture(
@@ -403,9 +412,10 @@ impl Toy for Wave {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-            "A Mexican wave in Estadio Azteca, Mexico City, at night: each person stands when enough of the people round them are standing, then sits, and won't stand again for a moment.",
-            "So the wave runs one way round the bowl, about 20 seats a second. It takes a few dozen to start one.",
-            "Swipe along the stands to stand people up. Too few, and it fizzles.",
+            "A Mexican wave in Estadio Azteca: each person stands when enough of the people round them stand, then sits.",
+            "It takes a few dozen at once to start one. It runs one way round, about 20 seats a second.",
+            "People tire of it: after a lap or two it thins and dies.",
+            "Swipe along the stands to start one.",
         ]))
     }
 }
