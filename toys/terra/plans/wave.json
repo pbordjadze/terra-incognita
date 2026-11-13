@@ -1,0 +1,46 @@
+{
+ "_": "The Wave, its light over Estadio Azteca, Mexico City, at night: a window onto the stadium's oval of phone lights with the wave going round. Touched, the window grows into the toy; the Earth mark, and it shrinks back into its light.",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": "wave"
+  },
+  {
+   "t": 8.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "the-light"
+  },
+  {
+   "t": 2.2,
+   "name": "window"
+  },
+  {
+   "t": 3.0,
+   "name": "growing"
+  },
+  {
+   "t": 6.5,
+   "name": "inside"
+  },
+  {
+   "t": 9.0,
+   "name": "going-back"
+  },
+  {
+   "t": 12.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 13,
+  "every": 0.1
+ }
+}

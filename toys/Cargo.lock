@@ -957,10 +957,12 @@ name = "terra"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bats",
  "bell",
  "bytemuck",
  "fireflies",
  "frost",
+ "huddle",
  "meander",
  "mold",
  "murmuration",
@@ -969,6 +971,7 @@ dependencies = [
  "swell",
  "throats",
  "toy-kit",
+ "wave",
  "wgpu",
  "whales",
 ]
