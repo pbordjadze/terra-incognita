@@ -288,9 +288,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             label.textColor = .white
             label.isAccessibilityElement = false
             let toggle = UISwitch()
-            // small and quiet, so the scene stays the subject: three quarters size, a pale track when on
+            // small, so the scene stays the subject: three quarters size, the system's green when on
             toggle.transform = CGAffineTransform(scaleX: 0.75, y: 0.75)
-            toggle.onTintColor = UIColor(white: 0.78, alpha: 0.9)
             toggle.tag = i
             toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
             switches.contentView.addSubview(label)

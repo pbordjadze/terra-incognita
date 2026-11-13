@@ -104,7 +104,7 @@ def caption(img, text, k):
 def switches(img, text, k):
     """The switches panel (main.swift's layoutSwitches): small, in the bottom right corner, its foot 60 points
     above the screen's, on a lighter glass; a row a rule, its label (footnote, right-aligned, dimmer when off)
-    beside an iOS switch at three quarters size (38 by 23 points; a pale track when on)."""
+    beside an iOS switch at three quarters size (38 by 23 points; green when on)."""
     W, H = img.size[0] / k, img.size[1] / k
     rows = [r.split('\t') for r in text.split('\n') if r.count('\t') == 1]
     pad, gap, row, sw, sh = 10, 8, 30, 38.25, 23.25
@@ -124,7 +124,7 @@ def switches(img, text, k):
         d.text(((x0 + pad + label_w) * k - tw, (mid - 8) * k), label, font=f,
                fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
         sx, sy = x0 + w - pad - sw, mid - sh / 2
-        track = (199, 199, 199, 230) if on else (120, 120, 128, 110)
+        track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
         d.rounded_rectangle([sx * k, sy * k, (sx + sw) * k, (sy + sh) * k], radius=sh / 2 * k, fill=track)
         kx, r = sx + (sw - sh / 2 if on else sh / 2), sh / 2 - 1.5
         d.ellipse([(kx - r) * k, (mid - r) * k, (kx + r) * k, (mid + r) * k], fill=(255, 255, 255, 255))
