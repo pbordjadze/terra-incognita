@@ -177,6 +177,17 @@
       "iconSource": "toys/throats/icon.png",
       "tintColor": "#F07A1A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "bats-build",
+      "name": "Bats",
+      "bundleIdentifier": "com.pbordjadze.toy.bats",
+      "subtitle": "Millions of bats at dusk, and you the hawk",
+      "localizedDescription": "A summer dusk above Bracken Cave in the Texas Hill Country, where millions of free-tailed bats climb out of a sinkhole in a turning column and stream off over the hills to feed. You are the hawk: dive into them and watch the swerve ripple on down the stream. Working title; a toy in the making.",
+      "icon": "bats-icon.png",
+      "iconSource": "toys/bats/icon.png",
+      "tintColor": "#E8935A",
+      "minOSVersion": "17.0"
     }
   ]
 }
