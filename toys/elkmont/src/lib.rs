@@ -449,21 +449,17 @@ impl Toy for Elkmont {
     fn demo(&self, ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         let [w, h] = ctx.points();
         Some(toy_kit::info::Demo::new(
-            "Hold your light low. Someone answers.",
+            "Fireflies in the Smokies. Hold your light low.",
             vec![toy_kit::info::Stroke::hold(0.5, 6.0, [0.42 * w, 0.62 * h])],
         ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "Each male flashes four to eight times, then rests in the dark.",
-                "Alone, he waits a random while before he flashes again.",
-                "But once rested, he flashes as soon as he sees a flash.",
-                "So the first to start sets them all off, about every twelve seconds.",
-            ],
-            "",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+            "On June nights at Elkmont, in the Great Smoky Mountains, the fireflies flash together in waves.",
+            "Each male flashes four to eight times, then rests until the woods go dark. Rested, he starts at the first flash he sees.",
+            "So the first to start sets them all off, about every twelve seconds. Hold your light low: a female may answer.",
+        ]))
     }
 
     fn save(&self) -> Option<String> {
