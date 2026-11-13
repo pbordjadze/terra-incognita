@@ -8,7 +8,6 @@ the owner's to decide):
 | --- | --- | --- | --- |
 | Whales: two whales, their songs and their travels in the real oceans | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | `murmuration-build-<n>` |
-| Mold: a slime mold on the night Earth finding the routes between cities' lights | `mold/` | `com.pbordjadze.toy.mold` | `mold-build-<n>` |
 | Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
 | Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
 | Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
@@ -22,7 +21,6 @@ the owner's to decide):
 | Throats: side-blotched lizards on a California hillside play rock–paper–scissors; the colours turn in spirals; a finger pours a colour (row 257) | `throats/` | `com.pbordjadze.toy.throats` | `throats-build-<n>` |
 | Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
 | Elkmont: the synchronous fireflies in the woods at Elkmont, flashing together; a light held low and the females answer (the Fireflies light on Terra's Earth since Nov 13, 2026) | `elkmont/` | `com.pbordjadze.toy.elkmont` | `elkmont-build-<n>` |
-| Kanto: Tero et al.'s slime mold on a plate cut to the Kanto plain, oat flakes at its towns; it spreads from Tokyo and thins to a network like the region's railways, which come up under it; a tap lays a flake (the Mold light on Terra's Earth since Nov 13, 2026) | `kanto/` | `com.pbordjadze.toy.kanto` | `kanto-build-<n>` |
 | Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a drag turns it or lengthens it (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | `nazare-build-<n>` |
 | Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | `bats-build-<n>` |
 | Huddle: emperor penguins on Atka Bay's sea ice in a winter wind; the cold edge walks round to the lee and waves of small steps run through; a finger turns the wind | `huddle/` | `com.pbordjadze.toy.huddle` | `huddle-build-<n>` |
@@ -75,7 +73,7 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     the real thing follows (the starlings' seven nearest, a wave faster in deeper water) and how a
     finger joins in; no "Real: … Drawn: …" line (Paul, Nov 13: a confusing paradigm; the sources stay
     in SOURCES.md), so the note is empty. The shell sets them on a dark glass, closed by a tap anywhere.
-    A toy may split that in two (Mold, the trial): `rules()` the rules alone, and `origins()`, an
+    A toy may split that in two (Shortcut, Screw): `rules()` the rules alone, and `origins()`, an
     asterisk beside the "?", where they came from; `card_at_top()` hangs the card from the top when the
     scene is low. Plain words, no title, nothing to do: a person can glance and go. Before the text
     ships, a reader who knows nothing of the toy is shown its shots and text and says what it is.

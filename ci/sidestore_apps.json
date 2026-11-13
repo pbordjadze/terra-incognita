@@ -7,7 +7,7 @@
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
       "subtitle": "The world, and the toys on it",
-      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys: whales off California, starlings in Somerset, a slime mold on the Kanto plain, fireflies in the Smokies, a bell struck in Chile, the swell at Nazaré, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys: whales off California, starlings in Somerset, fireflies in the Smokies, a bell struck in Chile, the swell at Nazaré, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
       "icon": "icon.png",
       "iconSource": "ci/sidestore-icon.png",
       "tintColor": "#C9A243",
@@ -44,17 +44,6 @@
       "icon": "murmuration-icon.png",
       "iconSource": "toys/murmuration/icon.png",
       "tintColor": "#C98A6A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "mold-build",
-      "name": "Mold",
-      "bundleIdentifier": "com.pbordjadze.toy.mold",
-      "subtitle": "A slime mold finds the night's cities",
-      "localizedDescription": "A glowing mold on the night Earth seeks the cities' lights and finds the routes between them. Working title; a toy in the making.",
-      "icon": "mold-icon.png",
-      "iconSource": "toys/mold/icon.png",
-      "tintColor": "#E8B84A",
       "minOSVersion": "17.0"
     },
     {
@@ -176,17 +165,6 @@
       "icon": "throats-icon.png",
       "iconSource": "toys/throats/icon.png",
       "tintColor": "#F07A1A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "kanto-build",
-      "name": "Kanto",
-      "bundleIdentifier": "com.pbordjadze.toy.kanto",
-      "subtitle": "A slime mold that designs Tokyo's railways",
-      "localizedDescription": "The 2010 experiment where a slime mold, put down at Tokyo on a plate with oat flakes at the region's towns, grew a network of tubes much like the region's railways. Watch it spread, find the towns and thin to a network, and the real railways come up under it. Tap to lay another flake. Working title; a toy in the making.",
-      "icon": "kanto-icon.png",
-      "iconSource": "toys/kanto/icon.png",
-      "tintColor": "#F2C33A",
       "minOSVersion": "17.0"
     },
     {

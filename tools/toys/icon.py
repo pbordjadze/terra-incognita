@@ -60,21 +60,6 @@ def murmuration():
     return img
 
 
-def mold():
-    img = Image.new('RGBA', (N, N), (8, 10, 16, 255))
-    rnd = random.Random(5)
-    layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    nodes = [(rnd.uniform(150, 870), rnd.uniform(150, 870)) for _ in range(9)]
-    for i, a in enumerate(nodes):
-        for b in sorted(nodes, key=lambda p: (p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2)[1:3]:
-            d.line([a, b], fill=(255, 214, 90, 255), width=14)
-    img.alpha_composite(layer.filter(ImageFilter.GaussianBlur(18)))
-    img.alpha_composite(layer)
-    glow(img, nodes, 22, (255, 240, 200, 255), 20)
-    return img
-
-
 def fireflies():
     img = Image.new('RGBA', (N, N), (10, 14, 24, 255))
     rnd = random.Random(7)
@@ -406,33 +391,6 @@ def elkmont():
     return img
 
 
-def kanto():
-    # a dark plate, a yellow network of tubes joining the plate's real oat flakes (its towns)
-    img = Image.new('RGBA', (N, N), (20, 17, 13, 255))
-    towns = json.loads((ROOT / 'toys' / 'kanto' / 'data' / 'plate.json').read_text())['towns']
-    cells = [t['cell'] for t in towns]
-    x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells)
-    y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells)
-    k = N * 0.78 / max(x1 - x0, y1 - y0)
-    pts = [(N / 2 + (c[0] - (x0 + x1) / 2) * k, N / 2 + (c[1] - (y0 + y1) / 2) * k) for c in cells]
-    edges = set()
-    for i, (x, y) in enumerate(pts):
-        near = sorted(range(len(pts)), key=lambda j: (pts[j][0] - x) ** 2 + (pts[j][1] - y) ** 2)[1:3]
-        for j in near:
-            edges.add((min(i, j), max(i, j)))
-    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    for i, j in edges:
-        gd.line([pts[i], pts[j]], fill=(255, 200, 40, 130), width=34)
-    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(18)))
-    d = ImageDraw.Draw(img)
-    for i, j in edges:
-        d.line([pts[i], pts[j]], fill=(255, 204, 41, 255), width=16 if 0 in (i, j) else 10)
-    for x, y in pts:
-        d.ellipse([x - 11, y - 11, x + 11, y + 11], fill=(236, 220, 180, 255))
-    return img
-
-
 def nazare():
     # the dusk sea off Nazaré: its real coast (the floor's land, cropped about the headland), the swell's
     # crests closing in on Praia do Norte, white water where they meet
@@ -641,7 +599,7 @@ def pando():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando}
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

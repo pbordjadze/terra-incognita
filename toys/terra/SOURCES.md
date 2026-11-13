@@ -24,16 +24,15 @@ inside Terra they are the same toys, unchanged.
   Sentinel data 2023-2024. Meander's own sheet is its own (`toys/meander/SOURCES.md`).
 - **The places of the lights**: where each toy opens. Whales: the middle of the two whales on their real
   routes (`toys/whales/data/routes.json`), moving along them as the light shows them. Murmuration: Ham
-  Wall, Somerset (the toy's `PLACE`). Mold: between Europe's cities (the toy opens over Europe). Fireflies:
+  Wall, Somerset (the toy's `PLACE`). Fireflies:
   Elkmont, Great Smoky Mountains (the toy's `PLACE`, `toys/elkmont/SOURCES.md`). Bell: Valdivia, Chile, 1960 (the first of the toy's
   great quakes). Swell: the mid-Pacific where the toy opens. Battle: Cannae, Apulia. Throats: near Los Banos,
   California (the side-blotched lizards' study population, `toys/throats/SOURCES.md`). Meander: the Rio Beni's
   floodplain, Bolivia (the toy's Sentinel-2 scene). Frost: Oymyakon, Yakutia. Pando: the aspen clone by Fish Lake, Utah (the toy's `PLACE`, `toys/pando/SOURCES.md`).
-- **The cities in the mold's light**: their real longitudes and latitudes.
 
 ## Drawn
 
-- Every light's likeness of its toy: the whales' song-rings, a small flock, threads growing between cities,
+- Every light's likeness of its toy: the whales' song-rings, a small flock,
   a scatter of glows bursting together every few seconds (the fireflies' beat, quickened), an aspen grove's gold crowns with a gust turning them pale, a ring crossing the Earth at no
   real speed, a train of crests, an engraving's two inks closing. They are pictures of the rules, not the
   toys' simulations.
