@@ -1,0 +1,26 @@
+[package]
+name = "barchans"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Barchans (a working title): crescent dunes walking across the Sahara near Tarfaya, grown by Werner's slab rule; drag to turn the wind."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "barchans-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

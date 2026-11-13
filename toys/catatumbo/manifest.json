@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Catatumbo loads none: the storm, the lake and the shore are drawn from code.",
+  "files": {}
+}

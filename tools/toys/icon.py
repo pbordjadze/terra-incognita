@@ -543,7 +543,81 @@ def wave():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare}
+def catatumbo():
+    # night over a lake: a violet stroke forking down to the water, the cloud lit behind it, its reflection
+    img = Image.new('RGBA', (N, N), (10, 10, 26, 255))
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    gd.ellipse([180, -260, 860, 420], fill=(150, 120, 230, 150))
+    glow = glow.filter(ImageFilter.GaussianBlur(120))
+    img = Image.alpha_composite(img, glow)
+    d = ImageDraw.Draw(img)
+    hy = 640
+    d.rectangle([0, hy, N, N], fill=(14, 12, 30, 255))
+    d.rectangle([0, hy - 10, N, hy], fill=(4, 4, 8, 255))
+    rnd = random.Random(327)
+    x, y = 470.0, 0.0
+    pts = [(x, y)]
+    while y < hy:
+        y += rnd.uniform(30, 60)
+        x += rnd.uniform(-45, 45)
+        pts.append((x, min(y, hy)))
+    bolt = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(bolt)
+    bd.line(pts, fill=(170, 140, 255, 255), width=46)
+    for i in (3, 6):
+        bx, by = pts[i]
+        bd.line([(bx, by), (bx + rnd.choice([-1, 1]) * 140, by + 120)], fill=(170, 140, 255, 255), width=24)
+    bolt = bolt.filter(ImageFilter.GaussianBlur(22))
+    img = Image.alpha_composite(img, bolt)
+    d = ImageDraw.Draw(img)
+    d.line(pts, fill=(250, 246, 255, 255), width=12)
+    refl = [(px + rnd.uniform(-8, 8), 2 * hy - py) for (px, py) in pts if 2 * hy - py < N]
+    if len(refl) > 1:
+        d.line(refl, fill=(120, 100, 200, 255), width=10)
+    return img
+
+
+def bubblers():
+    # pale sand from above: one crab at its burrow, its balls laid out in spokes all round
+    img = Image.new('RGBA', (N, N), (222, 206, 178, 255))
+    d = ImageDraw.Draw(img)
+    c = N / 2
+    rnd = random.Random(327)
+    for s in range(14):
+        a = s * math.tau / 14 + rnd.uniform(-0.1, 0.1)
+        for k in range(1, 9):
+            r = 120 + k * 42
+            x, y = c + math.cos(a) * r + rnd.uniform(-5, 5), c + math.sin(a) * r + rnd.uniform(-5, 5)
+            d.ellipse([x - 15 + 4, y - 15 + 5, x + 15 + 4, y + 15 + 5], fill=(170, 150, 120, 255))
+            d.ellipse([x - 15, y - 15, x + 15, y + 15], fill=(236, 224, 200, 255))
+    d.ellipse([c - 34, c - 34, c + 34, c + 34], fill=(40, 32, 26, 255))
+    cx, cy = c + 70, c - 60
+    for side in (-1, 1):
+        for leg in range(4):
+            a = (leg - 1.5) * 0.4
+            d.line([cx, cy, cx + math.cos(a) * 30 + 0, cy + side * 95 + math.sin(a) * 40], fill=(150, 124, 92, 255), width=12)
+    d.ellipse([cx - 62, cy - 62, cx + 62, cy + 62], fill=(204, 180, 140, 255))
+    d.ellipse([cx + 40, cy - 40, cx + 56, cy - 24], fill=(20, 16, 12, 255))
+    d.ellipse([cx + 40, cy + 24, cx + 56, cy + 40], fill=(20, 16, 12, 255))
+    return img
+
+
+def barchans():
+    # a crescent dune from above in a low sun, horns downwind, its slip face in shade, on the grey reg
+    img = Image.new('RGBA', (N, N), (150, 128, 106, 255))
+    d = ImageDraw.Draw(img)
+    c = N / 2
+    d.ellipse([c - 300, c - 330, c + 300, c + 230], fill=(236, 170, 100, 255))
+    d.ellipse([c - 210, c - 120, c + 210, c + 330], fill=(150, 128, 106, 255))
+    d.chord([c - 210, c - 120, c + 210, c + 330], 180, 360, fill=(120, 84, 60, 255))
+    d.ellipse([c - 170, c - 60, c + 170, c + 330], fill=(150, 128, 106, 255))
+    d.polygon([(c - 300, c - 50), (c - 230, c + 330), (c - 180, c + 120)], fill=(236, 170, 100, 255))
+    d.polygon([(c + 300, c - 50), (c + 230, c + 330), (c + 180, c + 120)], fill=(222, 154, 88, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

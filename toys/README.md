@@ -27,6 +27,9 @@ the owner's to decide):
 | Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | `bats-build-<n>` |
 | Huddle: emperor penguins on Atka Bay's sea ice in a winter wind; the cold edge walks round to the lee and waves of small steps run through; a finger turns the wind | `huddle/` | `com.pbordjadze.toy.huddle` | `huddle-build-<n>` |
 | The Wave: Estadio Azteca at night, 87,000 phone lights; swipe the stands and, if enough stand, a Mexican wave runs round the bowl (an excitable medium) | `wave/` | `com.pbordjadze.toy.wave` | `wave-build-<n>` |
+| Catatumbo: lightning over Lake Maracaibo forks down to your finger by dielectric breakdown; its thunder is the bolt's own (row 327) | `catatumbo/` | `com.pbordjadze.toy.catatumbo` | `catatumbo-build-<n>` |
+| Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | `bubblers-build-<n>` |
+| Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | `barchans-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
@@ -77,6 +80,9 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     ships, a reader who knows nothing of the toy is shown its shots and text and says what it is.
     `plans/rules.json` photographs it; `python3 tools/kit/shell_text.py <out>` draws the shell's text
     on the check's shots (the Simulator's `rules.png` is the real one).
+  - `field` (field.rs): a grid of four numbers a cell the toy writes on the CPU, uploaded as half floats and
+    drawn by a full-screen fragment of its own (the backdrop's, with `fld(cell)` to sample it):
+    Bubblers' sand, Barchans' heights.
   - `paint` (soft 2D discs, rings, strokes, glows), `backdrop` (a full-screen fragment of your own),
     `layer` (a texture that keeps what is painted into it), `sound::Bells` (struck notes) and `web`
     (a WebGPU shell, the `web` feature, wasm32): from busquets' copy of the kit (Nov 3, 2026). The

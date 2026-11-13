@@ -7,6 +7,9 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **A field** (painting-company row 327, Bubblers and Barchans): `field::Field`, a grid of four numbers a
+  cell written on the CPU and drawn by a full-screen fragment of the toy's own, uploaded as Rgba16Float
+  (`field::half`). New; nothing else changes.
 - **A sound file of the reader's own** (painting-company row 250, Screw): `Toy::wants_file` (the shell
   shows the Files picker), `Toy::opened(ctx, AudioFile)` (decoded: AVAudioFile on the device,
   `AudioFile::wav` in a plan's `"open"`), `Toy::title` (a quiet line at the top, in the system's text;

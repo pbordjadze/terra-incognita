@@ -1,0 +1,6 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Built data under toys/barchans/data/ is the toy's own; never hand-edit it (cargo run --release -p barchans --example opening).",
+  "files": {
+    "opening.bin": "toys/barchans/data/opening.bin"
+  }
+}

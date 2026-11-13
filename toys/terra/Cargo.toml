@@ -25,6 +25,9 @@ bell = { path = "../bell" }
 nazare = { path = "../nazare" }
 meander = { path = "../meander" }
 frost = { path = "../frost" }
+catatumbo = { path = "../catatumbo" }
+bubblers = { path = "../bubblers" }
+barchans = { path = "../barchans" }
 throats = { path = "../throats" }
 bats = { path = "../bats" }
 huddle = { path = "../huddle" }
