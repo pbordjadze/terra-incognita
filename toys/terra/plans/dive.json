@@ -1,10 +1,11 @@
 {
- "_": "Into a toy and back: the fireflies' light touched at 1 s (it stirs and rings), the Earth falls into night as the camera dives to where Fireflies opens, the toy comes up through it; a tap on a city inside is the toy's; the Earth mark at 9 s, and the Earth comes back up whole.",
+ "_": "Into a toy and back: the fireflies' light touched at 1 s (it stirs and rings), the Earth falls into night as the camera dives to where Fireflies opens, the toy comes up through it; a finger held inside is the toy's light; the Earth mark at 9 s, and the Earth comes back up whole.",
  "seconds": 14,
  "fps": 20,
  "events": [
   { "t": 1.0, "tap": "fireflies" },
-  { "t": 6.5, "tap": [196, 400] },
+  { "t": 6.5, "down": [196, 560] },
+  { "t": 7.6, "up": [196, 560] },
   { "t": 9.0, "tap": "earth" }
  ],
  "shots": [{ "t": 0.9, "name": "before" }, { "t": 1.6, "name": "diving" }, { "t": 2.6, "name": "night-falls" }, { "t": 3.6, "name": "opening" }, { "t": 6.0, "name": "inside" }, { "t": 7.2, "name": "toy-tap" }, { "t": 9.35, "name": "closing" }, { "t": 10.5, "name": "rising" }, { "t": 13.5, "name": "back" }],

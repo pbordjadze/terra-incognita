@@ -177,6 +177,17 @@
       "iconSource": "toys/throats/icon.png",
       "tintColor": "#F07A1A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "elkmont-build",
+      "name": "Elkmont",
+      "bundleIdentifier": "com.pbordjadze.toy.elkmont",
+      "subtitle": "The synchronous fireflies in a June wood",
+      "localizedDescription": "Night in the woods at Elkmont in the Great Smoky Mountains, where the fireflies flash together: a burst all through the trees, then dark, again and again. Hold a small light low and the females in the leaf litter answer it. Working title; a toy in the making.",
+      "icon": "elkmont-icon.png",
+      "iconSource": "toys/elkmont/icon.png",
+      "tintColor": "#A8E05A",
+      "minOSVersion": "17.0"
     }
   ]
 }

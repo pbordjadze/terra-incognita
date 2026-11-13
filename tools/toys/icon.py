@@ -381,7 +381,31 @@ def throats():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats}
+def elkmont():
+    # a dark wood at night, its trunks against a green glow, fireflies flashing low among them
+    img = Image.new('RGBA', (N, N), (8, 11, 14, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        g = max(0.0, 1.0 - abs(y - N * 0.58) / (N * 0.32))
+        d.line([(0, y), (N, y)], fill=(int(10 + 40 * g), int(14 + 80 * g), int(12 + 20 * g), 255))
+    rnd = random.Random(1106)
+    for _ in range(14):
+        x = rnd.uniform(0, N)
+        w = rnd.uniform(14, 60)
+        d.rectangle([x - w / 2, 0, x + w / 2, N], fill=(6, 9, 10, 255))
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    dots = [(rnd.uniform(40, N - 40), N * 0.58 + rnd.gauss(0, N * 0.09), rnd.uniform(4, 13)) for _ in range(70)]
+    for x, y, r in dots:
+        gd.ellipse([x - r * 3, y - r * 3, x + r * 3, y + r * 3], fill=(150, 220, 60, 90))
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(img)
+    for x, y, r in dots:
+        d.ellipse([x - r * 0.6, y - r * 0.6, x + r * 0.6, y + r * 0.6], fill=(225, 255, 150, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'elkmont': elkmont}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

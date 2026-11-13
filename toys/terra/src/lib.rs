@@ -42,7 +42,7 @@ pub fn opening_zoom(points: [f64; 2]) -> f64 {
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-const SCENES: [&str; 4] = ["murmuration", "meander", "frost", "throats"];
+const SCENES: [&str; 5] = ["murmuration", "meander", "frost", "throats", "fireflies"];
 /// How close the Earth comes over a scene before it is the glass (a dive's end): as close as it goes, so the
 /// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it, its
 /// rivers coming up round the window (painting-company row 258: at 9 the window outran the ground, "an iris,
@@ -80,6 +80,7 @@ fn window_at(id: &str) -> [f64; 3] {
     match id {
         "frost" => [0.5, 0.8, 1.0],
         "murmuration" => [0.55, 0.36, 0.45],
+        "fireflies" => [0.5, 0.45, 0.8],
         _ => [0.5, 0.5, 1.0],
     }
 }
@@ -762,11 +763,10 @@ impl Terra {
     }
 
     /// The touch that opened a light goes on into its toy: the toy is touched where the light was (the
-    /// bell rings from Chile, the swell drops its wave, a whale is followed, the mold fed, the fireflies
-    /// stirred). The scenes, whose touch is a hold or a drawn line, are left to the reader.
+    /// bell rings from Chile, the swell drops its wave, a whale is followed, the mold fed). The scenes, whose touch is a hold or a drawn line, are left to the reader.
     fn touch_through(&mut self, t: f64) {
         let d = &self.life.doors[self.door];
-        if !matches!(d.id, "bell" | "swell" | "whales" | "mold" | "fireflies") {
+        if !matches!(d.id, "bell" | "swell" | "whales" | "mold") {
             return;
         }
         let Some(r) = self.room.as_mut() else { return };
