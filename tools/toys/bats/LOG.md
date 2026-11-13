@@ -11,3 +11,13 @@ swell with the dive. But the shapes are rigid: a straight slab and two straight 
 shoulder, a gallows, barely moving. Make the streams long curving ribbons thinning toward the far
 hills, the column swaying and changing width. Smaller: the hawk a wingless pill; the horizon's bumps
 read as a city. Keep: the sinkhole's glow and swirl, the dusk, the ripple, the clicks, no chrome.
+
+## Round 3 (Nov 13, 2026): more; no ship
+The hawk is now a real winged silhouette, the ripple knots run down the column, the dusk and treeline
+are good. The silhouette still reads as a figure: the streams curl back down into hooks above the
+horizon (the right one leaving the frame and returning), and the column has a flat lid. Make the
+streams run out and away, thinning toward the far hills, never turning back; fray the column's top.
+
+## Called (Nov 13, 2026)
+Three rounds run, as the rule allows; round 3's asks were made and checked by the maker on fresh
+renders, without a fourth critic. Paul is the judge from here, on his phone.

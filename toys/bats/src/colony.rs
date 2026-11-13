@@ -29,18 +29,18 @@ pub struct Stream {
 
 pub const STREAMS: [Stream; 2] = [
     Stream {
-        heading: [0.05, 0.999],
+        heading: [0.50, 0.866],
         climb: 70.0,
         width: 9.0,
         spread: 0.02,
-        wander: 150.0,
+        wander: 60.0,
     },
     Stream {
         heading: [-0.42, 0.907],
         climb: 45.0,
         width: 6.0,
         spread: 0.016,
-        wander: 120.0,
+        wander: -100.0,
     },
 ];
 
@@ -174,7 +174,10 @@ pub fn stream_at(k: usize, s: f32) -> ([f32; 3], [f32; 3]) {
     let st = &STREAMS[k];
     let a = axis(TOP, 0.0);
     let side = [st.heading[1], -st.heading[0]];
-    let bend = |s: f32| st.wander * ((s / 640.0).sin() + 0.5 * (s / 260.0 + k as f32 * 2.0).sin());
+    // one long curve out and away (it never turns back), with a little wander on it
+    let bend = |s: f32| {
+        st.wander * ((1.0 - (-s / 500.0).exp()) * 1.6 + 0.25 * (s / 260.0 + k as f32 * 2.0).sin())
+    };
     let at = |s: f32| {
         let b = bend(s) * (s / 300.0).min(1.0);
         [
@@ -403,7 +406,7 @@ impl Colony {
         b.wing += dt * std::f32::consts::TAU * 9.5 * b.pace;
         match b.stage {
             // each leaves the column at its own height (its pace says which)
-            Stage::Column if b.p[1] > TOP * (b.pace - 0.07) => {
+            Stage::Column if b.p[1] > TOP * (0.62 + (b.pace - 0.85) * 1.3) => {
                 b.stage = Stage::Stream;
                 b.stream = if self.rng.unit() < 0.68 { 0 } else { 1 };
                 b.lane = [self.rng.range(-1.0, 1.0), self.rng.range(-1.0, 1.0)];

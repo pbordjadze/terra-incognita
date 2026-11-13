@@ -81,7 +81,8 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   let ph = 0.5 + 0.5 * sin(cam.time * (0.6 + 2.4 * hs) + hs * 61.0);
   let p4 = ph * ph * ph * ph;
   let tw = p4 * p4;
-  let bright = has * (0.10 + 0.25 * hs + 1.6 * tw + 3.4 * up);
+  // standing, each phone held up and brighter, but each its own: the crest stays made of points
+  let bright = has * (0.10 + 0.25 * hs + 1.6 * tw + (0.7 + 1.6 * hs) * up);
   // a standing person shows their shirt: green, white, red, or dark, rising with them
   let k = fract(hs * 7.31);
   var shirt = vec3<f32>(0.10, 0.10, 0.11);

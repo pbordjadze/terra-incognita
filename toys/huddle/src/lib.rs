@@ -129,7 +129,14 @@ impl Huddle {
             let back = [0.07 * tone, 0.08 * tone, 0.11 * tone, 1.0];
             self.painter
                 .line(at(-0.09, 0.0), at(0.05, 0.0), 0.115 * s, 0.6, back);
-            let sheen = [0.30, 0.36, 0.48, 0.22];
+            // the low sun on the round of each back; a step shrugs it, so a wave of steps runs as a
+            // ripple of light through the huddle
+            let shrug = if b.step < 1.4 {
+                (std::f32::consts::PI * b.step / 1.4).sin()
+            } else {
+                0.0
+            };
+            let sheen = [0.46, 0.52, 0.66, 0.16 + 0.22 * h(5) + 0.55 * shrug];
             self.painter.line(
                 at(-0.06, -0.03),
                 at(0.03, -0.03),
