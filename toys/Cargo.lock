@@ -337,6 +337,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "huddle"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "image"
 version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
