@@ -19,6 +19,18 @@ crowd and the city are worked out from the constants and rules in `src/`.
   a fall-off of 1.5 seats and those behind counting twice those ahead, chosen so that the model's
   wave runs 20 seats a second, about 14 seats wide, and groups of 16 rarely start one while groups of
   30 usually do (the tests in `crowd.rs` measure it).
+- The paper's model, left alone, runs a wave round for ever, and every wave started keeps going, so
+  a few swipes leave the bowl striped with waves. Real waves end. So three things are added here, not
+  from the paper and not measured, chosen so that a wave lasts a lap or two (one and a half to three
+  minutes) and the crowd will start another about half a minute after one dies: each time a person
+  stands their threshold rises by about 0.1, falling back over about 45 s (so a second wave close
+  behind the first meets people who have only just sat down, and fizzles); each second everyone's
+  threshold wobbles by up to 0.06 and the whole crowd's drifts by about 0.015 (some crowds are keener
+  than others); and while a wave runs the whole crowd's threshold rises 0.001 a second, falling back
+  over 15 s once none is running. As it rises the least keen only half stand, so the wave dims before
+  it breaks. A group of a few people somewhere tries on its own every 10 to 30 s while no wave runs;
+  about one in seventeen tries is a bigger group, and a wave starts on its own about once in seven
+  minutes (`crowd.rs`' measurements: `cargo test -p wave --release -- --ignored --nocapture`).
 - The wave was "first widely broadcasted during the 1986 World Cup held in Mexico" (the same paper).
 
 ## The place (real, simplified)
