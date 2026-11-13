@@ -120,7 +120,11 @@ impl Huddle {
                 let x = (i as f32 + 0.5 * (j & 1) as f32) * SPACING;
                 let y = j as f32 * SPACING * 0.866;
                 // a ragged, slightly long disc, not a crystal
-                let k = 1.0 + 0.18 * (x.atan2(y) * 3.0).sin() * rng.unit();
+                let a = x.atan2(y);
+                let k = 1.0
+                    + 0.12 * (a * 2.0 + 0.7).sin()
+                    + 0.08 * (a * 5.0 + 2.1).sin()
+                    + 0.10 * rng.unit();
                 spots.push([x * k * 1.15, y * k * 0.9]);
             }
         }
@@ -128,8 +132,8 @@ impl Huddle {
         let face = norm(wind);
         for s in spots.into_iter().take(n) {
             birds.push(Penguin {
-                p: [s[0] + rng.range(-0.02, 0.02), s[1] + rng.range(-0.02, 0.02)],
-                face: turn(face, [rng.range(-1.0, 1.0), rng.range(-1.0, 1.0)], 0.25),
+                p: [s[0] + rng.range(-0.06, 0.06), s[1] + rng.range(-0.06, 0.06)],
+                face: turn(face, [rng.range(-1.0, 1.0), rng.range(-1.0, 1.0)], 0.5),
                 state: State::Packed,
                 cold: rng.range(0.0, 0.6),
                 frost: 0.0,

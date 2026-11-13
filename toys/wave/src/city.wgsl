@@ -52,7 +52,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let spot = floor(g / 7.0);
     let hs = hash2(spot);
     let pin = step(0.72, hs) * (1.0 - smoothstep(0.0, 0.5 + 1.5 * w, length(fract(g / 7.0) - 0.5 - 0.3 * (vec2<f32>(hash2(spot + vec2<f32>(1.0, 0.0)), hash2(spot + vec2<f32>(0.0, 1.0))) - 0.5)) * 7.0));
-    var lamps = (lamp * 1.0 + glow * 0.16) * lit + wide * 0.30 + pin * 0.6;
+    var lamps = (lamp * 1.0 + glow * 0.06) * lit + wide * 0.12 + pin * 0.6;
     // far away the lights merge into a glow
     let far = 1.0 - exp(-t / 1800.0);
     var ground = vec3<f32>(0.014, 0.011, 0.012) + vec3<f32>(1.0, 0.55, 0.20) * lamps * 0.45;

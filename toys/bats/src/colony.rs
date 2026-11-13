@@ -17,7 +17,7 @@ pub const TOP: f32 = 125.0;
 /// How far along a stream a bat is let go (and goes back to the cave to come out again), metres.
 pub const STREAM_END: f32 = 2600.0;
 
-/// A stream: its heading over the ground (x, z, a unit vector), its climb a metre along, its
+/// A stream: its heading over the ground (x, z, a unit vector), how far it climbs above the top before levelling, its
 /// half-width at the top and how it widens, and how much it wanders.
 pub struct Stream {
     pub heading: [f32; 2],
@@ -29,18 +29,18 @@ pub struct Stream {
 
 pub const STREAMS: [Stream; 2] = [
     Stream {
-        heading: [0.80, 0.60],
-        climb: 0.13,
+        heading: [0.05, 0.999],
+        climb: 70.0,
         width: 9.0,
         spread: 0.02,
-        wander: 70.0,
+        wander: 150.0,
     },
     Stream {
-        heading: [0.40, 0.917],
-        climb: 0.22,
-        width: 5.0,
-        spread: 0.014,
-        wander: 90.0,
+        heading: [-0.42, 0.907],
+        climb: 45.0,
+        width: 6.0,
+        spread: 0.016,
+        wander: 120.0,
     },
 ];
 
@@ -156,7 +156,7 @@ fn norm(a: [f32; 3]) -> [f32; 3] {
 /// and sways like smoke).
 fn axis(y: f32, t: f32) -> [f32; 2] {
     let h = (y / TOP).clamp(0.0, 1.0);
-    let sway = h * h * 9.0;
+    let sway = h * h * 15.0;
     [
         CAVE_X + 0.06 * y + sway * (y / 45.0 - t * 0.21).sin(),
         CAVE_Z + 0.04 * y + sway * 0.6 * (y / 60.0 - t * 0.17 + 1.3).cos(),
@@ -164,8 +164,9 @@ fn axis(y: f32, t: f32) -> [f32; 2] {
 }
 
 /// The column's radius at height `y`.
-fn radius(y: f32) -> f32 {
-    2.5 + 0.085 * y.max(0.0)
+fn radius(y: f32, t: f32) -> f32 {
+    // swelling and narrowing as the bats come out in pulses
+    (2.5 + 0.085 * y.max(0.0)) * (1.0 + 0.22 * (y / 28.0 - t * 0.9).sin())
 }
 
 /// A point `s` metres along stream `k`'s middle, and its direction there.
@@ -173,12 +174,13 @@ pub fn stream_at(k: usize, s: f32) -> ([f32; 3], [f32; 3]) {
     let st = &STREAMS[k];
     let a = axis(TOP, 0.0);
     let side = [st.heading[1], -st.heading[0]];
-    let bend = |s: f32| st.wander * ((s / 520.0).sin() + 0.4 * (s / 230.0 + k as f32).sin());
+    let bend = |s: f32| st.wander * ((s / 640.0).sin() + 0.5 * (s / 260.0 + k as f32 * 2.0).sin());
     let at = |s: f32| {
         let b = bend(s) * (s / 300.0).min(1.0);
         [
             a[0] + st.heading[0] * s + side[0] * b,
-            TOP + st.climb * s,
+            // up off the column's top, then level: far off, a ribbon low over the hills
+            TOP + st.climb * (1.0 - (-s / 350.0).exp()),
             a[1] + st.heading[1] * s + side[1] * b,
         ]
     };
@@ -426,7 +428,7 @@ impl Colony {
         let r = (rel[0] * rel[0] + rel[1] * rel[1]).sqrt().max(0.3);
         let out = [rel[0] / r, rel[1] / r];
         let round = [-out[1], out[0]];
-        let pull = (radius(b.p[1]) - r).clamp(-6.0, 6.0) * 1.3;
+        let pull = (radius(b.p[1], self.t) - r).clamp(-6.0, 6.0) * 1.3;
         let speed = 9.5 * b.pace;
         let up = 4.0 * b.pace + if b.p[1] < 4.0 { 4.0 } else { 0.0 };
         (

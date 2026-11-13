@@ -65,8 +65,17 @@ fn sky(el: f32, az: f32, dusk: f32) -> vec3<f32> {
 // The hills on the horizon: their height (radians above level) at bearing `az`, trees on them.
 fn ridge(az: f32) -> f32 {
   let hill = 0.012 + 0.022 * fbm(vec2<f32>(az * 2.2, 3.7)) + 0.008 * sin(az * 3.0 + 1.0);
-  let trees = 0.006 * smoothstep(0.45, 0.75, noise2(vec2<f32>(az * 140.0, 1.0)))
-    * (0.6 + 0.8 * noise2(vec2<f32>(az * 9.0, 4.0)));
+  // live oaks and junipers: round crowns, in clumps, two rows overlapping
+  var trees = 0.0;
+  for (var k = 0; k < 2; k = k + 1) {
+    let x = az * (150.0 + 70.0 * f32(k)) + f32(k) * 0.37;
+    let cell = floor(x);
+    let f = fract(x) - 0.5;
+    let n = hash2(vec2<f32>(cell, f32(k) + 2.0));
+    let crown = sqrt(max(0.0, 0.25 - f * f)) * 2.0;
+    let clump = smoothstep(0.35, 0.6, noise2(vec2<f32>(az * 11.0, 4.0 + f32(k))));
+    trees = max(trees, 0.0065 * crown * (0.5 + 0.5 * n) * step(0.3, n) * clump);
+  }
   return hill + trees;
 }
 

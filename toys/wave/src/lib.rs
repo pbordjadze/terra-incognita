@@ -20,6 +20,8 @@ use wgpu::util::DeviceExt;
 const TICK_HZ: f64 = 28.0;
 /// How many seats round a finger stand up when it touches.
 const REACH: f32 = 2.8;
+/// Seats round where a finger is first set down that stand (about one group in ten that size starts a wave).
+const TAP_REACH: f32 = 2.1;
 /// Seconds between a group somewhere trying to start one on its own (most fail).
 const TRY_S: [f32; 2] = [7.0, 16.0];
 
@@ -108,12 +110,11 @@ impl Wave {
         let Some(s) = self.seat_at(q) else {
             return;
         };
-        let from = self
-            .last
-            .iter()
-            .find(|l| l.0 == id)
-            .map(|l| l.1)
-            .unwrap_or(s);
+        let last = self.last.iter().find(|l| l.0 == id).map(|l| l.1);
+        let from = last.unwrap_or(s);
+        // a finger set down stands only the few under it (too few, alone, to start one); drawn along
+        // the stands, it stands everyone it passes
+        let reach = if last.is_some() { REACH } else { TAP_REACH };
         // everyone along the way from the last seat to this one
         let mut du = s[0] - from[0];
         if du > U as f32 * 0.5 {
@@ -126,7 +127,7 @@ impl Wave {
         let mut stood = 0;
         for k in 1..=n {
             let f = k as f32 / n as f32;
-            stood += self.crowd.stand(from[0] + du * f, from[1] + dv * f, REACH);
+            stood += self.crowd.stand(from[0] + du * f, from[1] + dv * f, reach);
         }
         if stood > 0 {
             ctx.haptic();

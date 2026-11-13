@@ -72,11 +72,23 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   let sharp = 1.0 - smoothstep(rad - size * 0.6, rad + size * 0.6, r);
   // (a pixel over several seats takes the light of the one it falls on, so the stands glitter)
   let dot = mix(sharp, 0.5, smoothstep(0.35, 1.2, size));
-  let warm = mix(vec3<f32>(1.0, 0.86, 0.66), vec3<f32>(0.80, 0.90, 1.0), s.b);
-  // a phone held low sways and glints; held up, it is steady and bright
-  let glint = 0.55 + 0.45 * sin(cam.time * (1.3 + 2.0 * s.b) + s.b * 40.0 + f32(id.x) * 0.7);
-  let g2 = glint * glint;
-  let bright = has * (0.28 + 0.9 * g2 * g2 * g2 + 3.4 * up);
+  let hs = hash(vec2<f32>(f32(id.x), f32(id.y)));
+  // a light of its own: most a phone's torch, warm white; some a screen, cool; a few coloured
+  var warm = mix(vec3<f32>(1.0, 0.86, 0.66), vec3<f32>(0.72, 0.84, 1.0), smoothstep(0.55, 0.75, s.b));
+  warm = mix(warm, vec3<f32>(0.55, 1.0, 0.6), step(0.93, s.b));
+  warm = mix(warm, vec3<f32>(1.0, 0.45, 0.45), step(0.97, s.b));
+  // each twinkles at its own pace: a phone turned toward the camera flashes, then turns away
+  let ph = 0.5 + 0.5 * sin(cam.time * (0.6 + 2.4 * hs) + hs * 61.0);
+  let p4 = ph * ph * ph * ph;
+  let tw = p4 * p4;
+  let bright = has * (0.10 + 0.25 * hs + 1.6 * tw + 3.4 * up);
+  // a standing person shows their shirt: green, white, red, or dark, rising with them
+  let k = fract(hs * 7.31);
+  var shirt = vec3<f32>(0.10, 0.10, 0.11);
+  shirt = select(shirt, vec3<f32>(0.06, 0.30, 0.14), k < 0.35);
+  shirt = select(shirt, vec3<f32>(0.42, 0.42, 0.40), k >= 0.35 && k < 0.55);
+  shirt = select(shirt, vec3<f32>(0.40, 0.07, 0.07), k >= 0.55 && k < 0.7);
+  c = c + shirt * up * 0.9;
   c = c + warm * dot * bright;
   // a standing crowd glows: the light of the raised phones on the people round them, along the row
   var halo = 0.0;

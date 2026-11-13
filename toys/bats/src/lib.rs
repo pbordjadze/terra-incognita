@@ -166,7 +166,7 @@ impl Bats {
             let fade = h.gone.map_or(1.0, |g| (1.0 - g / 2.5).max(0.0));
             let speed = len(h.v);
             // stooping it folds its wings back
-            let fold = ((speed - 14.0) / 16.0).clamp(0.0, 0.6);
+            let fold = ((speed - 14.0) / 16.0).clamp(0.0, 0.35);
             // drawn at least big enough to see under a finger, wherever it flies
             let at_least = 46.0 * z / f;
             let span = (HAWK_SPAN * HAWK_DRAWN).max(at_least) * (1.0 - fold * 0.6);
@@ -174,42 +174,68 @@ impl Bats {
                 let n = (h.v[0] * h.v[0] + h.v[2] * h.v[2]).sqrt().max(1e-3);
                 [h.v[0] / n, h.v[2] / n]
             };
-            let side = [dir[1], 0.0, -dir[0]];
-            let beat = if fold > 0.3 { 0.0 } else { h.wing.sin() * 0.18 };
-            let at = |s: f32, back: f32, up: f32| {
+            // seen from below, as a hawk is against the sky: the wings drawn across its way on the
+            // glass, so it never shows edge-on
+            let Some((ahead, _)) = self.project([
+                h.p[0] + dir[0] * 4.0,
+                h.p[1] + h.v[1] / speed.max(1.0) * 4.0,
+                h.p[2] + dir[1] * 4.0,
+            ]) else {
+                continue;
+            };
+            let Some((c, _)) = self.project(h.p) else {
+                continue;
+            };
+            let fwd = {
+                let d = [ahead[0] - c[0], ahead[1] - c[1]];
+                let n = (d[0] * d[0] + d[1] * d[1]).sqrt().max(1e-3);
+                [d[0] / n, d[1] / n]
+            };
+            let across = [-fwd[1], fwd[0]];
+            let half = span * f / z * 0.5;
+            let beat = if fold > 0.3 { 0.0 } else { h.wing.sin() * 0.12 };
+            // (along its way, across it), in points from its body
+            let at = |a: f32, x: f32| {
                 [
-                    h.p[0] + side[0] * span * 0.5 * s - h.v[0] / speed.max(1.0) * back,
-                    h.p[1] + up,
-                    h.p[2] + side[2] * span * 0.5 * s - h.v[2] / speed.max(1.0) * back,
+                    (c[0] + fwd[0] * a * half + across[0] * x * half) * k,
+                    (c[1] + fwd[1] * a * half + across[1] * x * half) * k,
                 ]
             };
             let col = [0.03, 0.022, 0.02, 0.97 * fade];
-            let px = |p: [f32; 2]| [p[0] * k, p[1] * k];
-            let pts: Vec<Option<([f32; 2], f32)>> = [
-                at(-1.0, 0.25 + fold * 0.5, 0.15 + beat),
-                at(-0.45, 0.05, 0.08),
-                at(0.0, 0.0, 0.0),
-                at(0.45, 0.05, 0.08),
-                at(1.0, 0.25 + fold * 0.5, 0.15 + beat),
-                at(0.0, 0.55, 0.0),
-            ]
-            .iter()
-            .map(|p| self.project(*p))
-            .collect();
-            let w = (0.075 * span * f / z * k).max(1.2);
-            for s in [(0, 1), (1, 2), (2, 3), (3, 4)] {
-                if let (Some((a, _)), Some((b, _))) = (pts[s.0], pts[s.1]) {
-                    self.painter.line(
-                        px(a),
-                        px(b),
-                        w * if s.0 == 1 || s.0 == 2 { 1.5 } else { 0.75 },
-                        1.0,
-                        col,
-                    );
+            let sweep = fold * 0.6;
+            let w = (0.07 * half * k).max(1.0);
+            for sd in [-1.0f32, 1.0] {
+                // the wing, filled: from the body out to its leading edge (bent at the wrist) and
+                // its trailing edge, the hand swept back to a tip
+                let wrist = [0.16 - sweep * 0.3 + beat, sd * (0.5 - fold * 0.15)];
+                let tip = [-0.2 - sweep + beat, sd * (1.0 - fold * 0.35)];
+                for j in 0..=6 {
+                    let u = j as f32 / 6.0;
+                    let root = [0.14 - 0.34 * u, sd * 0.05];
+                    // the leading edge to the wrist and on to the tip; the trailing edge back in
+                    let out = if u < 0.5 {
+                        let v = u / 0.5;
+                        [
+                            wrist[0] + (tip[0] - wrist[0]) * v,
+                            wrist[1] + (tip[1] - wrist[1]) * v,
+                        ]
+                    } else {
+                        let v = (u - 0.5) / 0.5;
+                        [
+                            tip[0] + (-0.22 - tip[0]) * v,
+                            tip[1] + (sd * 0.3 - tip[1]) * v,
+                        ]
+                    };
+                    self.painter
+                        .line(at(root[0], root[1]), at(out[0], out[1]), w, 1.0, col);
                 }
             }
-            if let (Some((a, _)), Some((b, _))) = (pts[2], pts[5]) {
-                self.painter.line(px(a), px(b), w * 0.9, 1.0, col);
+            // the body, the head ahead, the fanned tail behind
+            self.painter
+                .line(at(0.28, 0.0), at(-0.25, 0.0), w * 1.8, 1.0, col);
+            for x in [-0.12f32, -0.04, 0.04, 0.12] {
+                self.painter
+                    .line(at(-0.2, 0.0), at(-0.55, x), w * 1.1, 1.0, col);
             }
         }
     }

@@ -98,7 +98,18 @@ impl Huddle {
             self.painter
                 .line(a, z, 0.085 * s, 0.07 * s, [0.20, 0.26, 0.45, 0.16]);
         }
-        for b in &self.flock.birds {
+        for (i, b) in self.flock.birds.iter().enumerate() {
+            // each its own: a little bigger or smaller, its head turned its own way, and inside the
+            // huddle its head mostly down, so its gold shows less
+            let h = |n: u32| {
+                let x = (i as u32)
+                    .wrapping_mul(2_654_435_761)
+                    .wrapping_add(n.wrapping_mul(40_503));
+                ((x ^ (x >> 15)).wrapping_mul(2_246_822_519) >> 8) as f32 / (1u32 << 24) as f32
+            };
+            let s = s * (0.88 + 0.22 * h(1));
+            let turn_head = (h(2) - 0.5) * 0.06;
+            let shown = (0.30 + 0.7 * b.exposed.max(b.moving)) * (0.6 + 0.4 * h(3));
             let f = b.face;
             let side = [-f[1], f[0]];
             // the waddle: a sway side to side as it walks or steps
@@ -114,7 +125,8 @@ impl Huddle {
                 )
             };
             // the back: near black with a blue sheen, frosted where the wind has caught it
-            let back = [0.07, 0.08, 0.11, 1.0];
+            let tone = 0.85 + 0.3 * h(4);
+            let back = [0.07 * tone, 0.08 * tone, 0.11 * tone, 1.0];
             self.painter
                 .line(at(-0.09, 0.0), at(0.05, 0.0), 0.115 * s, 0.6, back);
             let sheen = [0.30, 0.36, 0.48, 0.22];
@@ -132,23 +144,33 @@ impl Huddle {
             }
             // the head, its gold ear patches, the bill
             self.painter
-                .disc(at(0.12, 0.0), 0.062 * s, 0.6, [0.05, 0.05, 0.07, 1.0]);
-            let gold = [0.98, 0.80, 0.36, 0.9];
+                .disc(at(0.12, turn_head), 0.062 * s, 0.6, [0.05, 0.05, 0.07, 1.0]);
+            let gold = [0.98, 0.80, 0.36, 0.9 * shown];
             // the ear patches, seen from above: gold streaks down the sides of the head and neck
-            self.painter
-                .line(at(0.12, 0.05), at(0.06, 0.06), 0.014 * s, 0.01 * s, gold);
-            self.painter
-                .line(at(0.12, -0.05), at(0.06, -0.06), 0.014 * s, 0.01 * s, gold);
             self.painter.line(
-                at(0.16, 0.0),
-                at(0.22, 0.0),
+                at(0.12, 0.05 + turn_head),
+                at(0.06, 0.06),
+                0.014 * s,
+                0.01 * s,
+                gold,
+            );
+            self.painter.line(
+                at(0.12, -0.05 + turn_head),
+                at(0.06, -0.06),
+                0.014 * s,
+                0.01 * s,
+                gold,
+            );
+            self.painter.line(
+                at(0.16, turn_head * 1.6),
+                at(0.22, turn_head * 2.6),
                 0.012 * s,
                 0.6,
                 [0.12, 0.10, 0.10, 1.0],
             );
             self.painter.line(
-                at(0.165, 0.0),
-                at(0.20, 0.0),
+                at(0.165, turn_head * 1.7),
+                at(0.20, turn_head * 2.4),
                 0.007 * s,
                 0.6,
                 [0.95, 0.55, 0.42, 1.0],
