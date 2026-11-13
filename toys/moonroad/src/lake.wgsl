@@ -160,7 +160,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     // a painted cell settles to a soft paint; the moon in it lately lifts it toward the flash, so the
     // live road outshines the trail it leaves
     let settled = mix(paint, vec3<f32>(0.66, 0.62, 0.80), 0.55) * 0.66;
-    col = select(PAPER, mix(settled, paint, smoothstep(0.0, 0.6, lit)), painted > 0.0);
+    col = select(PAPER, mix(settled, paint, smoothstep(0.0, 0.6, lit)), painted > 0.01);
     col = mix(col, FLASH, smoothstep(0.55, 1.0, lit));
     // the template's line between cells: thin, grey on paper, faint on paint; gone where cells are tiny
     let lw = 0.42 * u.scale;
@@ -171,7 +171,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let cw = du * f;
     let seedpx = atan(eye / exp(bv * dv)) * f * dv;
     let numh = min(7.0 * u.scale, seedpx * 0.55);
-    if (painted < 0.5 && numh > 3.4 * u.scale && cw > numh * 1.2 && hash2(bid * 1.37) < 0.42) {
+    if (n > 0 && painted < 0.5 && numh > 3.4 * u.scale && cw > numh * 1.2 && hash2(bid * 1.37) < 0.42) {
       // (out is up the screen)
       let q = vec2<f32>(pb.x, -pb.y) / numh;
       let nd = numeral(q, k + 1) * numh;

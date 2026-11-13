@@ -12,9 +12,10 @@ pub const DU: f64 = 0.034;
 pub const DV: f64 = 0.024;
 /// The grid: cells across (a ring: the shore is long) and rows out.
 pub const NU: usize = 48;
-pub const NV: usize = 200;
+pub const NV: usize = 280;
 /// Rows kept nearer than the bottom of the screen, so turning the phone never runs out of water.
-const SPARE_ROWS: i64 = 40;
+/// (75 rows: a factor of 6 in distance, landscape to portrait on a phone)
+const SPARE_ROWS: i64 = 75;
 /// The eye over the water, metres (standing on the beach).
 pub const EYE_M: f64 = 1.7;
 /// The moon's elevation (radians, ~4°) and its azimuth straight ahead.
@@ -303,17 +304,26 @@ mod tests {
 
     #[test]
     fn a_gust_widens_the_road() {
-        let run = |gust: bool| {
-            let mut lake = Lake::new(2.5, 9);
+        let run = |gust: bool, seed: u64| {
+            let mut lake = Lake::new(2.5, seed);
             if gust {
                 lake.gust([0.0, 8.0], 1.0);
             }
             for _ in 0..90 {
                 lake.step(1.0 / 30.0);
             }
-            lake.painted_share()
+            // the painted cells on the water in view
+            (0..NV)
+                .filter(|&r| (2.0..40.0).contains(&lake.row_m(r, 0.5)))
+                .flat_map(|r| &lake.cells[r * NU..(r + 1) * NU])
+                .filter(|c| c.painted > 0.5)
+                .count() as f64
         };
-        assert!(run(true) > run(false) * 1.3);
+        // (over a few lakes: one alone is a coin's worth of glints)
+        let (a, b): (f64, f64) = (1..=6)
+            .map(|s| (run(true, s), run(false, s)))
+            .fold((0.0, 0.0), |(a, b), (x, y)| (a + x, b + y));
+        assert!(a > b * 1.3, "{a} with a gust, {b} without");
     }
 
     #[test]
