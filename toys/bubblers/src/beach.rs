@@ -71,6 +71,8 @@ pub struct Crab {
     pub gait: f32,
     pub size: f32,
     pub moving: f32,
+    /// its burrow is open (it has dug out since the last tide sealed it)
+    pub dug: bool,
 }
 
 pub struct Beach {
@@ -100,8 +102,8 @@ pub const TIDE_OUT: f32 = 7.0;
 /// A crab sees a neighbour bolt this far off (cm); a footstep is felt this far.
 const SEE_CM: f32 = 9.0;
 const FEEL_CM: f32 = 13.0;
-const FEED_CM_S: f32 = 0.35;
-const RUN_CM_S: f32 = 3.0;
+const FEED_CM_S: f32 = 1.5;
+const RUN_CM_S: f32 = 5.0;
 const FLEE_CM_S: f32 = 14.0;
 
 impl Beach {
@@ -128,7 +130,7 @@ impl Beach {
                 heading: rng.range(0.0, std::f32::consts::TAU),
                 reach: rng.range(2.5, 4.0),
                 turn: if rng.f() < 0.5 { 1.0 } else { -1.0 },
-                state: State::Hidden(rng.range(0.0, 3.0)),
+                state: State::Hidden(rng.range(0.5, 7.0)),
                 next_ball: 0.0,
                 side: 1.0,
                 scared: None,
@@ -136,6 +138,7 @@ impl Beach {
                 gait: rng.range(0.0, 6.0),
                 size: rng.range(0.85, 1.15),
                 moving: 0.0,
+                dug: false,
             })
             .collect();
         Beach {
@@ -146,7 +149,8 @@ impl Beach {
             crabs,
             pellets: Vec::new(),
             worked: vec![0.0; gw * gh],
-            wet: vec![0.35; gw * gh],
+            // the tide has just gone out: the beach is wet and smooth, every burrow sealed
+            wet: vec![1.0; gw * gh],
             furrow: vec![0.0; gw * gh],
             t: 0.0,
             tide: None,
@@ -210,7 +214,7 @@ impl Beach {
         let reach = (c.reach + self.rng.range(-0.3, 1.2)).clamp(2.5, 9.0);
         let mut best = (f32::MAX, c.heading);
         for _ in 0..5 {
-            let a = c.heading + c.turn * self.rng.range(0.3, 0.7);
+            let a = c.heading + c.turn * self.rng.range(0.45, 0.8);
             let w = self.worked_along(c.home, a, reach) + self.rng.range(0.0, 0.05);
             if w < best.0 {
                 best = (w, a);
@@ -254,13 +258,22 @@ impl Beach {
             let p = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
             Self::mark(&mut self.furrow, self.gw, self.gh, p, 0.6, 1.0);
         }
-        // the balls in its way are pushed aside
+        // the balls in its way are pushed aside, out to its banks
+        let (ux, uy) = (b[0] - a[0], b[1] - a[1]);
+        let l2 = (ux * ux + uy * uy).max(1e-6);
         for pl in &mut self.pellets {
-            let (dx, dy) = (pl.p[0] - b[0], pl.p[1] - b[1]);
+            let f = (((pl.p[0] - a[0]) * ux + (pl.p[1] - a[1]) * uy) / l2).clamp(0.0, 1.0);
+            let q = [a[0] + ux * f, a[1] + uy * f];
+            let (dx, dy) = (pl.p[0] - q[0], pl.p[1] - q[1]);
             let dd = (dx * dx + dy * dy).sqrt();
-            if dd < 0.7 && dd > 1e-4 {
-                pl.p[0] = b[0] + dx / dd * 0.75;
-                pl.p[1] = b[1] + dy / dd * 0.75;
+            if dd < 0.75 {
+                let (nx, ny) = if dd > 1e-4 {
+                    (dx / dd, dy / dd)
+                } else {
+                    (-uy / l2.sqrt(), ux / l2.sqrt())
+                };
+                pl.p[0] = q[0] + nx * (0.8 + 0.1 * pl.shade.abs());
+                pl.p[1] = q[1] + ny * (0.8 + 0.1 * pl.shade.abs());
             }
         }
         self.dirty = true;
@@ -333,6 +346,12 @@ impl Beach {
                     self.wet[i] = 1.0;
                 }
             }
+            // the burrows under it are sealed
+            for c in &mut self.crabs {
+                if c.home[1] > front {
+                    c.dug = false;
+                }
+            }
             for p in &mut self.pellets {
                 if p.gone < 0.0 && p.p[1] > front {
                     p.gone = t;
@@ -345,6 +364,7 @@ impl Beach {
             for c in &mut self.crabs {
                 c.state = State::Hidden(t + self.rng.range(1.0, 5.0));
                 c.reach = self.rng.range(2.5, 3.5);
+                c.dug = false;
             }
         }
     }
@@ -388,12 +408,12 @@ impl Beach {
         Self::mark(&mut self.worked, self.gw, self.gh, c.p, 0.45, 1.0);
         self.dirty = true;
         if t >= c.next_ball {
-            c.next_ball = t + self.rng.range(0.75, 1.05);
+            c.next_ball = t + self.rng.range(0.19, 0.23);
             c.side = -c.side;
             let perp = [-dir[1], dir[0]];
             let r = self.rng.range(0.13, 0.18) * c.size;
-            let back = self.rng.range(0.6, 0.75);
-            let lat = c.side * self.rng.range(0.08, 0.2);
+            let back = self.rng.range(0.35, 0.45);
+            let lat = c.side * self.rng.range(0.0, 0.05);
             let p = [
                 c.p[0] - dir[0] * back + perp[0] * lat,
                 c.p[1] - dir[1] * back + perp[1] * lat,
@@ -424,6 +444,7 @@ impl Beach {
                 c.p = c.home;
                 if t >= until && self.tide.is_none() {
                     c.state = State::Peek(t + self.rng.range(0.6, 1.4));
+                    c.dug = true;
                 }
             }
             State::Peek(until) => {

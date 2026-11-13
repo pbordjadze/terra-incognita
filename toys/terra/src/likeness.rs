@@ -182,30 +182,42 @@ pub fn draw(
             }
         }
         "barchans" => {
-            // the reg from above, three crescents walking down it, horns ahead
+            // pale reg from high above, crescents walking down it, horns ahead, each with its dark
+            // slip face in the hollow between the horns
             p.disc(
                 c,
                 (r * 1.05 * k) as f32,
                 (r * 0.2 * k) as f32,
-                [0.56, 0.48, 0.40, 0.95 * w],
+                [0.74, 0.66, 0.55, 0.95 * w],
             );
             for (j, (x0, s)) in [(-0.35, 1.0), (0.3, 0.75), (0.0, 0.55)].iter().enumerate() {
                 let y = ((tm * 0.05 / s + j as f64 * 0.37).rem_euclid(1.0)) * 1.6 - 0.8;
                 let fade = (1.0 - (y / 0.8).abs().powi(4)) as f32;
-                let mut prev = None;
-                for i in 0..=12 {
+                let arc = |i: usize, inner: f64| {
                     let u = i as f64 / 12.0 * std::f64::consts::PI;
-                    let q = at(x0 + u.cos() * 0.22 * s, y - u.sin() * 0.12 * s + 0.1 * s);
-                    if let Some(pp) = prev {
+                    at(
+                        x0 + u.cos() * 0.22 * s * inner,
+                        y - u.sin() * 0.12 * s * inner + 0.1 * s,
+                    )
+                };
+                for i in 0..12 {
+                    let kw = (1.6 * s) as f32 * kf;
+                    p.line(
+                        arc(i, 1.0),
+                        arc(i + 1, 1.0),
+                        kw,
+                        0.8,
+                        [0.98, 0.88, 0.70, 0.95 * a * fade],
+                    );
+                    if (2..10).contains(&i) {
                         p.line(
-                            pp,
-                            q,
-                            (1.6 * s) as f32 * kf,
+                            arc(i, 0.8),
+                            arc(i + 1, 0.8),
+                            kw * 0.5,
                             0.8,
-                            [0.93, 0.66, 0.40, 0.95 * a * fade],
+                            [0.30, 0.24, 0.20, 0.8 * a * fade],
                         );
                     }
-                    prev = Some(q);
                 }
             }
         }

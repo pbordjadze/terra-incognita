@@ -11,9 +11,15 @@ pub const SLAB: f32 = 0.1;
 const HOP: f32 = 5.0;
 /// The chance a slab sticks where it lands: on sand, on bare ground.
 const STICK_SAND: f32 = 0.6;
-const STICK_BARE: f32 = 0.05;
+const STICK_BARE: f32 = 0.01;
 /// The shadow behind a crest: 15°, in slabs a cell.
 const SHADOW: f32 = 0.268 / SLAB;
+/// How far a hop strays across the wind, cells (all told, either way).
+const SPREAD: f32 = 1.0;
+/// The young dunes across the field at the start.
+pub const GX: usize = 9;
+/// The chance a landed slab creeps to the lower side across the wind.
+const CREEP: f32 = 0.3;
 /// The angle of repose, ~33°, in slabs a cell (a diagonal is √2 cells).
 const REPOSE: i32 = 6;
 
@@ -55,25 +61,14 @@ impl Dunes {
     pub fn new(w: usize, h: usize, seed: u64, wind: [f32; 2]) -> Dunes {
         let mut rng = Rng(seed | 1);
         let mut slabs = vec![0i32; w * h];
-        // heaps of many sizes, one to a patch of a jittered grid, as a storm might leave them
-        let (gx, gy) = (4usize, (4 * h / w).max(1));
+        // young barchans of many sizes, one to a patch of a jittered grid, horns downwind: so the
+        // field is crescents from its first moment and the rule has only to keep them walking
+        let (gx, gy) = (GX, (GX * h / w).max(1));
         for k in 0..gx * gy {
-            let cx = ((k % gx) as f32 + 0.2 + 0.6 * rng.f()) * w as f32 / gx as f32;
-            let cy = ((k / gx) as f32 + 0.2 + 0.6 * rng.f()) * h as f32 / gy as f32;
-            let r = 7.0 + rng.f() * 4.0;
-            let peak = r * 2.6 + rng.f() * 6.0;
-            let ri = r.ceil() as i32 * 2;
-            for dy in -ri..=ri {
-                for dx in -ri..=ri {
-                    let d2 = (dx * dx + dy * dy) as f32 / (r * r);
-                    let v = peak * (-d2 * 1.6).exp();
-                    if v >= 0.5 {
-                        let x = (cx as i32 + dx).rem_euclid(w as i32) as usize;
-                        let y = (cy as i32 + dy).rem_euclid(h as i32) as usize;
-                        slabs[y * w + x] += v as i32;
-                    }
-                }
-            }
+            let cx = ((k % gx) as f32 + 0.15 + 0.7 * rng.f()) * w as f32 / gx as f32;
+            let cy = ((k / gx) as f32 + 0.15 + 0.7 * rng.f()) * h as f32 / gy as f32;
+            let size = 0.6 + 0.6 * rng.f();
+            crescent(&mut slabs, w, h, [cx, cy], size, wind);
         }
         let mut d = Dunes {
             w,
@@ -271,6 +266,10 @@ impl Dunes {
             for _ in 0..400 {
                 fx += self.wind[0] * HOP;
                 fy += self.wind[1] * HOP;
+                // and a little across it: grains in saltation don't keep to a file
+                let side = (self.rng.f() - 0.5) * SPREAD;
+                fx += side * self.wind[1];
+                fy -= side * self.wind[0];
                 let tx = (fx + self.rng.f() - 0.5).round() as i32;
                 let ty = (fy + self.rng.f() - 0.5).round() as i32;
                 let j = self.at(tx, ty);
@@ -282,6 +281,20 @@ impl Dunes {
                     STICK_BARE
                 };
                 if self.rng.f() < stick {
+                    // where it lands it creeps to the lower side across the wind (Momiji's lateral
+                    // diffusion), which is what rounds a dune's back and draws out its horns
+                    let (ax, ay) = (self.wind[1].round() as i32, -self.wind[0].round() as i32);
+                    let l = self.at(tx - ax, ty - ay);
+                    let r = self.at(tx + ax, ty + ay);
+                    let j = if self.rng.f() > CREEP {
+                        j
+                    } else if self.slabs[l] < self.slabs[j] && self.slabs[l] <= self.slabs[r] {
+                        l
+                    } else if self.slabs[r] < self.slabs[j] {
+                        r
+                    } else {
+                        j
+                    };
                     self.slabs[j] += 1;
                     let (jx, jy) = (j % self.w, j / self.w);
                     self.settle(jx, jy);
@@ -314,6 +327,39 @@ impl Dunes {
                     (c[1] as i32 + dy).rem_euclid(self.h as i32) as usize,
                 );
                 self.settle(x, y);
+            }
+        }
+    }
+}
+
+/// One barchan laid on the field: a low mound with its lee scooped out downwind, which leaves a
+/// steep curved face between two horns. `size` 1 is ~24 cells across and ~2.4 high.
+fn crescent(slabs: &mut [i32], w: usize, h: usize, c: [f32; 2], size: f32, wind: [f32; 2]) {
+    let (half, len, peak) = (12.0 * size, 9.0 * size, 2.4 * size / SLAB);
+    let r = (half * 1.8) as i32;
+    for dy in -r..=r {
+        for dx in -r..=r {
+            let (x, y) = (dx as f32, dy as f32);
+            // u across the wind, v along it (downwind positive)
+            let u = x * wind[1] - y * wind[0];
+            let v = x * wind[0] + y * wind[1];
+            let back = 1.0 - (u / half).powi(2) - (v / len).powi(2);
+            // the scoop: a narrower ellipse pushed downwind; its rim is the brink
+            let su = u / (half * 0.58);
+            let sv = (v - len * 1.05) / (len * 0.95);
+            let scoop = 1.0 - su * su - sv * sv;
+            // the horns: what is left of the mound's flanks, drawn out downwind
+            let horn = if v > 0.0 && scoop < 0.0 {
+                (1.0 - (u.abs() / half - 0.72).powi(2) / 0.04 - ((v - len * 0.4) / (len * 1.3)).powi(2)).max(0.0) * 0.35
+            } else {
+                0.0
+            };
+            let body = if scoop > 0.0 { 0.0 } else { back.max(0.0) };
+            let hgt = peak * body.powf(0.7).max(horn);
+            if hgt >= 1.0 {
+                let i = (c[1] as i32 + dy).rem_euclid(h as i32) as usize * w
+                    + (c[0] as i32 + dx).rem_euclid(w as i32) as usize;
+                slabs[i] += hgt as i32;
             }
         }
     }
@@ -372,3 +418,4 @@ mod tests {
         let _ = c0;
     }
 }
+

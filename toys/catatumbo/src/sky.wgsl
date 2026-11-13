@@ -41,8 +41,12 @@ fn shore(px: vec2<f32>, hy: f32) -> vec4<f32> {
   let clump = step(0.62, noise2(vec2<f32>(x * 0.035, 1.0)));
   let has = clump * step(0.35, hash2(vec2<f32>(cell, 2.0)));
   let fx = fract(x / 7.0);
-  let house = has * step(0.15, fx) * step(fx, 0.85);
-  let roof = h + house * 3.4 * s;
+  // each house its own width and height, some with a pitched roof
+  let wide = 0.22 + 0.3 * hash2(vec2<f32>(cell, 8.0));
+  let tall = 2.2 + 2.6 * hash2(vec2<f32>(cell, 9.0));
+  let pitch = step(0.5, hash2(vec2<f32>(cell, 11.0))) * (1.0 - abs(fx - 0.5) / wide) * 1.3;
+  let house = has * step(0.5 - wide, fx) * step(fx, 0.5 + wide);
+  let roof = h + house * (tall + max(pitch, 0.0)) * s;
   let top = hy - roof;
   if (px.y < top || px.y > hy) { return vec4<f32>(0.0); }
   var col = vec3<f32>(0.004, 0.004, 0.008);

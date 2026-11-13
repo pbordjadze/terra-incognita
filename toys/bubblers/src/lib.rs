@@ -21,8 +21,8 @@ pub const PLACE: (f64, f64) = (98.30, 7.90);
 
 /// The screen is this many centimetres across.
 const WIDTH_CM: f32 = 30.0;
-/// The beach has been at work this long when the toy opens (seconds).
-const OPENING_S: f32 = 75.0;
+/// The tide went out this long before the toy opens (seconds): the first crabs are just digging out.
+const OPENING_S: f32 = 4.0;
 /// The tide comes on its own after this long untouched by one (seconds).
 const TIDE_EVERY_S: f32 = 210.0;
 
@@ -201,7 +201,7 @@ impl Toy for Bubblers {
         let front = b.front().unwrap_or(f32::MAX);
         // the burrows
         for c in &b.crabs {
-            if c.home[1] > front {
+            if c.home[1] > front || !c.dug {
                 continue;
             }
             self.painter.disc(

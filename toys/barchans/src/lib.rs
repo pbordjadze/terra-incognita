@@ -16,10 +16,10 @@ use toy_kit::paint::Painter;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Synth, Toy};
 
 /// Where it is: the barchan corridor south of Tarfaya, Morocco (lon, lat).
-pub const PLACE: (f64, f64) = (-12.95, 27.75);
+pub const PLACE: (f64, f64) = (-12.70, 27.62);
 
 /// The field, cells (a torus: a taller screen sees it wrap, seamlessly); its width spans the screen.
-pub const FIELD: [usize; 2] = [180, 400];
+pub const FIELD: [usize; 2] = [256, 560];
 const ACROSS: usize = FIELD[0];
 pub const SEED: u64 = 0xD00E_5EED;
 /// The trade wind, straight down the screen: the scene is turned so that down is south-south-west,

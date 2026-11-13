@@ -137,7 +137,8 @@ impl Catatumbo {
                     .iter()
                     .map(|c| {
                         let lateral = (c.x as f64 - foot) * CELL_M;
-                        let alt = (b.nz as f64 - 1.0 - c.z as f64) * CELL_M;
+                        // the cell that touched the ground is at the water (row nz - 2: the last row is the boundary)
+                        let alt = (b.nz as f64 - 2.0 - c.z as f64) * CELL_M;
                         self.screen(s.at[0], lateral, alt.max(0.0), s.dist)
                     })
                     .collect()
@@ -172,7 +173,7 @@ impl Catatumbo {
             let (x, alt, depth) = match s.kind {
                 Kind::Ground => (
                     foot_lateral + (c.x as f64 - foot) * CELL_M,
-                    (b.nz as f64 - 1.0 - c.z as f64) * CELL_M,
+                    ((b.nz as f64 - 2.0 - c.z as f64) * CELL_M).max(0.0),
                     s.dist,
                 ),
                 Kind::Sheet => (
@@ -208,8 +209,8 @@ impl Catatumbo {
         self.next_storm = self.t + self.rng.range(1.2, 4.5);
         let w = self.size_pt[0];
         let hy = self.horizon();
-        if self.rng.f() < 0.4 {
-            // a far ground stroke, just below the horizon
+        if self.rng.f() < 0.4 || self.t < 1.0 {
+            // a far ground stroke (the first thing the storm does), just below the horizon
             let p = [
                 self.rng.range(w * 0.1, w * 0.9),
                 hy + self.rng.range(4.0, 22.0),
@@ -270,7 +271,7 @@ impl Toy for Catatumbo {
             rng: Rng(0xCA7A_7B00),
             t: 0.0,
             size_pt: ctx.points(),
-            next_storm: 0.6,
+            next_storm: 0.3,
             flicker: (-10.0, [0.0, 0.0], 0.0),
             reduce_motion: ctx.reduce_motion,
         })
@@ -454,7 +455,7 @@ impl Catatumbo {
             let (alpha, core) = if leading {
                 (0.22 + 0.25 * cur, false)
             } else {
-                let a = light * cur.powf(1.5) + after * 0.25 * cur;
+                let a = light * cur.powf(0.8) + after * 0.25 * cur;
                 if a < 0.01 {
                     continue;
                 }
@@ -464,7 +465,7 @@ impl Catatumbo {
             let b = pts[k];
             line.clear();
             line.push(a);
-            jag(a, b, s.seed ^ (k as u64) << 7, 7.0, &mut line);
+            jag(a, b, s.seed ^ (k as u64) << 7, 12.0, &mut line);
             let r = (width * (0.35 + 0.9 * cur as f64)) as f32;
             for w in line.windows(2) {
                 let (pa, pb) = (w[0], w[1]);
@@ -473,13 +474,16 @@ impl Catatumbo {
                 let p = ppp as f32;
                 self.painter.glow(qa, qb, 0.0, r * 9.0 * p, violet);
                 if core {
-                    self.painter.glow(
-                        qa,
-                        qb,
-                        r * 0.5 * p,
-                        1.2 * p,
-                        [1.0, 0.97, 1.0, alpha.min(1.0)],
-                    );
+                    // opaque and drawn over, so the joints don't bead where segments' caps overlap
+                    // (a faint one is added instead: an opaque grey would read as a dark crack)
+                    let v = alpha.min(1.0);
+                    if v > 0.5 {
+                        self.painter
+                            .line(qa, qb, r * 0.5 * p, 0.6 * p, [v, 0.97 * v, v, 1.0]);
+                    } else {
+                        self.painter
+                            .glow(qa, qb, r * 0.4 * p, 1.0 * p, [1.0, 0.97, 1.0, v]);
+                    }
                 } else {
                     self.painter
                         .glow(qa, qb, r * 0.3 * p, 1.0 * p, [0.75, 0.7, 1.0, alpha]);
@@ -536,6 +540,19 @@ impl Catatumbo {
             );
         }
         if !leading {
+            // the point where it meets the lake: white-hot, with a glint spread along the water
+            let hot = (light * 1.2 + after * 0.2).min(1.0);
+            let k = (2.0 + 3.0 * near.min(3.0)) * ppp;
+            self.painter
+                .disc(f, k as f32, (k * 0.8) as f32, [1.0, 0.98, 1.0, hot]);
+            let span = (20.0 + 70.0 * near.min(3.0)) * ppp;
+            self.painter.glow(
+                [f[0] - span as f32, f[1]],
+                [f[0] + span as f32, f[1]],
+                (0.6 * ppp) as f32,
+                (5.0 * near.min(2.0) * ppp) as f32,
+                [0.9, 0.85, 1.0, hot * 0.6],
+            );
             let rr = (14.0 + 50.0 * near.min(3.0)) * ppp;
             self.painter.glow(
                 f,
