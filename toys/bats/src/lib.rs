@@ -423,7 +423,7 @@ impl Toy for Bats {
         let at = |n: &str| a.iter().find(|x| x.0 == n).map(|x| x.1);
         let s = at("stream").unwrap_or([self.size_pt[0] * 0.6, self.size_pt[1] * 0.4]);
         Some(info::Demo::new(
-            "You're the hawk. Dive into the bats.",
+            "Hawk to a million bats. Dive in.",
             vec![info::Stroke::drag(
                 0.4,
                 0.9,

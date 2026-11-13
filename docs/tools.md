@@ -35,7 +35,6 @@ Rebuild, never hand-edit.
 | Linters | rustfmt and clippy `-D warnings` (host, iOS, wasm32), ruff, shellcheck, actionlint, SwiftLint, each stock but for the rules loosened with reasons in `ruff.toml`, `.swiftlint.yml`, `.github/actionlint.yaml` | `bash ci/lint.sh [rust\|python\|shell\|actions\|swift\|fix]` (pinned tools: `tools/requirements.txt` in `.venv`) | `lint.yml`, first in every workflow |
 | Same pictures | every toy's plans and Adrift's scenes played in two checkouts, compared pixel for pixel: a dependency bump changes nothing on screen | `python3 tools/toys/same_pictures.py play <checkout> <out>`, `compare <a> <b>` | by hand (Linux, Mesa's Vulkan) |
 | Elkmont's moments | a check's film of Elkmont searched for each burst's brightest frame and the darkest between, so shots and critics see the flashes | `python3 tools/toys/elkmont/moments.py <check out dir>` | by hand, after a plan with a film |
-| Kanto's plate | the Kanto plain as Tero et al. laid it out for the mold: land, lit mountains, 36 towns as oat flakes, the real railways (Natural Earth, AWS Terrain Tiles, GeoNames) | `python3 tools/toys/kanto/build.py <cache-dir>` | by hand, when the plate changes |
 | Nazaré's floor | the sea floor and land off Nazaré on a 50 m grid (EMODnet Bathymetry) | `python3 tools/toys/nazare/build.py <cache-dir>` | by hand, when the floor changes |
 
 ## Delivery

@@ -5,8 +5,8 @@
         --manifest <manifest.json> [--budget-mb N | --app-json <toy.json>] [--plan <plan.json>] \\
         [--size 1170x2532] [--ppp 3] [--ipa <app.ipa> [--ipa-data data]]
 
-    python3 tools/kit/launch_check.py --check 'toys/target/release/mold-check play {plan} {out} --size {size} --ppp {ppp}' \\
-        --manifest toys/mold/manifest.json --app-json toys/mold/toy.json
+    python3 tools/kit/launch_check.py --check 'toys/target/release/whales-check play {plan} {out} --size {size} --ppp {ppp}' \\
+        --manifest toys/whales/manifest.json --app-json toys/whales/toy.json
 
 The check command is run once with the app's short launch plan (default: two seconds, a frame at the
 end), under the environment toy-kit reads (toys/crates/toy-kit/src/budget.rs):

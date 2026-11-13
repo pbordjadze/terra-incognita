@@ -199,7 +199,7 @@ mod tests {
         let c = Camera::new(12.0, 42.0, 1.55);
         let obj = serde_json::to_string(&serde_json::json!({"day": 3.0, "camera": c})).unwrap();
         assert_eq!(saved_camera(&obj), Some(c));
-        // mold's (feeds, camera)
+        // a (state, camera) pair, as a toy may save
         let pair = serde_json::to_string(&(Vec::<u8>::new(), c)).unwrap();
         assert_eq!(saved_camera(&pair), Some(c));
         assert_eq!(saved_camera("{\"seed\": 4}"), None);

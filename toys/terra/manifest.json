@@ -37,8 +37,6 @@
     "night.jpg": "Globe/ground/night.jpg",
     "opening.bin": "toys/barchans/data/opening.bin",
     "plain.jpg": "toys/meander/data/plain.jpg",
-    "plate.json": "toys/kanto/data/plate.json",
-    "plate.png": "toys/kanto/data/plate.png",
     "rivers.bin": "toys/terra/data/rivers.bin",
     "routes.json": "toys/whales/data/routes.json",
     "terrain.png": "Globe/terrain.png"
