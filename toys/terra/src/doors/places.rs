@@ -4,7 +4,7 @@ use super::Door;
 use crate::rooms;
 
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 12] = [
+pub const SCENES: [&str; 13] = [
     "murmuration",
     "fireflies",
     "swell",
@@ -17,6 +17,7 @@ pub const SCENES: [&str; 12] = [
     "catatumbo",
     "bubblers",
     "barchans",
+    "pando",
 ];
 
 /// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
@@ -26,6 +27,7 @@ pub const SCENES: [&str; 12] = [
 pub fn doors() -> Vec<Door> {
     let mut all = globes();
     all.extend(scenes());
+    all.extend(ground_scenes());
     all
 }
 
@@ -119,6 +121,12 @@ fn scenes() -> Vec<Door> {
             degree: 9,
             open: rooms::open::<frost::Frost>,
         },
+    ]
+}
+
+/// The scenes whose rule runs on the ground (and Pando's grove), split from `scenes` to keep each short.
+fn ground_scenes() -> Vec<Door> {
+    vec![
         Door {
             id: "catatumbo",
             name: "Catatumbo",
@@ -145,6 +153,15 @@ fn scenes() -> Vec<Door> {
             night: false,
             degree: -1,
             open: rooms::open::<barchans::Barchans>,
+        },
+        Door {
+            id: "pando",
+            name: "Pando",
+            at: [pando::PLACE.0, pando::PLACE.1],
+            tint: [0.96, 0.70, 0.18],
+            night: false,
+            degree: 4,
+            open: rooms::open::<pando::Pando>,
         },
     ]
 }

@@ -1,0 +1,27 @@
+{
+ "_": "First sight: the grove in a light wind, a gust passing; a drag blows across it; a tap goes into one stem, a tap on a leaf into that leaf, a tap into its skin, a finger held over the pores closes them, and a tap rises back out to the grove.",
+ "seconds": 34,
+ "fps": 30,
+ "events": [
+  { "t": 6.0, "drag": [[60, 560], [340, 520]], "for": 0.5 },
+  { "t": 10.0, "tap": "tree" },
+  { "t": 16.0, "tap": "leaf" },
+  { "t": 21.0, "tap": "blade" },
+  { "t": 25.0, "hold": [200, 420], "for": 3.5 },
+  { "t": 30.0, "tap": [200, 420] }
+ ],
+ "shots": [
+  { "t": 2.0, "name": "grove" },
+  { "t": 6.8, "name": "blown" },
+  { "t": 10.5, "name": "dive-1" },
+  { "t": 11.2, "name": "dive-2" },
+  { "t": 14.0, "name": "stem" },
+  { "t": 16.5, "name": "dive-leaf" },
+  { "t": 19.5, "name": "leaf" },
+  { "t": 23.5, "name": "skin" },
+  { "t": 28.4, "name": "shaded" },
+  { "t": 31.0, "name": "rising" },
+  { "t": 33.5, "name": "back" }
+ ],
+ "audio": true
+}
