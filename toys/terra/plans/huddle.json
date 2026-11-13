@@ -1,0 +1,74 @@
+{
+ "_": "Huddle, its light on Atka Bay's sea ice, Antarctica, by the emperor penguins' colony: a window onto the ice, the huddle packed and the snow blowing past. The Earth turned down to Antarctica, touched, the window grows into the toy; the Earth mark, and it shrinks back into its light.",
+ "seconds": 15,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.5,
+   "drag": [
+    [
+     300,
+     430
+    ],
+    [
+     120,
+     430
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 1.6,
+   "drag": [
+    [
+     200,
+     640
+    ],
+    [
+     200,
+     260
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 3.0,
+   "tap": "huddle"
+  },
+  {
+   "t": 10.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 2.9,
+   "name": "the-light"
+  },
+  {
+   "t": 4.2,
+   "name": "window"
+  },
+  {
+   "t": 5.0,
+   "name": "growing"
+  },
+  {
+   "t": 8.5,
+   "name": "inside"
+  },
+  {
+   "t": 11.0,
+   "name": "going-back"
+  },
+  {
+   "t": 14.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 15,
+  "every": 0.1
+ }
+}

@@ -1,0 +1,5 @@
+{ "_": "A dive: the hawk stoops into the main stream and drags along it; the swerve runs on.", "size": [1179, 2556], "ppp": 3, "seconds": 6, "fps": 30,
+  "events": [ { "t": 1.0, "drag": [[150, 150], "stream"], "for": 0.8 } ],
+  "film": { "from": 0.5, "to": 5.5, "every": 0.1, "fingers": true },
+  "audio": true,
+  "shots": [0.9, 1.5, 2.0, 2.6, 3.4] }

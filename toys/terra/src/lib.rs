@@ -19,7 +19,7 @@ use toy_kit::paint::Painter;
 use toy_kit::sound::{pentatonic, Bells, Note};
 use toy_kit::{Assets, Camera, Ctx, Globe, LonLat, MemoryAssets, Phase, PointerEvent, Synth, Toy};
 
-use doors::Life;
+use doors::{Life, SCENES};
 use rooms::{Room, Shared};
 
 /// The Earth mark: bottom left, as the info and rules marks are bottom right (toy-kit info.rs).
@@ -41,8 +41,6 @@ pub fn opening_zoom(points: [f64; 2]) -> f64 {
 
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
-/// The scenes (toys without a globe of their own), which open out of their light as a window.
-const SCENES: [&str; 4] = ["murmuration", "meander", "frost", "throats"];
 /// How close the Earth comes over a scene before it is the glass (a dive's end): as close as it goes, so the
 /// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it, its
 /// rivers coming up round the window (painting-company row 258: at 9 the window outran the ground, "an iris,
