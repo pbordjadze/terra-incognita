@@ -22,7 +22,7 @@ before design work. Keep design discussions and plans in that private repository
 ## Map
 
 - **The toys and Terra** (`toys/`): the toy kit (`toys/crates/toy-kit`: the `Toy` trait, the shared
-  globe, paint, sound, the headless check, the iOS shell), each toy's crate, and Terra, the host that
+  globe, paint, sound, the headless check), the one iOS shell (`toys/ios/`), each toy's crate, and Terra, the host that
   links them. `toys/README.md` is their map and what a toy should be; `docs/kit.md` the kit's tools.
 - **Adrift** (`adrift/`): glass floats on the real sea, Rust on wgpu; `adrift/README.md`, its rulings
   in `DECISIONS.md`, its sources in `SOURCES.md`.
@@ -85,8 +85,8 @@ The same rules as the owner's other apps (painting-company's CLAUDE.md › Revie
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;
   a commit message says what changed and why and quotes no one.
-- No network at run time, no analytics, no accounts; nothing is a web view (`toys/README.md` names the
-  one exception, the reader's own song in Screw).
+- No network at run time, no analytics, no accounts; nothing is a web view. The one exception to
+  bundling everything is Screw's song, the reader's own file (`toys/README.md`).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
 - A tool you write to check or measure your own work (a harness, a preview, a shim) is committed

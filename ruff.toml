@@ -1,4 +1,3 @@
 # ruff (https://docs.astral.sh/ruff/), its default rules, run by the lint job (lint.yml) over the
-# Python tools and checks. ci/qa/ is generated from painting-company's shared copy: linted there.
-extend-exclude = ["ci/qa"]
+# Python tools and checks.
 target-version = "py312"

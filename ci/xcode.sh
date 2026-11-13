@@ -7,8 +7,6 @@
 # Xcode lacks it (since Xcode 26 it is a separate download; the app's .metal files need it).
 #   ci/xcode.sh            # a workflow's first step after checkout
 #   ci/xcode.sh --version  # prints the version alone
-# (The QA explore workflow, generated from the shared copy, names its version itself:
-# `ci/qa/xcode.sh 27.2` in qa-explore.yml; keep the two the same.)
 set -euo pipefail
 VERSION=27.2
 [[ "${1:-}" == --version ]] && { echo "$VERSION"; exit 0; }

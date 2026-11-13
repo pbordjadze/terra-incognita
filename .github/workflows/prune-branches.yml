@@ -32,5 +32,5 @@ jobs:
           git branch -r --merged origin/main --format='%(refname:lstrip=3)' | while read -r b; do
             case "$b" in main|HEAD|sidestore|packs|before-*) continue ;; esac
             if grep -qxF "$b" <<< "$open"; then echo "keep $b (open pull request)"; continue; fi
-            if [ "$DRY_RUN" = true ]; then echo "would delete $b"; else git push origin --delete "$b"; fi
+            if [ "$DRY_RUN" = true ]; then echo "would delete $b"; else git push origin --delete "$b" || echo "could not delete $b"; fi
           done
