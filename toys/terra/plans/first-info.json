@@ -1,0 +1,4 @@
+{ "_": "The info opening by itself on a first visit (toy-kit info.rs › First): none on the Earth; the starlings' light touched at 1 s, and once the toy has settled its demo plays and its line shows; back to the Earth and in again, and it stays shut (a toy's first opening since launch only).",
+  "size": [1170, 2532], "ppp": 3, "seconds": 34, "fps": 20, "first_info": true,
+  "events": [ { "t": 1.0, "tap": "murmuration" }, { "t": 16.0, "tap": "earth" }, { "t": 23.0, "tap": "murmuration" } ],
+  "shots": [{ "t": 0.9, "name": "earth-quiet" }, { "t": 7.5, "name": "settling" }, { "t": 9.0, "name": "demo" }, { "t": 11.0, "name": "demo-late" }, { "t": 15.5, "name": "settled" }, { "t": 33.5, "name": "again-quiet" }] }

@@ -378,13 +378,11 @@ impl Toy for Bell {
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "A great earthquake makes the whole Earth ring like a bell for days, far too low to hear.",
-                "Here it's sped up a million times, and the bands are the ground rising and falling. Where you strike sets which notes ring.",
-            ],
-            "Real: the Earth's notes, and the great quakes it rings from on its own. Drawn: the speed-up, the motion's size.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "After a great earthquake the whole Earth rings like a bell for days, far too low to hear.",
+                "It rings only in its own notes, like a bell.",
+                "Here it is sped up a million times, so you can hear it. The bands are the ground rising and falling; where you strike sets which notes ring.",
+        ]))
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

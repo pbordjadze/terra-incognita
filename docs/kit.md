@@ -181,11 +181,16 @@ by standing on the kit:
   (all seven), and the shell's one line in system text. Terra Incognita has its own (SwiftUI,
   `InfoDemo` in `PlaygroundRoot.swift`, beside the cloud button while no prototype runs). Adrift has
   none yet (its shell and look are its conductor's). Proof: every toy's `plans/info.json`.
+  Since Nov 13 (Paul: "The info should pop up when you first open an experience") it opens by itself
+  a second into a toy's first visit (`info::First`; Terra asks for it, `Ctx::show_info`, as each toy
+  first opens since launch, and not on its Earth), its line on a small dark glass so it reads on frost
+  and paper as on night. A plan sees it only with `"first_info": true`.
 - **The rules mark** (Nov 4, painting-company row 214; Paul: "a second button with just a tiny bit
   more detail. Just the rules"): a "?" beside the info mark, `Toy::rules()` in each toy, the shell's
   system text on a dark glass above the marks, closed by a tap anywhere, no timer. Words: the rules
-  that make the scene, a line each, then one dim line, "Real: ... Drawn: ...", from the toy's
-  SOURCES.md. Judged by two fresh critics on screenshots (`plans/rules.json`; the shell's text drawn
+  the real thing follows and how a finger joins in, two to four short lines; the dim "Real: ...
+  Drawn: ..." line went on Nov 13 (Paul: "'Real vs Drawn' is a confusing paradigm. It could just
+  explain what rules the real world phenomenon follows"). Judged by two fresh critics on screenshots (`plans/rules.json`; the shell's text drawn
   on by `tools/kit/shell_text.py`; the Simulator's `out/sim/rules.png` is the real text).
   Open: the card covers the lower half (Battle's flanks, Swell's wavefront) while it shows; a light
   card on the paper scenes was suggested and not taken (one look for all seven).

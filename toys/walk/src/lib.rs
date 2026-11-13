@@ -672,15 +672,11 @@ impl Toy for Walk {
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "The walker picks a spot at random, no farther than its ring.",
-                "Higher ground: it always goes. Lower: only sometimes, and more rarely the farther down it is.",
-                "When it doesn't go, it stays put and leaves another footprint where it stands. Past the edge there is no ground: it never goes there.",
-                "Where footprints pile up thickest, the map in the dark rises highest. At dawn, the land itself.",
-            ],
-            "Real: every step is that rule, on the land you see at dawn; the map in the dark is made from the footprints alone. Drawn: the land (a new one each night), the walker, the night.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "The walker picks a spot at random within its ring. Uphill, it always goes; downhill, only sometimes, more rarely the steeper the drop.",
+                "When it stays, it leaves another footprint where it stands.",
+                "So footprints pile up on the high ground, and the map in the dark rises where they are thickest. Dawn shows the land itself.",
+        ]))
     }
 }
 

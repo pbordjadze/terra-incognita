@@ -9,11 +9,12 @@
 
 pub mod doors;
 pub mod rooms;
+mod words;
 
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-use toy_kit::info::{Demo, Rules, Stroke};
+use toy_kit::info::{Demo, Rules};
 use toy_kit::paint::Painter;
 use toy_kit::sound::{pentatonic, Bells, Note};
 use toy_kit::{Assets, Camera, Ctx, Globe, LonLat, MemoryAssets, Phase, PointerEvent, Synth, Toy};
@@ -463,6 +464,7 @@ pub struct Terra {
     room: Option<Box<dyn Room>>,
     /// The light whose toy is open (or opening, or closing).
     door: usize,
+    seen: std::collections::HashSet<usize>, // toys opened since launch: a first opening shows its demo
     state: State,
     veil: Veil,
     t: f64,
@@ -1447,6 +1449,7 @@ impl Toy for Terra {
             room_level: Arc::new(AtomicU32::new(0f32.to_bits())),
             room: None,
             door: 0,
+            seen: Default::default(),
             state: State::Atlas,
             veil: Veil::new(ctx),
             t: 0.0,
@@ -1665,6 +1668,9 @@ impl Toy for Terra {
                 }
                 if t - t0 >= FADE {
                     self.state = State::Inside;
+                    if self.seen.insert(self.door) {
+                        ctx.show_info();
+                    }
                     // the Earth's lights sleep while a toy is open
                     self.veil.target = None;
                 }
@@ -1956,10 +1962,7 @@ impl Toy for Terra {
             .nearest(&self.globe, [w / 2.0, h / 2.0])
             .map(|i| self.life.spot(&self.globe, i).0)
             .unwrap_or([w / 2.0, h / 2.0]);
-        Some(Demo::new(
-            "Each light is a toy. Touch one to go in.",
-            vec![Stroke::tap(0.6, at)],
-        ))
+        Some(words::earth_demo(at))
     }
 
     fn buttons(&self, ctx: &Ctx) -> Vec<(String, [f64; 2])> {
@@ -1997,6 +2000,10 @@ impl Toy for Terra {
         None
     }
 
+    fn info_at_start(&self) -> bool {
+        false
+    }
+
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
         self.inside() && self.room.as_ref().is_some_and(|r| r.card_at_top())
     }
@@ -2005,14 +2012,7 @@ impl Toy for Terra {
         if self.inside() {
             return self.room.as_ref().and_then(|r| r.rules());
         }
-        Some(Rules::new(
-            &[
-                "Every light is a toy, at the place where it is real.",
-                "Touch a light to fall into its toy, or pinch down onto it. Pinch out, or touch the Earth mark bottom left, to come back.",
-                "Pinch in anywhere: the closer you go, the more rivers there are.",
-            ],
-            "Real: the Earth this month as NASA's satellites saw it, its rivers (HydroSHEDS) and each toy's place. Drawn: the lights.",
-        ))
+        Some(words::earth_rules())
     }
 }
 

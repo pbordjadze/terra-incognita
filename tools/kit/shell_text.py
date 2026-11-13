@@ -57,11 +57,7 @@ def rules(img, text, k, top=False):
     h = min(th + 2 * pad[0], foot - SAFE_TOP - 8)
     x0, y0 = (W - w) / 2, (SAFE_TOP + 8 if top else foot - h)
     box = tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h))
-    glass = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
-    glass = Image.blend(glass, Image.new("RGB", glass.size, (15, 15, 17)), 0.75)  # (material + the 0.62 tint)
-    mask = Image.new('L', glass.size, 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, glass.size[0] - 1, glass.size[1] - 1), radius=round(16 * k), fill=255)
-    img.paste(glass, box[:2], mask)
+    glass(img, box, k, 16)
     d = ImageDraw.Draw(img, 'RGBA')
     y = y0 + pad[0]
     for t, f, a, before, lh in rows:
@@ -72,20 +68,36 @@ def rules(img, text, k, top=False):
         y += lh
 
 
+def glass(img, box, k, radius):
+    """UIKit's ultra-thin dark material with the shell's 0.62 tint, over `box` (pixels)."""
+    g = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
+    g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), 0.75)
+    mask = Image.new('L', g.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, g.size[0] - 1, g.size[1] - 1), radius=round(radius * k), fill=255)
+    img.paste(g, box[:2], mask)
+
+
 def caption(img, text, k):
+    """The demo's line: two lines at most, on a small dark glass as wide as it needs, its middle 74 points
+    above the safe area's foot."""
     W, H = img.size[0] / k, img.size[1] / k
-    w = min(W - 48, 560)
+    pad = (8, 14)
+    most = min(W - 48, 560) - 2 * pad[1]
     f = ImageFont.truetype(FONT, round(16 * k))
     d = ImageDraw.Draw(img, 'RGBA')
-    tw = d.textlength(text, font=f)
-    if tw > w * k:  # (adjustsFontSizeToFitWidth, down to 0.7)
-        f = ImageFont.truetype(FONT, round(16 * k * max(0.7, w * k / tw)))
-        tw = d.textlength(text, font=f)
-    x, y = (W * k - tw) / 2, (H - SAFE_BOTTOM - 96 + 22 - 10) * k
-    shadow = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    ImageDraw.Draw(shadow).text((x, y), text, font=f, fill=(0, 0, 0, 230))
-    img.paste(Image.new('RGB', img.size, 0), (0, 0), shadow.filter(ImageFilter.GaussianBlur(4 * k)).split()[3])
-    ImageDraw.Draw(img, 'RGBA').text((x, y), text, font=f, fill=(255, 255, 255, 235))
+    if d.textlength(text, font=f) > most * k and '. ' in text:  # (too long for one: break after the first sentence)
+        text = text.replace('. ', '.\n', 1)
+    lines = wrap(d, text, f, most * k)[:2]
+    w = max(d.textlength(t, font=f) for t in lines) / k
+    lh = 21
+    h = lh * len(lines)
+    mid = H - SAFE_BOTTOM - 74
+    x0, y0 = (W - w) / 2 - pad[1], mid - h / 2 - pad[0]
+    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w + 2 * pad[1], y0 + h + 2 * pad[0])), k, 14)
+    d = ImageDraw.Draw(img, 'RGBA')
+    for i, t in enumerate(lines):
+        tw = d.textlength(t, font=f)
+        d.text(((W * k - tw) / 2, (y0 + pad[0] + i * lh + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, 242))
 
 
 def title(img, text, k):

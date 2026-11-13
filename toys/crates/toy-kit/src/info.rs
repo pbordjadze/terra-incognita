@@ -7,14 +7,14 @@
 //! gesture starts, still, with the line, and no touch is played. A plan taps it as `"tap": "info"`.
 //!
 //! Beside it, the rules mark (a "?"): a tap shows the toy's [`Rules`] (`Toy::rules`): the few rules
-//! that make what is on screen, then one line of what is measured and what is drawn. The shell sets
+//! the real thing follows and how a finger joins in, in two to four short lines. The shell sets
 //! them in the system's text over the live scene (`host.info.rules()`); a tap anywhere closes them,
 //! and nothing closes them on a timer (they are read at the reader's pace, or not at all). A plan
 //! taps it as `"tap": "rules"`. painting-company row 214.
 //!
 //! Beside that, the origins mark (an asterisk, a footnote's mark): a tap shows where the rules came
-//! from (`Toy::origins`, a [`Rules`] too: its lines the science and history behind them, its note what
-//! is real and what is drawn), so the "?" can be the rules alone. Same card, same closing tap. A
+//! from (`Toy::origins`, a [`Rules`] too: its lines the science and history behind them), so the "?"
+//! can be the rules alone. Same card, same closing tap. A
 //! toy may hang the card from the top instead of over the marks (`Toy::card_at_top`), to keep it off
 //! what matters in its scene. A plan taps it as `"tap": "origins"`. painting-company row 219.
 
@@ -133,7 +133,7 @@ impl Demo {
 }
 
 /// What the rules mark (or the origins mark) shows: lines, a line each, and an optional dimmer note
-/// (empty: none), e.g. what is real and what is drawn.
+/// (empty: none; Screw's says the reader's song stays on the phone).
 #[derive(Clone, Debug)]
 pub struct Rules {
     pub lines: Vec<String>,
@@ -146,6 +146,10 @@ impl Rules {
             lines: lines.iter().map(|l| l.to_string()).collect(),
             note: note.into(),
         }
+    }
+    /// The lines alone, no note.
+    pub fn lines(lines: &[&str]) -> Rules {
+        Rules::new(lines, "")
     }
     /// As the shell takes it: the lines, one a line, then a blank line and the note.
     pub fn text(&self) -> String {
@@ -302,6 +306,107 @@ impl Info {
             return Route::Taken;
         }
         Route::Toy
+    }
+}
+
+/// The demo opening by itself on a first visit (Paul, Nov 13: "The info should pop up when you first
+/// open an experience"): a toy's own a moment after it starts (`Toy::info_at_start`), unless a finger
+/// came down first; and whenever the toy asks (`Ctx::show_info`: Terra, as each toy it holds first
+/// opens). Off (`on: false`) in the headless check unless a plan says `"first_info": true`, so a plan's
+/// fingers stay its own.
+pub struct First {
+    pub on: bool,
+    /// A real finger came down (the reader is already in: the start's demo stays shut).
+    pub touched: bool,
+    /// The toy's first frame, and whether the start's demo is done with.
+    began: Option<f64>,
+    done: bool,
+}
+
+impl Default for First {
+    fn default() -> First {
+        First {
+            on: true,
+            touched: false,
+            began: None,
+            done: false,
+        }
+    }
+}
+
+/// How long after the toy's first frame its demo opens by itself.
+const FIRST_AFTER: f64 = 1.0;
+
+// the info marks' side of the host
+impl<T: crate::Toy> crate::Host<T> {
+    /// Opens the demo by itself when a first visit calls for it (`First`).
+    pub(crate) fn first_info_step(&mut self, t: f64) {
+        let asked = self.ctx.take_show_info();
+        let f = &mut self.first_info;
+        if !f.on {
+            return;
+        }
+        let began = *f.began.get_or_insert(t);
+        let start = !f.done && t - began >= FIRST_AFTER;
+        if start {
+            f.done = true;
+        }
+        if (asked || (start && !f.touched && self.toy.info_at_start())) && !self.info.is_open() {
+            self.open_info(t);
+        }
+    }
+
+    /// Shows where the rules came from (a tap on the origins mark, or VoiceOver's activation of it),
+    /// or, if that shows, hides it.
+    pub fn open_origins(&mut self) {
+        let r = if self.info.origins().is_some() {
+            None
+        } else {
+            self.toy.origins()
+        };
+        self.info.show_origins(r);
+    }
+
+    /// The origins mark's place in points, if the toy has one.
+    pub fn origins_spot(&self) -> Option<[f64; 2]> {
+        self.marks
+            .origins
+            .then(|| Info::origins_spot(self.ctx.points()))
+    }
+
+    /// Whether the shell hangs the card from the top (`Toy::card_at_top`).
+    pub fn card_at_top(&self) -> bool {
+        self.toy.card_at_top(&self.ctx)
+    }
+
+    /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
+    /// hides them.
+    pub fn open_rules(&mut self) {
+        let r = if self.info.rules().is_some() {
+            None
+        } else {
+            self.toy.rules()
+        };
+        self.info.show_rules(r);
+    }
+
+    /// The rules mark's place in points, if the toy has one.
+    pub fn rules_spot(&self) -> Option<[f64; 2]> {
+        self.marks
+            .rules
+            .then(|| Info::rules_spot(self.ctx.points()))
+    }
+
+    /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
+    pub fn open_info(&mut self, t: f64) {
+        if let Some(d) = self.toy.demo(&self.ctx) {
+            self.info.open(d, t);
+        }
+    }
+
+    /// The info mark's place in points, if the toy has one.
+    pub fn info_spot(&self) -> Option<[f64; 2]> {
+        self.marks.demo.then(|| Info::spot(self.ctx.points()))
     }
 }
 

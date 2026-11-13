@@ -403,20 +403,17 @@ impl Toy for Fireflies {
             [-46.63, -23.55],
         ]);
         Some(toy_kit::info::Demo::new(
-            "Every city a firefly, falling into step. Tap one.",
+            "Every city light a firefly. Tap a crowd to scatter it.",
             vec![toy_kit::info::Stroke::tap(0.5, at)],
         ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "Every city light is a firefly with its own clock. When the clock fills, it flashes green.",
-                "Seeing a neighbour flash nudges its clock ahead.",
-                "Slowly they fall into step, in waves.",
-            ],
-            "Real: the lights (NASA), and the rule: fireflies in the Smoky Mountains sync this way. Drawn: how fast they flash and how far they see, the chimes.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "Some fireflies flash in unison, like those in the Smoky Mountains.",
+                "Each flashes on its own rhythm, but seeing a neighbour light up nudges it a little sooner. No one leads, yet slowly they fall into step, in waves.",
+                "Here every city light is a firefly, and green is a flash. Tap to knock a crowd out of step, and watch it fall back in.",
+        ]))
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

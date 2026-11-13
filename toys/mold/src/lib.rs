@@ -772,29 +772,20 @@ impl Toy for Mold {
 
     // The "?": the rules alone, as sim.wgsl runs them. Where they came from is the asterisk's.
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "65,000 specks wander the land.",
-                "Each sniffs ahead, ahead-left and ahead-right, turns toward the strongest scent, and steps forward.",
-                "If that spot is taken, it turns a random way instead.",
-                "Each leaves a little scent behind. Scent spreads and fades.",
-                "City lights and your taps give off scent.",
-                "No speck crosses open sea.",
-            ],
-            "",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "A slime mold is one huge cell with no brain, creeping out to find food.",
+                "It follows food and its own slime trails, so busy paths grow thicker and the rest fade away.",
+                "What is left is a web of short routes between its food: here, the world's city lights. Tap anywhere to drop more food.",
+        ]))
     }
 
     // The asterisk: where the rules came from (SOURCES.md), then what is real and what is made up.
     fn origins(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
+        Some(toy_kit::info::Rules::lines(&[
                 "In 2010 Atsushi Tero's team set oat flakes on a map of the towns around Tokyo, and a real slime mold, Physarum, joined them much as Tokyo's railways do.",
-                "The same year, Jeff Jones showed that specks following a few simple rules grow the same kind of network.",
+                "The same year, Jeff Jones showed that specks following a few simple rules grow the same kind of network: 65,000 of them crawl here.",
                 "Here the oat flakes are the world's city lights, as NASA's satellites see them at night.",
-            ],
-            "From the science: the city lights and Jones's rules. Made up: the sea rule, the taps, the numbers, the color and the glow.",
-        ))
+        ]))
     }
 
     // the card hangs over the half of the screen with less of the lit land on it

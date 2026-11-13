@@ -111,6 +111,7 @@ pub struct Ctx {
     /// The reader's Reduce Motion.
     pub reduce_motion: bool,
     haptic: bool,
+    show_info: bool,
 }
 
 impl Ctx {
@@ -124,6 +125,7 @@ impl Ctx {
             night: false,
             reduce_motion: false,
             haptic: false,
+            show_info: false,
         }
     }
 
@@ -132,10 +134,21 @@ impl Ctx {
         self.haptic = true;
     }
 
+    /// Asks the host to open the info mark's demo now, as a first visit does (Terra, as a toy it holds
+    /// opens for the first time; `Host::first_info`).
+    pub fn show_info(&mut self) {
+        self.show_info = true;
+    }
+
     /// Whether a haptic tap was asked for since the last call, forgetting it (a host passes on the
     /// taps of a toy it holds: `toys/terra`).
     pub fn take_haptic(&mut self) -> bool {
         std::mem::take(&mut self.haptic)
+    }
+
+    /// Whether the demo was asked for since the last call, forgetting it.
+    pub fn take_show_info(&mut self) -> bool {
+        std::mem::take(&mut self.show_info)
     }
 
     /// The screen's size in points.
@@ -191,14 +204,13 @@ pub trait Toy: 'static {
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         None
     }
-    /// What the rules mark shows (`info`): the few rules that make what is on screen, and one line of
-    /// what is measured and what is drawn. None (the default) shows no rules mark.
+    /// What the rules mark shows (`info`): the rules the real thing follows, two to four short lines,
+    /// the note empty. None (the default) shows no rules mark.
     fn rules(&self) -> Option<info::Rules> {
         None
     }
     /// What the origins mark shows (`info`): where the rules came from (the real science and
-    /// history behind them), then a dimmer note of what is real and what is drawn. None (the default)
-    /// shows no origins mark.
+    /// history behind them). None (the default) shows no origins mark.
     fn origins(&self) -> Option<info::Rules> {
         None
     }
@@ -207,6 +219,12 @@ pub trait Toy: 'static {
     /// as a card opens, so it may look at where things are now.
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
         false
+    }
+    /// Whether the info mark's demo opens by itself a moment after the toy starts (true, the default:
+    /// a first visit shows what the toy is). Terra says no for its Earth and asks for each toy it opens
+    /// instead (`Ctx::show_info`).
+    fn info_at_start(&self) -> bool {
+        true
     }
     /// Things on screen a finger can touch that VoiceOver should offer as buttons: a label and where
     /// it is, in points (Terra's lights, each opening its toy). None by default: a toy's scene is
@@ -369,6 +387,8 @@ pub struct Host<T: Toy> {
     /// The info mark and its demo.
     pub info: info::Info,
     marks: info::Marks,
+    /// The info demo's opening on a first visit (`info::First`).
+    pub first_info: info::First,
     /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
     buttons: std::ffi::CString,
     /// The toy's title as the shell reads it (`title_text`).
@@ -391,6 +411,7 @@ impl<T: Toy> Host<T> {
             synth,
             last_t: None,
             info: Default::default(),
+            first_info: Default::default(),
             marks,
             buttons: Default::default(),
             title: Default::default(),
@@ -408,6 +429,9 @@ impl<T: Toy> Host<T> {
         // shows closes the card and is the button's too: one tap, not two (painting-company row 246: five
         // of six newcomers tapped Terra's Earth mark with the rules up, and it only closed them). A toy
         // without buttons keeps the rule that a closing tap is nobody's.
+        if e.phase == Phase::Down {
+            self.first_info.touched = true;
+        }
         if e.phase == Phase::Down && self.info.is_open() {
             let pts = self.toy.buttons(&self.ctx);
             if pts
@@ -426,59 +450,6 @@ impl<T: Toy> Host<T> {
             info::Route::Rules => self.open_rules(),
             info::Route::Origins => self.open_origins(),
         }
-    }
-
-    /// Shows where the rules came from (a tap on the origins mark, or VoiceOver's activation of it),
-    /// or, if that shows, hides it.
-    pub fn open_origins(&mut self) {
-        let r = if self.info.origins().is_some() {
-            None
-        } else {
-            self.toy.origins()
-        };
-        self.info.show_origins(r);
-    }
-
-    /// The origins mark's place in points, if the toy has one.
-    pub fn origins_spot(&self) -> Option<[f64; 2]> {
-        self.marks
-            .origins
-            .then(|| info::Info::origins_spot(self.ctx.points()))
-    }
-
-    /// Whether the shell hangs the card from the top (`Toy::card_at_top`).
-    pub fn card_at_top(&self) -> bool {
-        self.toy.card_at_top(&self.ctx)
-    }
-
-    /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
-    /// hides them.
-    pub fn open_rules(&mut self) {
-        let r = if self.info.rules().is_some() {
-            None
-        } else {
-            self.toy.rules()
-        };
-        self.info.show_rules(r);
-    }
-
-    /// The rules mark's place in points, if the toy has one.
-    pub fn rules_spot(&self) -> Option<[f64; 2]> {
-        self.marks
-            .rules
-            .then(|| info::Info::rules_spot(self.ctx.points()))
-    }
-
-    /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
-    pub fn open_info(&mut self, t: f64) {
-        if let Some(d) = self.toy.demo(&self.ctx) {
-            self.info.open(d, t);
-        }
-    }
-
-    /// The info mark's place in points, if the toy has one.
-    pub fn info_spot(&self) -> Option<[f64; 2]> {
-        self.marks.demo.then(|| info::Info::spot(self.ctx.points()))
     }
 
     /// The toy's buttons, a line each: its label, a tab, x, a tab, y (points); valid until the next call.
@@ -551,6 +522,7 @@ impl<T: Toy> Host<T> {
             self.toy.pointer(&mut self.ctx, g);
         }
         self.toy.update(&mut self.ctx, t, dt);
+        self.first_info_step(t);
     }
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
