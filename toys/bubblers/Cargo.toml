@@ -1,0 +1,26 @@
+[package]
+name = "bubblers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Bubblers (a working title): sand-bubbler crabs at low tide on a Phuket beach, laying starbursts of sand balls; a tap is a footstep."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "bubblers-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true
