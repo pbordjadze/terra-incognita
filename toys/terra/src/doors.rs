@@ -536,19 +536,26 @@ impl Life {
                 "mold" => self.paint_mold(p, c, r * k, kf, tm, a),
                 "fireflies" => self.paint_flies(p, c, r * k, kf, tm, a, reduce_motion),
                 "bell" | "swell" => {
-                    // rings on the sphere about the place: the bell's one, crossing the whole Earth;
-                    // the swell's train of crests, slower and close
+                    // rings on the sphere about the place: the bell's one, crossing the whole Earth; the
+                    // swell's crests closing in on Nazaré from all round, as the canyon focuses them there
                     let centre = LonLat::new(d.at[0], d.at[1]).to_xyz();
-                    let (period, reach, crests, width) = if d.id == "bell" {
+                    let bell = d.id == "bell";
+                    let (period, reach, crests, width) = if bell {
                         (5.0, 0.55, 2, 3.0)
                     } else {
-                        (9.0, 0.7, 3, 2.4)
+                        (6.0, 0.06, 3, 2.0)
                     };
                     for j in 0..crests {
-                        let ph = (tm / period - j as f64 * if d.id == "bell" { 0.5 } else { 0.07 })
+                        let ph = (tm / period - j as f64 * if bell { 0.5 } else { 1.0 / 3.0 })
                             .rem_euclid(1.0);
-                        let theta = 0.02 + reach * ph;
-                        let al = ((1.0 - ph).powf(1.2) * smooth(0.0, 0.05, ph)) as f32 * a;
+                        let (theta, al) = if bell {
+                            (
+                                0.02 + reach * ph,
+                                (1.0 - ph).powf(1.2) * smooth(0.0, 0.05, ph),
+                            )
+                        } else {
+                            (0.004 + reach * (1.0 - ph), ph * smooth(1.0, 0.92, ph))
+                        };
                         sphere_ring(
                             p,
                             globe,
@@ -557,7 +564,7 @@ impl Life {
                             k,
                             [ox, oy],
                             width * kf,
-                            [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.8, al],
+                            [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.8, al as f32 * a],
                         );
                     }
                     p.disc(c, 2.2 * kf, 1.0, [tint[0], tint[1], tint[2], 0.9 * a]);

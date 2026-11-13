@@ -433,6 +433,43 @@ def kanto():
     return img
 
 
+def nazare():
+    # the dusk sea off Nazaré: its real coast (the floor's land, cropped about the headland), the swell's
+    # crests closing in on Praia do Norte, white water where they meet
+    import numpy as np
+    meta = json.loads((ROOT / 'toys' / 'nazare' / 'data' / 'floor.json').read_text())
+    w, h = meta['w'], meta['h']
+    ground = np.frombuffer((ROOT / 'toys' / 'nazare' / 'data' / 'floor.bin').read_bytes(), '<i2').reshape(h, w)
+    px, py = meta['places']['praia_do_norte']['cell']
+    half = 150
+    x0, y0 = int(px) - int(half * 1.55), int(py) - half
+    crop = ground[max(y0, 0):y0 + 2 * half, max(x0, 0):x0 + 2 * half]
+    land = Image.fromarray(np.where(crop >= 0, 255, 0).astype('uint8')).resize((N, N), Image.Resampling.BILINEAR)
+    img = Image.new('RGBA', (N, N), (14, 34, 46, 255))
+    k = N / (2 * half)
+    fx, fy = (px - x0) * k, (py - y0) * k
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    for j in range(7):
+        r = 70 + j * 92
+        gd.arc([fx - r, fy - r, fx + r, fy + r], 120, 240, fill=(200, 225, 230, 110), width=26)
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(10)))
+    d = ImageDraw.Draw(img)
+    for j in range(7):
+        r = 70 + j * 92
+        d.arc([fx - r, fy - r, fx + r, fy + r], 120, 240, fill=(214, 232, 232, 255), width=9 if j > 1 else 14)
+    foam = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    ImageDraw.Draw(foam).ellipse([fx - 120, fy - 110, fx - 10, fy + 110], fill=(240, 246, 246, 230))
+    img = Image.alpha_composite(img, foam.filter(ImageFilter.GaussianBlur(14)))
+    ground_img = Image.new('RGBA', (N, N), (30, 28, 22, 255))
+    img.paste(ground_img, (0, 0), land.filter(ImageFilter.GaussianBlur(1.5)))
+    d = ImageDraw.Draw(img)
+    tx, ty = (meta['places']['town']['cell'][0] - x0) * k, (meta['places']['town']['cell'][1] - y0) * k
+    for dx, dy in [(10, 0), (30, 20), (5, 40), (40, -10), (22, 55), (55, 30)]:
+        d.ellipse([tx + dx - 7, ty + dy - 7, tx + dx + 7, ty + dy + 7], fill=(255, 190, 110, 255))
+    return img
+
+
 def gradient(top, bottom):
     img = Image.new('RGBA', (N, N))
     d = ImageDraw.Draw(img)
@@ -506,7 +543,7 @@ def wave():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto}
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'kanto': kanto, 'nazare': nazare}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

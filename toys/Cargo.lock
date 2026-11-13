@@ -579,6 +579,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nazare"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -990,9 +1002,9 @@ dependencies = [
  "kanto",
  "meander",
  "murmuration",
+ "nazare",
  "serde",
  "serde_json",
- "swell",
  "throats",
  "toy-kit",
  "wave",

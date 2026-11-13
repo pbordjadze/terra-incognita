@@ -659,8 +659,8 @@ impl Terra {
         // pair, which is already close); a scene of its own: as close over its place as the Earth goes
         let to = match room.camera() {
             // the toys whose first sight is a whole sea or the whole Earth (the whales' pair, the bell's
-            // ring round the world, the swell's crossing an ocean): down to that, the toy's own view
-            Some(own) if matches!(self.life.doors[i].id, "whales" | "bell" | "swell") => own,
+            // ring round the world): down to that, the toy's own view
+            Some(own) if matches!(self.life.doors[i].id, "whales" | "bell") => own,
             Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             // a toy seen from above: down onto its place at its true scale and turn, where its first frame is
             // what the Earth shows (painting-company row 258)
@@ -761,10 +761,10 @@ impl Terra {
     }
 
     /// The touch that opened a light goes on into its toy: the toy is touched where the light was (the
-    /// bell rings from Chile, the swell drops its wave, a whale is followed). The scenes, whose touch is a hold or a drawn line, are left to the reader.
+    /// bell rings from Chile, a whale is followed). The scenes, whose touch is a hold or a drawn line, are left to the reader.
     fn touch_through(&mut self, t: f64) {
         let d = &self.life.doors[self.door];
-        if !matches!(d.id, "bell" | "swell" | "whales") {
+        if !matches!(d.id, "bell" | "whales") {
             return;
         }
         let Some(r) = self.room.as_mut() else { return };

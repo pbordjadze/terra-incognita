@@ -1,0 +1,42 @@
+{
+ "_": "Nazar\u00e9's floor (tools/toys/nazare/build.py): floor.bin is W x H int16 decimetres, north row first.",
+ "west": -9.3,
+ "east": -9.03,
+ "south": 39.4,
+ "north": 39.82,
+ "w": 463,
+ "h": 934,
+ "cell_m": 50.0,
+ "places": {
+  "headland": {
+   "lonlat": [
+    -9.085,
+    39.604
+   ],
+   "cell": [
+    368.7,
+    480.3
+   ]
+  },
+  "praia_do_norte": {
+   "lonlat": [
+    -9.0845,
+    39.6105
+   ],
+   "cell": [
+    369.5,
+    465.9
+   ]
+  },
+  "town": {
+   "lonlat": [
+    -9.07,
+    39.601
+   ],
+   "cell": [
+    394.4,
+    487.0
+   ]
+  }
+ }
+}

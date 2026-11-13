@@ -1,0 +1,76 @@
+{
+ "_": "Nazaré from the start: a long winter swell from the west-north-west bending round the canyon into Praia do Norte; then a finger turns it to the south-west and back, and lengthens it.",
+ "seconds": 40,
+ "fps": 10,
+ "events": [
+  {
+   "t": 18.0,
+   "drag": [
+    [
+     150,
+     300
+    ],
+    [
+     60,
+     300
+    ]
+   ],
+   "for": 1.0
+  },
+  {
+   "t": 27.0,
+   "drag": [
+    [
+     150,
+     300
+    ],
+    [
+     250,
+     300
+    ]
+   ],
+   "for": 1.0
+  },
+  {
+   "t": 33.0,
+   "drag": [
+    [
+     200,
+     500
+    ],
+    [
+     200,
+     650
+    ]
+   ],
+   "for": 1.0
+  }
+ ],
+ "shots": [
+  {
+   "t": 2,
+   "name": "open"
+  },
+  {
+   "t": 9,
+   "name": "sets"
+  },
+  {
+   "t": 16,
+   "name": "peak"
+  },
+  {
+   "t": 24,
+   "name": "southwest"
+  },
+  {
+   "t": 31,
+   "name": "northwest"
+  },
+  {
+   "t": 39,
+   "name": "short"
+  }
+ ],
+ "audio": true
+}

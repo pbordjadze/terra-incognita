@@ -1,0 +1,56 @@
+{
+ "_": "The swell's light on Portugal touched: the dive to Nazaré, the canyon's swell coming up through it (toys/nazare); a drag inside turns the swell; the Earth mark and back.",
+ "restore": "{\"camera\":{\"lon\":-9.1,\"lat\":39.6,\"zoom\":1.4,\"roll\":0.0}}",
+ "seconds": 16,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": "swell"
+  },
+  {
+   "t": 8.0,
+   "drag": [
+    [
+     150,
+     330
+    ],
+    [
+     80,
+     330
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 11.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "before"
+  },
+  {
+   "t": 2.4,
+   "name": "diving"
+  },
+  {
+   "t": 4.0,
+   "name": "opening"
+  },
+  {
+   "t": 7.5,
+   "name": "inside"
+  },
+  {
+   "t": 10.5,
+   "name": "turned"
+  },
+  {
+   "t": 15.5,
+   "name": "back"
+  }
+ ]
+}
