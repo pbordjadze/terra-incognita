@@ -4,3 +4,5 @@ numpy==2.5.4
 ruff==0.17.4
 shellcheck-py==0.11.0.1
 actionlint-py==1.7.12.25
+lizard==1.26.0
+pyright==1.1.414

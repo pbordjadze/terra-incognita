@@ -1,0 +1,24 @@
+# Python files with pyright errors (pyrightconfig.json, standard mode) when type checking came in: `path errors`, the count each
+# may not pass.
+# They may only get better: `python3 ci/ratchet.py types --tighten` lowers a ceiling in the commit that improves it.
+# A raised ceiling or a new entry carries its reason after a `#` on its line.
+ci/check_globe.py 1
+tools/adrift/data/weather.py 10
+tools/adrift/study.py 1
+tools/clouds/build.py 4
+tools/globe/build.py 7
+tools/globe/ground.py 1
+tools/globe/preview.py 8
+tools/herds/build.py 2
+tools/metal/layers.py 12
+tools/metal/metal.py 59
+tools/metal/tests/test_metal.py 9
+tools/plates/build_data.py 8
+tools/plates/kells-forest/prep.py 3
+tools/plates/preview.py 3
+tools/playground/playground.py 8
+tools/playground/test_playground.py 16
+tools/toys/frost/reiter.py 1
+tools/toys/mold/build.py 6
+tools/water/build.py 2
+tools/wikipedia/build.py 3
