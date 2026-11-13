@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Bats loads none: the dusk, the land and the bats are drawn from code.",
+  "files": {}
+}

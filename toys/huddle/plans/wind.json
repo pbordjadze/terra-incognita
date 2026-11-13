@@ -1,0 +1,5 @@
+{ "_": "A drag across the ice turns the wind round; the edge that's now in it frosts and starts to peel off.", "size": [1179, 2556], "ppp": 3, "seconds": 14, "fps": 30,
+  "events": [ { "t": 1.0, "drag": [[60, 700], [340, 640]], "for": 0.7 }, { "t": 9.0, "tap": "middle" } ],
+  "film": { "from": 0.5, "to": 14.0, "every": 0.25, "fingers": true },
+  "audio": true,
+  "shots": [0.9, 4.0, 8.0, 10.0, 13.9] }
