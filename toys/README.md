@@ -21,7 +21,7 @@ the owner's to decide):
 | Throats: side-blotched lizards on a California hillside play rock–paper–scissors; the colours turn in spirals; a finger pours a colour (row 257) | `throats/` | `com.pbordjadze.toy.throats` | `throats-build-<n>` |
 | Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
 | Elkmont: the synchronous fireflies in the woods at Elkmont, flashing together; a light held low and the females answer (the Fireflies light on Terra's Earth since Nov 13, 2026) | `elkmont/` | `com.pbordjadze.toy.elkmont` | `elkmont-build-<n>` |
-| Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a drag turns it or lengthens it (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | `nazare-build-<n>` |
+| Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a swipe toward the coast sends a swell from that side, and its set breaks there (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | `nazare-build-<n>` |
 | Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | `bats-build-<n>` |
 | Huddle: emperor penguins on Atka Bay's sea ice in a winter wind; the cold edge walks round to the lee and waves of small steps run through; a finger turns the wind | `huddle/` | `com.pbordjadze.toy.huddle` | `huddle-build-<n>` |
 | The Wave: Estadio Azteca at night, 87,000 phone lights; swipe the stands and, if enough stand, a Mexican wave runs round the bowl (an excitable medium) | `wave/` | `com.pbordjadze.toy.wave` | `wave-build-<n>` |
@@ -29,6 +29,7 @@ the owner's to decide):
 | Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | `bubblers-build-<n>` |
 | Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | `barchans-build-<n>` |
 | Pando: the aspen clone in Utah that looks like a forest and is one tree; drag to blow, tap into one stem, one leaf, its pores (row 334) | `pando/` | `com.pbordjadze.toy.pando` | `pando-build-<n>` |
+| Moon Road: Lake Superior at moonrise, the water a numbered template the moon paints wherever a facet tilts its light to you, so the glitter path fills in; a tap gusts, a drag walks the shore and the road follows (row 333) | `moonroad/` | `com.pbordjadze.toy.moonroad` | `moonroad-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
