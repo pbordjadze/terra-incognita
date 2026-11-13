@@ -6,10 +6,10 @@ the owner's to decide):
 
 | toy | directory | bundle id | release tag |
 | --- | --- | --- | --- |
-| Whales: two whales, their songs and their travels in the real oceans | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
+| Whales: two whales, their songs and their travels in the real oceans (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | `murmuration-build-<n>` |
 | Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
-| Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
+| Bell: strike the Earth and it rings in its own measured free oscillations (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
 | Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 | Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
 | Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | `jam-build-<n>` |
@@ -106,8 +106,9 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). A scene toy (no globe of its own) opens as a window:
   touched, its light shows the toy itself, live, its whole frame scaled into the light (`draw_window`), growing
   with the Earth's zoom as Terra turns the light to the middle and falls toward it; out, it shrinks back
-  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is the held toys' merged
-  (`tools/toys/terra/manifest.py`); CI checks it whenever a toy it holds changes. A toy added to Terra is a
+  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is its own globe's and the held toys',
+  merged (`tools/toys/terra/manifest.py`); CI checks it whenever any toy changes. It holds local toys only for now (a
+  real place and a real phenomenon; Bell and Whales came off its map on Nov 13, 2026). A toy added to Terra is a
   dependency in its `Cargo.toml`, a `Door` and a name in `doors.rs`/`lib.rs`, and its name in the manifest
   tool.
 - `<toy>/`: one crate a toy (`src/lib.rs` the toy, `src/bin/check.rs` its check binary), `toy.json` (its

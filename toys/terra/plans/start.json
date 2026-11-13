@@ -1,5 +1,5 @@
 {
- "_": "First sight: the whole Earth over the Atlantic, its lights alive (the fireflies' glows bursting together in the Smokies, the bell's ring crossing from Chile, the starlings wheeling), glints now and then; it begins to turn on its own. A tap on the bare sea at 6 s: a ring there, the nearest light glints back.",
+ "_": "First sight: the whole Earth over the Atlantic, its lights alive (the fireflies' glows bursting together in the Smokies, the starlings wheeling, the swell's crests closing on Nazaré), glints now and then; it begins to turn on its own. A tap on the bare sea at 6 s: a ring there, the nearest light glints back.",
  "seconds": 10,
  "fps": 20,
  "events": [{ "t": 6.0, "tap": { "lonlat": [-40.0, 30.0] } }],
