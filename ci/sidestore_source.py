@@ -5,7 +5,7 @@
 
 The apps are ci/sidestore_apps.json's; each one's versions come from the releases tagged
 `<tag>-<n>` that carry an .ipa asset (newest first, KEEP of them). Needs `gh` with GH_TOKEN and
-GITHUB_REPOSITORY. Both ci.yml's ipa job (Terra) and adrift.yml (Adrift) run it, each after its own
+GITHUB_REPOSITORY. toys.yml (Terra and the toys) and adrift.yml (Adrift) run it, each after its own
 release, and push the result to the `sidestore` branch with the icons beside it.
 """
 import json

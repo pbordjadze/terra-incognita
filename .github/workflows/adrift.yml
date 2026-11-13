@@ -10,7 +10,6 @@ name: Adrift
 #          as the `adrift-build-<n>` prerelease (the five newest kept) and the SideStore source on the
 #          `sidestore` branch is regenerated to list both apps (ci/sidestore_publish.sh). On a branch the
 #          IPA is the `adrift-ipa` artifact.
-# Terra's ci.yml ignores pushes that change only Adrift; this one runs only for them.
 
 on:
   push:

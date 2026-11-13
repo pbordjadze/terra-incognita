@@ -31,7 +31,7 @@ time; everything is bundled.
   that measured each cell), from NOAA AOML's ERDDAP. Licence: Creative Commons Attribution 4.0.
   Drogued drifters follow the water about 15 m down; the climatology combines their tracks since
   1979 with satellite altimetry. The currents sheet is Terra's own, read as it is
-  (`App/TerraIncognita/Ocean/OceanCurrents.png`, `tools/ocean/build.py`): where no drifter went (under the
+  (`Globe/ocean/OceanCurrents.png`, `tools/ocean/build.py`): where no drifter went (under the
   polar ice, some gulfs) the current is smoothed in from the measured cells and the sheet says so
   in its B channel; the rules treat a float there as riding a guess.
 - **The drifters' tracks.** The same programme's 6-hourly interpolated trajectories

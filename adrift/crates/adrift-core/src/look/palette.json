@@ -1,5 +1,5 @@
 {
-  "about": "Adrift's palette: every colour the look draws, and the grounds it is read against. Read by the look's Rust (include_str), mirrored by tools/adrift/study.py, and held to the contrast rule by tools/adrift/palette.py (CLAUDE.md > Design rules: inks 4.5:1, large or non-text marks 3:1, every ink on a halo). Hex sRGB; alpha where a colour is laid over the sea. The sea's own tones are Terra's G_ and N_ palettes (Globe.metal), which the ground pass keeps.",
+  "about": "Adrift's palette: every colour the look draws, and the grounds it is read against. Read by the look's Rust (include_str), and held to the contrast rule by tools/adrift/palette.py (WCAG AA: inks 4.5:1, large or non-text marks 3:1, every ink on a halo). Hex sRGB; alpha where a colour is laid over the sea. The sea's own tones are Terra's G_ and N_ palettes (Globe.metal), which the ground pass keeps.",
   "grounds": {
     "day": {"shelf": "#D3F0EE", "open": "#C2E4F4", "deep": "#A9D2EC", "ice": "#F1F5F8"},
     "night": {"sea": "#101828", "deep": "#09101E", "ice": "#444E60"}

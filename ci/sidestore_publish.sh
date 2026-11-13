@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates the SideStore source from this repository's releases (ci/sidestore_source.py,
 # ci/sidestore_apps.json) and force-pushes it, with the apps' icons, to the `sidestore` branch, which
-# SideStore reads at https://raw.githubusercontent.com/<repo>/sidestore/source.json. Run by ci.yml's
-# ipa job and by adrift.yml after each release; needs GH_TOKEN and GITHUB_REPOSITORY.
+# SideStore reads at https://raw.githubusercontent.com/<repo>/sidestore/source.json. Run by
+# toys.yml and adrift.yml after each release; needs GH_TOKEN and GITHUB_REPOSITORY.
 #
 #     bash ci/sidestore_publish.sh <build dir> "<commit message>"
 set -euo pipefail
