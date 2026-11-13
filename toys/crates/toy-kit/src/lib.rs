@@ -513,7 +513,7 @@ impl<T: Toy> Host<T> {
             None => 0.0,
         };
         self.last_t = Some(t);
-        // the origins mark may come and go with what a host holds (Terra: Mold's, while Mold is open)
+        // the origins mark may come and go with what a host holds (Terra: a held toy's, while it is open)
         self.marks.origins = self.toy.origins().is_some();
         // the demo's ghost finger: real touches, before the toy's step
         for g in self.info.advance(t, self.ctx.reduce_motion) {

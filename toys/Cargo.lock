@@ -446,18 +446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanto"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "serde",
- "serde_json",
- "toy-kit",
- "wgpu",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -537,18 +525,6 @@ checksum = "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c"
 dependencies = [
  "adler2",
  "simd-adler32",
-]
-
-[[package]]
-name = "mold"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "serde",
- "serde_json",
- "toy-kit",
- "wgpu",
 ]
 
 [[package]]
@@ -1035,7 +1011,6 @@ dependencies = [
  "elkmont",
  "frost",
  "huddle",
- "kanto",
  "meander",
  "murmuration",
  "nazare",
