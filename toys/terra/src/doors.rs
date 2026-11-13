@@ -748,19 +748,9 @@ impl Life {
                         }
                     }
                 }
-                "frost" | "catatumbo" | "bubblers" | "barchans" => likeness::draw(
-                    p,
-                    d.id,
-                    &likeness::Spot {
-                        c,
-                        r,
-                        k,
-                        kf,
-                        a,
-                        halo,
-                    },
-                    tm,
-                ),
+                "frost" | "catatumbo" | "bubblers" | "barchans" => {
+                    likeness::draw(p, d.id, &likeness::Spot::new(c, r, k, kf, a, halo), tm)
+                }
                 _ => {
                     // a toy without a likeness of its own yet: a light of its colour, breathing
                     let ph = (tm / 3.0 + i as f64 * 0.37).rem_euclid(1.0);

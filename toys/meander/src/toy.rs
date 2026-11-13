@@ -987,13 +987,10 @@ impl Toy for Meander {
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
-        Some(toy_kit::info::Rules::new(
-            &[
-                "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake. A bank you push stays soft for a while, so the bend you made keeps growing.",
-                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). Time runs about twenty years a second, slowing as a neck closes.",
-            ],
-            "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace, the finger's push.",
-        ))
+        Some(toy_kit::info::Rules::lines(&[
+                "A river wears away the outside of each bend and leaves sand on the inside, so its bends keep growing. About twenty years pass each second.",
+                "When a loop's neck closes, the river cuts through and the loop is left behind as a lake. The dark crescents are real old lakes on Bolivia's Rio Beni.",
+        ]))
     }
 
     fn anchors(&self) -> Vec<(String, [f64; 2])> {

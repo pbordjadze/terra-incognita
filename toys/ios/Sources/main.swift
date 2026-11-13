@@ -17,8 +17,10 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     var nextTouchId: UInt64 = 1
     let haptic = UIImpactFeedbackGenerator(style: .light)
     /// The info mark's one line, in the system's text (it follows the reader's text size; VoiceOver
-    /// reads it), shown while the kit plays the mark's demo (toy-kit's info.rs).
+    /// reads it), shown while the kit plays the mark's demo (toy-kit's info.rs), on a small dark glass
+    /// so it reads over a bright scene (frost, snow, paper) as over night.
     let caption = UILabel()
+    let captionGlass = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
     var captionText: String?
     lazy var infoElement = InfoElement(accessibilityContainer: self)
     lazy var rulesElement = RulesElement(accessibilityContainer: self)
@@ -26,7 +28,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// The toy's own buttons (toy_buttons: Terra's lights), kept by label so VoiceOver's focus stays put.
     var buttonElements: [String: ButtonElement] = [:]
     /// The rules (the rules mark's; toy-kit's info.rs › Rules) in the system's text: the toy's few
-    /// rules, then one dimmer line of what is measured and what is drawn, on a dark glass over the live
+    /// rules (and, if it gives one, a dimmer note), on a dark glass over the live
     /// scene, above the marks. A tap anywhere closes it; it scrolls if the reader's text size needs.
     /// The origins mark's text (where the rules came from) takes the same card; a toy may hang the card
     /// from the top instead (`toy_card_at_top`, asked as it opens).
@@ -56,18 +58,17 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         }
         caption.font = UIFont.preferredFont(forTextStyle: .callout)
         caption.adjustsFontForContentSizeCategory = true
-        caption.adjustsFontSizeToFitWidth = true
-        caption.minimumScaleFactor = 0.7
-        caption.numberOfLines = 1
+        caption.numberOfLines = 2
         caption.textAlignment = .center
-        caption.textColor = UIColor(white: 1.0, alpha: 0.92)
-        caption.layer.shadowColor = UIColor.black.cgColor
-        caption.layer.shadowOpacity = 0.9
-        caption.layer.shadowRadius = 6
-        caption.layer.shadowOffset = .zero
-        caption.alpha = 0
-        caption.isUserInteractionEnabled = false
-        addSubview(caption)
+        caption.textColor = UIColor(white: 1.0, alpha: 0.95)
+        captionGlass.layer.cornerRadius = 14
+        captionGlass.layer.cornerCurve = .continuous
+        captionGlass.clipsToBounds = true
+        captionGlass.contentView.backgroundColor = UIColor(white: 0.06, alpha: 0.62)
+        captionGlass.contentView.addSubview(caption)
+        captionGlass.alpha = 0
+        captionGlass.isUserInteractionEnabled = false
+        addSubview(captionGlass)
         title.font = UIFont.preferredFont(forTextStyle: .footnote)
         title.adjustsFontForContentSizeCategory = true
         title.numberOfLines = 1
@@ -361,13 +362,24 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         guard text != captionText else { return }
         captionText = text
         if let text {
+            // as wide as the line needs (two lines at most), centred where the line always was; a line too
+            // long for one breaks after its first sentence, not wherever the width runs out
+            let pad = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14), most = min(bounds.width - 48, 560)
             caption.text = text
-            let w = min(bounds.width - 48, 560)
-            caption.frame = CGRect(x: (bounds.width - w) / 2, y: bounds.height - safeAreaInsets.bottom - 96, width: w, height: 44)
-            UIView.animate(withDuration: 0.25) { self.caption.alpha = 1 }
+            if caption.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: 100)).width > most - pad.left - pad.right,
+               let r = text.range(of: ". ") {
+                caption.text = text.replacingCharacters(in: r, with: ".\n")
+            }
+            let fit = caption.sizeThatFits(CGSize(width: most - pad.left - pad.right, height: .greatestFiniteMagnitude))
+            let w = min(ceil(fit.width), most - pad.left - pad.right), h = ceil(fit.height)
+            let mid = bounds.height - safeAreaInsets.bottom - 74
+            captionGlass.frame = CGRect(x: (bounds.width - w) / 2 - pad.left, y: mid - h / 2 - pad.top,
+                                        width: w + pad.left + pad.right, height: h + pad.top + pad.bottom)
+            caption.frame = CGRect(x: pad.left, y: pad.top, width: w, height: h)
+            UIView.animate(withDuration: 0.25) { self.captionGlass.alpha = 1 }
             UIAccessibility.post(notification: .announcement, argument: text)
         } else {
-            UIView.animate(withDuration: 0.35) { self.caption.alpha = 0 }
+            UIView.animate(withDuration: 0.35) { self.captionGlass.alpha = 0 }
         }
     }
 

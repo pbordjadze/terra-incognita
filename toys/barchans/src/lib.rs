@@ -264,15 +264,11 @@ impl Toy for Barchans {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Real wind lifts sand wherever it reaches and drops it a little downwind, where it sticks best on sand.",
-                "Behind every crest is a lee the wind can't reach, and a slope too steep slides.",
-                "So heaps grow into crescents with horns downwind, and the small ones walk faster than the big.",
-                "Drag to turn the wind; hold still to pour sand. A big dune's sliding face hums.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "South of Tarfaya, in Morocco, crescent dunes walk across the bare desert floor.",
+            "The wind lifts sand wherever it reaches and drops it a little downwind. Behind each crest is a lee it can't reach, and a slope too steep slides.",
+            "So heaps grow into crescents, horns downwind, small ones walking faster than big. Drag to turn the wind; hold still to pour sand.",
+        ]))
     }
 }
 

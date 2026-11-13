@@ -15,3 +15,13 @@ the maker's reasoning. Its verdict, then what the maker changed. Times are ET.
   dunes); sand in transit no longer shows; the sun low from upwind so slip faces sit in shade; pale reg,
   bright sand, smoother heights, ambient light in the shadows; the light moved inland of the coast and
   its window paler, with slip faces.
+
+## Round 2 (2026-11-13, ~2:00 AM ET, commit 7d819655): not shippable
+- First look: real dunes on bare ground now, half of them crescents, but narrow horseshoes; a hard black
+  slip-face shadow with a jagged edge; banding; after the wind turns, the dunes melt to commas and the
+  shadows vanish (the sun didn't turn); the pour not to be found.
+- The one change asked: crisp wide crescents back within seconds of any wind change, the light turning
+  with the wind so the slip face always sits in soft shade; no banding.
+- Changed: wider crescents (more spread across the wind); the heights softened by a small blur on the
+  CPU (no banding); the sun low from upwind and turning with it; soft-edged shadows; a stronger pour, on
+  bare ground in the plan.

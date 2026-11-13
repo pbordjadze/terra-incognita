@@ -426,14 +426,11 @@ impl Toy for Catatumbo {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Real lightning breaks the air a step at a time, likeliest where the pull is strongest, so it forks.",
-                "Your finger is the ground it reaches for; hold, and it strikes again down the same channel.",
-                "Every piece of the channel thunders; sound takes 3 seconds a kilometre, so the near pieces crack first and the far ones roll in.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "Over Lake Maracaibo, in Venezuela, lightning flashes on most nights of the year.",
+            "A stroke breaks the air a step at a time, likeliest where the pull is strongest, so it forks. Your finger is the ground it reaches for; hold, and it strikes again.",
+            "Every piece of the channel thunders. Sound takes 3 seconds a kilometre, so the near pieces crack first and the far ones roll in.",
+        ]))
     }
 }
 

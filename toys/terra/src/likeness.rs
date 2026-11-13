@@ -72,6 +72,17 @@ pub struct Spot {
 }
 
 impl Spot {
+    pub fn new(c: [f32; 2], r: f64, k: f64, kf: f32, a: f32, halo: f32) -> Spot {
+        Spot {
+            c,
+            r,
+            k,
+            kf,
+            a,
+            halo,
+        }
+    }
+
     fn at(&self, x: f64, y: f64) -> [f32; 2] {
         [
             self.c[0] + (x * self.r * self.k) as f32,

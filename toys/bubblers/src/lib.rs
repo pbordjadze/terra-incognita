@@ -198,33 +198,7 @@ impl Toy for Bubblers {
                 0.0,
             ],
         };
-        let front = b.front().unwrap_or(f32::MAX);
-        // the burrows
-        for c in &b.crabs {
-            if c.home[1] > front || !c.dug {
-                continue;
-            }
-            // a collar of dug-out sand, lit on its far side; a soft hollow; the dark hole in it
-            let z = 0.85 + 0.3 * ((c.home[0] * 7.1 + c.home[1] * 3.3).sin() * 0.5 + 0.5);
-            self.painter.disc(
-                px([c.home[0] + 0.06, c.home[1] + 0.07]),
-                0.48 * z * s,
-                0.2 * s,
-                [0.98, 0.93, 0.82, 0.35],
-            );
-            self.painter.disc(
-                px([c.home[0] - 0.04, c.home[1] - 0.05]),
-                0.42 * z * s,
-                0.22 * s,
-                [0.45, 0.38, 0.30, 0.35],
-            );
-            self.painter.disc(
-                px([c.home[0] - 0.03, c.home[1] - 0.03]),
-                0.2 * z * s,
-                0.12 * s,
-                [0.10, 0.08, 0.06, 0.92],
-            );
-        }
+        paint_burrows(&mut self.painter, b, s);
         // the balls: a shadow, the ball, its light
         for p in &b.pellets {
             let grow = ((b.t - p.born) / 0.18).clamp(0.0, 1.0);
@@ -250,12 +224,8 @@ impl Toy for Bubblers {
                 r * 0.7 * s,
                 [0.28, 0.22, 0.16, 0.30 * a],
             );
-            self.painter.disc(
-                px(p.p),
-                r * s,
-                r * 0.35 * s,
-                [col(0), col(1), col(2), a],
-            );
+            self.painter
+                .disc(px(p.p), r * s, r * 0.35 * s, [col(0), col(1), col(2), a]);
             // the light on its upper left, the grains on it
             self.painter.disc(
                 px([p.p[0] - r * 0.3, p.p[1] - r * 0.3]),
@@ -289,15 +259,42 @@ impl Toy for Bubblers {
     }
 
     fn rules(&self) -> Option<info::Rules> {
-        Some(info::Rules::new(
-            &[
-                "Real sand-bubbler crabs feed outward from their burrows, sifting the sand and leaving it behind in little balls.",
-                "Each run starts beside the last, on the least-sifted sand, so the balls spread into starbursts.",
-                "A crab that sees a neighbour bolt bolts too. Your tap is a footstep; drag to draw in the sand.",
-                "Shake, and the tide comes in.",
-            ],
-            "",
-        ))
+        Some(info::Rules::lines(&[
+            "On the beaches of Phuket at low tide, sand-bubbler crabs feed outward from their burrows, leaving the sifted sand behind in little balls.",
+            "Each run starts beside the last, on unsifted sand, so the balls spread into starbursts.",
+            "A crab that sees a neighbour bolt bolts too. Your tap is a footstep; drag to draw in the sand; shake, and the tide comes in.",
+        ]))
+    }
+}
+
+/// The open burrows (not those under the water): a collar of dug-out sand, a soft hollow, the hole.
+fn paint_burrows(painter: &mut Painter, b: &Beach, s: f32) {
+    let px = |p: [f32; 2]| [p[0] * s, p[1] * s];
+    let front = b.front().unwrap_or(f32::MAX);
+    for c in &b.crabs {
+        if c.home[1] > front || !c.dug {
+            continue;
+        }
+        // a collar of dug-out sand, lit on its far side; a soft hollow; the dark hole in it
+        let z = 0.85 + 0.3 * ((c.home[0] * 7.1 + c.home[1] * 3.3).sin() * 0.5 + 0.5);
+        painter.disc(
+            px([c.home[0] + 0.06, c.home[1] + 0.07]),
+            0.48 * z * s,
+            0.2 * s,
+            [0.98, 0.93, 0.82, 0.35],
+        );
+        painter.disc(
+            px([c.home[0] - 0.04, c.home[1] - 0.05]),
+            0.42 * z * s,
+            0.22 * s,
+            [0.45, 0.38, 0.30, 0.35],
+        );
+        painter.disc(
+            px([c.home[0] - 0.03, c.home[1] - 0.03]),
+            0.2 * z * s,
+            0.12 * s,
+            [0.10, 0.08, 0.06, 0.92],
+        );
     }
 }
 

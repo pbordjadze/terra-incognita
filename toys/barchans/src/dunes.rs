@@ -350,7 +350,10 @@ fn crescent(slabs: &mut [i32], w: usize, h: usize, c: [f32; 2], size: f32, wind:
             let scoop = 1.0 - su * su - sv * sv;
             // the horns: what is left of the mound's flanks, drawn out downwind
             let horn = if v > 0.0 && scoop < 0.0 {
-                (1.0 - (u.abs() / half - 0.72).powi(2) / 0.04 - ((v - len * 0.4) / (len * 1.3)).powi(2)).max(0.0) * 0.35
+                (1.0 - (u.abs() / half - 0.72).powi(2) / 0.04
+                    - ((v - len * 0.4) / (len * 1.3)).powi(2))
+                .max(0.0)
+                    * 0.35
             } else {
                 0.0
             };
@@ -418,4 +421,3 @@ mod tests {
         let _ = c0;
     }
 }
-
