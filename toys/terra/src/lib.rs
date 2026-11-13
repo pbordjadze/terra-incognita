@@ -1743,8 +1743,8 @@ impl Toy for Terra {
             toy_kit::log(&format!("terra: the ground sheets: {e:#}"));
         }
         let km_pt = 6371.0 / self.globe.disc().r.max(1.0);
-        // the map's rivers give way as a sheet's own picture ripens to its true colour (the sheet's key: a
-        // kilometre a point down to 50 m), so they never stop at its edge while it is still the map's ground
+        // the map's rivers (when on: they are off for now, see `new`) give way as a sheet's own picture ripens to
+        // its true colour (the sheet's key: a kilometre a point down to 50 m), so they never stop at its edge
         let ripe = ((km_pt.ln() - 0.05f64.ln()) / (1.0f64.ln() - 0.05f64.ln())).clamp(0.0, 1.0);
         if let Some(r) = self.globe.rivers.as_mut() {
             r.strength = if self.globe.sheets.is_empty() {
