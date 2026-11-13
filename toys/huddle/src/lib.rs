@@ -32,7 +32,6 @@ struct Touch {
     id: u64,
     from: [f64; 2],
     last: [f64; 2],
-    t0: f64,
     tl: f64,
     dragging: bool,
 }
@@ -252,7 +251,6 @@ impl Toy for Huddle {
                     id: e.id,
                     from: q,
                     last: q,
-                    t0: self.t,
                     tl: self.t,
                     dragging: false,
                 });
@@ -279,7 +277,6 @@ impl Toy for Huddle {
                         t.tl = self.t;
                     }
                 }
-                let _ = t.t0;
             }
             _ => {
                 if self.touch.as_ref().is_some_and(|t| t.id == e.id) {

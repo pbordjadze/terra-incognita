@@ -199,6 +199,17 @@
       "iconSource": "toys/huddle/icon.png",
       "tintColor": "#E8B04A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "wave-build",
+      "name": "The Wave",
+      "bundleIdentifier": "com.pbordjadze.toy.wave",
+      "subtitle": "Start a Mexican wave in a stadium of phone lights",
+      "localizedDescription": "Estadio Azteca in Mexico City at night, 87,000 people, every one a phone held up as a light. Swipe along the stands and the people under your finger stand up; if enough do, a wave runs round the bowl at twenty seats a second. Too few, and it fizzles; two waves that meet wipe each other out. Working title; a toy in the making.",
+      "icon": "wave-icon.png",
+      "iconSource": "toys/wave/icon.png",
+      "tintColor": "#F2C46B",
+      "minOSVersion": "17.0"
     }
   ]
 }

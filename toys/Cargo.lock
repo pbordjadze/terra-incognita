@@ -1111,6 +1111,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wave"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "web-sys"
 version = "0.3.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
