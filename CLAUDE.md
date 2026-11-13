@@ -223,6 +223,13 @@ install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
 - By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`
   (and qa-explore.yml's, in painting-company's shared copy), then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
 - Lint before pushing: `bash ci/lint.sh` (`fix` formats). Formatting goes in its own commit.
+- The pre-commit hook (`ci/hooks/pre-commit`: rustfmt, ruff, ShellCheck, file length, silenced lints on what
+  the commit changes, in seconds) is on in every Claude Code session (`.claude/settings.json`, which also
+  rustfmts a Rust file as soon as it is written); elsewhere, `git config core.hooksPath ci/hooks`. Don't
+  `--no-verify` past it: CI's lint job fails on the same things.
+- No source file passes 800 lines (`ci/sizes.py`): split a long file by what it does (a module, a type, its
+  tests) before it gets there. The files already longer are in `ci/sizes.txt` at their length then, and
+  only shrink (`--tighten` lowers a ceiling in the commit that shrinks it); raising one takes a reason on its line.
 - A lint is silenced only with its reason beside it: `#[allow(...)] // why` on the same line (or the line above, where rustfmt moves it), `# noqa: CODE why`,
   and a comment line with the reason directly above a `# shellcheck disable=` or `// swiftlint:disable`; a rule
   loosened for a whole tool goes in its config file with its reason. `ci/silenced.py` (in `ci/lint.sh`) holds to it.

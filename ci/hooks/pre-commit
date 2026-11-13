@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# The fast checks, on what this commit changes, in a few seconds, so a slip is caught before CI takes it.
+# Turned on per clone: `git config core.hooksPath ci/hooks` (.claude/settings.json does it for every
+# Claude Code session). Clippy, SwiftLint and the tests stay in CI (`bash ci/lint.sh` runs them all here).
+#   rustfmt     the workspaces whose Rust is staged (`bash ci/lint.sh fix` formats)
+#   ruff        the staged Python
+#   ShellCheck  the staged shell scripts
+#   ci/sizes.py and ci/silenced.py, over the repository
+# Skipping it (`git commit --no-verify`) only defers the same checks to CI's lint job.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
+[ -d .venv/bin ] && PATH="$PWD/.venv/bin:$PATH"
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR -- . ':!ci/qa/*')
+failed=()
+check() { local name="$1"; shift; "$@" || failed+=("$name"); }
+has() { command -v "$1" > /dev/null || { echo "pre-commit: $1 not on PATH, skipped (CI's lint job runs it)"; return 1; }; }
+# pick <ending> [<directory>/]: the staged files with that ending (under that directory), NUL-separated
+pick() { local f; for f in "${staged[@]}"; do [[ $f == *"$1" && $f == "${2:-}"* ]] && printf '%s\0' "$f"; done; }
+quiet() { local out; out=$("$@") || { echo "$out"; return 1; }; }
+
+for ws in toys adrift; do
+  if [ -n "$(pick .rs "$ws/" | head -c1)" ] && has cargo; then
+    check "rustfmt ($ws)" bash -c "cd $ws && cargo fmt --all -- --check > /dev/null || { echo 'rustfmt: $ws needs formatting: bash ci/lint.sh fix'; exit 1; }"
+  fi
+done
+mapfile -d '' py < <(pick .py)
+[ ${#py[@]} -gt 0 ] && has ruff && check ruff ruff check --quiet "${py[@]}"
+mapfile -d '' sh < <(pick .sh)
+[ ${#sh[@]} -gt 0 ] && has shellcheck && check shellcheck shellcheck "${sh[@]}"
+check "file length" quiet python3 ci/sizes.py
+check "silenced lints" quiet python3 ci/silenced.py
+
+if [ ${#failed[@]} -gt 0 ]; then
+  echo "pre-commit: failed: ${failed[*]}"
+  exit 1
+fi
