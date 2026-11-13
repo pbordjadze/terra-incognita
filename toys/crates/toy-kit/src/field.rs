@@ -3,7 +3,7 @@
 //! is the backdrop's (`fn backdrop(px, world) -> vec4<f32>`, premultiplied, `u` in scope; `world` is
 //! `u.center + (px - u.size / 2) / u.scale`), with the grid beside it: `field` (Rgba16Float, filterable)
 //! and its sampler `field_s` (repeating, linear), and `fld(cell)` sampling it at a cell position (cell
-//! centres at `i + 0.5`). Written for Catatumbo, Bubblers and Barchans (painting-company row 260).
+//! centres at `i + 0.5`). Written for Catatumbo, Bubblers and Barchans (painting-company row 327).
 
 use crate::backdrop::BackdropParams;
 use crate::Gpu;

@@ -4,7 +4,7 @@
 //! water; hold and it strikes again down the same channel. The thunder is the bolt's own (`sound.rs`):
 //! every piece of the channel cracks, and each crack reaches you after sound has crossed the distance.
 //! Touch the sky and a crawler spreads under the cloud. Left alone, the storm keeps flickering.
-//! painting-company row 260.
+//! painting-company row 327.
 
 pub mod bolt;
 pub mod sound;
