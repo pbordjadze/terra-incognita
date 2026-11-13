@@ -1,76 +1,20 @@
 {
- "_": "Nazaré from the start: a long winter swell from the west-north-west bending round the canyon into Praia do Norte; then a finger turns it to the south-west and back, and lengthens it.",
+ "_": "Nazaré from the start: a long winter swell from the west-north-west bending round the canyon into Praia do Norte; then swipes toward the coast send swells in: a long one from the north-west (its set breaking at the peak a moment later), a short one from the west, a long one from the south-west.",
  "seconds": 40,
  "fps": 10,
  "events": [
-  {
-   "t": 18.0,
-   "drag": [
-    [
-     150,
-     300
-    ],
-    [
-     60,
-     300
-    ]
-   ],
-   "for": 1.0
-  },
-  {
-   "t": 27.0,
-   "drag": [
-    [
-     150,
-     300
-    ],
-    [
-     250,
-     300
-    ]
-   ],
-   "for": 1.0
-  },
-  {
-   "t": 33.0,
-   "drag": [
-    [
-     200,
-     500
-    ],
-    [
-     200,
-     650
-    ]
-   ],
-   "for": 1.0
-  }
+  {"t": 10.0, "drag": [[60, 150], [200, 420]], "for": 0.6},
+  {"t": 20.0, "drag": [[100, 400], [160, 400]], "for": 0.4},
+  {"t": 30.0, "drag": [[40, 600], [200, 450]], "for": 0.6}
  ],
  "shots": [
-  {
-   "t": 2,
-   "name": "open"
-  },
-  {
-   "t": 9,
-   "name": "sets"
-  },
-  {
-   "t": 16,
-   "name": "peak"
-  },
-  {
-   "t": 24,
-   "name": "southwest"
-  },
-  {
-   "t": 31,
-   "name": "northwest"
-  },
-  {
-   "t": 39,
-   "name": "short"
-  }
+  {"t": 2, "name": "open"},
+  {"t": 9, "name": "before"},
+  {"t": 13.4, "name": "set-breaks"},
+  {"t": 17, "name": "northwest"},
+  {"t": 24, "name": "short-west"},
+  {"t": 33.4, "name": "southwest-set"},
+  {"t": 39, "name": "southwest"}
  ],
  "audio": true
 }
