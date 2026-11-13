@@ -12,7 +12,7 @@
 //! fizzles); nobody is quite the same twice (each second a person's threshold wobbles a little, and
 //! the whole crowd's mood drifts); and people tire of a wave the longer it has been going (a wave
 //! carries its age from person to person, and the older it is the more it takes to join it). An
-//! old wave dims, as the least keen only half stand, then thins and dies, usually within a lap or
+//! old wave dims, as the least keen barely rise, then thins and dies, usually within a lap or
 //! two; a new one started by a fresh group is as young as it ever was.
 
 /// Seats round a row, and rows (about the stadium's 87,000).
@@ -75,8 +75,8 @@ pub struct Crowd {
     tired: Vec<f32>,
     /// each person's mood this second, added to their threshold
     mood: Vec<f32>,
-    /// how keen on waves each person is, 0..1: as the crowd tires of one, the least keen only half
-    /// stand
+    /// how keen on waves each person is, 0..1: as the crowd tires of one, the least keen barely
+    /// rise
     keen: Vec<f32>,
     /// the whole crowd's mood, added to every threshold (below zero, keener)
     pub sway: f32,
@@ -152,7 +152,7 @@ impl Crowd {
     }
 
     /// How high person `i` stands (0 seated .. 1 standing, arms up): in a young wave everyone all
-    /// the way; as it ages, more and more, the least keen first, only half rise.
+    /// the way; as it ages, more and more, the least keen first, barely rise.
     pub fn height(&self, i: usize, frac: f32) -> f32 {
         let up = Self::up(self.stage[i], frac);
         if up == 0.0 {

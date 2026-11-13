@@ -30,8 +30,8 @@ crowd and the city are worked out from the constants and rules in `src/`.
     0.015 over about 40 s;
   - a wave carries its age from person to person (each joins the oldest wave standing beside them),
     and joining it takes 0.0007 more threshold for each second of its age; a group that starts one
-    counts it as up to 13 s older or 40 s younger, by luck. As it ages the least keen only half
-    stand, so the wave dims, then thins and dies.
+    counts it as up to 13 s older or 40 s younger, by luck. As it ages the least keen barely
+    rise, so the wave dims, then thins and dies.
   A group of a few people somewhere tries on its own every 10 to 30 s while no wave runs, one try
   in twenty-five a bigger group; on the measurement's seed 4 waves in 30 minutes started by
   themselves (`crowd.rs`' measurements: `cargo test -p wave --release -- --ignored --nocapture`).
