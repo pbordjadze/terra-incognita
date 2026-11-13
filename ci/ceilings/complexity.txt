@@ -78,7 +78,7 @@ toys/swell/src/lib.rs::new 198 10
 toys/taste/src/bin/taster.rs::play 64 22
 toys/taste/src/lib.rs::draw 201 28
 toys/taste/src/lib.rs::update 76 26
-toys/terra/src/doors.rs::paint 429 50
+toys/terra/src/doors.rs::paint 419 48
 toys/terra/src/lib.rs::pointer 69 26
 toys/terra/src/lib.rs::squeeze_pointer 105 27
 toys/terra/src/lib.rs::update 238 59
