@@ -1,0 +1,29 @@
+Retrying tests on failure. Running tests repeatedly up to 2 times.
+
+Writing result bundle at path:
+	/Users/runner/work/terra-incognita/terra-incognita/build/encounter-iphone.xcresult
+
+2026-11-13 05:49:51.637 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 05:49:51.637 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 05:52:41.232 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 05:52:41.232 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 05:57:54.886 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 05:57:54.887 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:00:31.854 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:00:31.854 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:01:01.904 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:01:01.904 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:01:32.796 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:01:32.796 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:09:32.783 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:09:32.784 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:11:56.116 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:11:56.116 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:16:07.425 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:16:07.425 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:21:18.387 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-13 06:21:18.388 xcodebuild[88998:227019] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-11-13 06:23:29.778 xcodebuild[88998:227019] [MT] IDETestOperationsObserverDebug: 2063.133 elapsed -- Testing started completed.
+2026-11-13 06:23:29.779 xcodebuild[88998:227019] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-13 06:23:29.779 xcodebuild[88998:227019] [MT] IDETestOperationsObserverDebug: 2063.133 sec, +2063.133 sec -- end
+Testing started

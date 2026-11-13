@@ -1,0 +1,923 @@
+{
+  "name": "Terra Incognita (CI builds)",
+  "identifier": "com.pbordjadze.terraincognita.source",
+  "subtitle": "Automatic builds",
+  "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+  "website": "https://github.com/pbordjadze/terra-incognita",
+  "tintColor": "#C9A243",
+  "apps": [
+    {
+      "name": "Terra Incognita",
+      "bundleIdentifier": "com.pbordjadze.terraincognita",
+      "developerName": "pbordjadze",
+      "subtitle": "The world, and the toys on it",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys: whales off California, starlings in Somerset, a slime mold between Europe's cities, fireflies in the Smokies, a bell struck in Chile, a swell in the Pacific, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+      "tintColor": "#C9A243",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.1200",
+          "buildVersion": "1200",
+          "date": "2026-11-07T09:58:40Z",
+          "localizedDescription": "Merge toy-terra-scale: Terra, discovery through scale (painting-company row 258)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-200/terra.ipa",
+          "size": 45872626,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1197",
+          "buildVersion": "1197",
+          "date": "2026-11-07T09:50:42Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-197/terra.ipa",
+          "size": 24006083,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1192",
+          "buildVersion": "1192",
+          "date": "2026-11-07T06:45:24Z",
+          "localizedDescription": "Merge toy-jam-braess: the cars toy becomes Shortcut, Braess's paradox to play with (painting-company row 255)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-192/terra.ipa",
+          "size": 23544009,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1188",
+          "buildVersion": "1188",
+          "date": "2026-11-07T01:10:22Z",
+          "localizedDescription": "Merge ci-xcode-27: CI on Xcode 27.2, the newest stable on the xcode-27 image, named once in ci/xcode.sh; the toys' and Adrift's shells adopt the scene lifecycle the iOS 27 SDK requires (painting-company row 251) [toys-ipa terra]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-188/terra.ipa",
+          "size": 23507205,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1180",
+          "buildVersion": "1180",
+          "date": "2026-11-06T11:57:00Z",
+          "localizedDescription": "Merge toy-terra-passages: the Toys checks' apt step stops the runner's own updaters and requires only the Vulkan driver (the last merge's checks ran into their time limit); Terra's passages released (painting-company row 245)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-180/terra.ipa",
+          "size": 23485362,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.1200",
+      "versionDate": "2026-11-07T09:58:40Z",
+      "versionDescription": "Merge toy-terra-scale: Terra, discovery through scale (painting-company row 258)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-200/terra.ipa",
+      "size": 45872626,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Adrift",
+      "bundleIdentifier": "com.pbordjadze.adrift",
+      "developerName": "pbordjadze",
+      "subtitle": "Glass floats on the real sea",
+      "localizedDescription": "Tap the open sea and it rings; rest a beat longer and a glass float is yours, lamp amber on a cool sea. The month's real currents and winds, measured by drifting buoys, carry it; nothing scripts where it goes. Written from scratch in Rust on the GPU. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/adrift-icon.png",
+      "tintColor": "#E0A040",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.137",
+          "buildVersion": "137",
+          "date": "2026-11-07T10:42:55Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-137/Adrift.ipa",
+          "size": 33635205,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.135",
+          "buildVersion": "135",
+          "date": "2026-11-07T08:28:05Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-135/Adrift.ipa",
+          "size": 33635205,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.133",
+          "buildVersion": "133",
+          "date": "2026-11-07T06:53:17Z",
+          "localizedDescription": "Merge toy-throats: Throats, side-blotched lizards on a California hillside playing rock-paper-scissors in turning spirals (painting-company row 257)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-133/Adrift.ipa",
+          "size": 33201320,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.131",
+          "buildVersion": "131",
+          "date": "2026-11-07T06:16:33Z",
+          "localizedDescription": "Merge toy-jam-braess: the cars toy becomes Shortcut, Braess's paradox to play with (painting-company row 255)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-131/Adrift.ipa",
+          "size": 33201319,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.129",
+          "buildVersion": "129",
+          "date": "2026-11-07T00:28:23Z",
+          "localizedDescription": "Merge ci-xcode-27: CI on Xcode 27.2, the newest stable on the xcode-27 image, named once in ci/xcode.sh; the toys' and Adrift's shells adopt the scene lifecycle the iOS 27 SDK requires (painting-company row 251) [toys-ipa terra]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-129/Adrift.ipa",
+          "size": 33201319,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.137",
+      "versionDate": "2026-11-07T10:42:55Z",
+      "versionDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-137/Adrift.ipa",
+      "size": 33635205,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Whales",
+      "bundleIdentifier": "com.pbordjadze.toy.whales",
+      "developerName": "pbordjadze",
+      "subtitle": "Two whales, their songs and their travels",
+      "localizedDescription": "Pick two whales and hear them sing as they travel the real oceans. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/whales-icon.png",
+      "tintColor": "#4A7FA8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:10:43Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-202/whales.ipa",
+          "size": 21960376,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T08:59:04Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-197/whales.ipa",
+          "size": 21939796,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:36:56Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-114/whales.ipa",
+          "size": 21455200,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:23:28Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-108/whales.ipa",
+          "size": 21442535,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.102",
+          "buildVersion": "102",
+          "date": "2026-11-03T18:19:35Z",
+          "localizedDescription": "Merge toy-whales: Whales round 4, several hydrophones; the opening frame mostly sea (painting-company row 201)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-102/whales.ipa",
+          "size": 21427070,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.202",
+      "versionDate": "2026-11-07T11:10:43Z",
+      "versionDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-202/whales.ipa",
+      "size": 21960376,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Murmuration",
+      "bundleIdentifier": "com.pbordjadze.toy.murmuration",
+      "developerName": "pbordjadze",
+      "subtitle": "A flock, and you one of them",
+      "localizedDescription": "Hundreds of birds on simple rules over the real sky; lean and the flock bends around you. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/murmuration-icon.png",
+      "tintColor": "#C98A6A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:18:00Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-197/murmuration.ipa",
+          "size": 4272554,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.181",
+          "buildVersion": "181",
+          "date": "2026-11-06T12:26:37Z",
+          "localizedDescription": "Merge toy-terra-passages: the Toys checks' apt step stops the runner's own updaters and requires only the Vulkan driver (the last merge's checks ran into their time limit); Terra's passages released (painting-company row 245)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-181/murmuration.ipa",
+          "size": 3799608,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:31:55Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-114/murmuration.ipa",
+          "size": 3788241,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:21:58Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-108/murmuration.ipa",
+          "size": 3776684,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.95",
+          "buildVersion": "95",
+          "date": "2026-11-03T10:17:04Z",
+          "localizedDescription": "Merge toy-murmuration: Murmuration round 11, a lean to any corner keeps the flock round you (painting-company row 202)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-95/murmuration.ipa",
+          "size": 3758545,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:18:00Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-197/murmuration.ipa",
+      "size": 4272554,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Mold",
+      "bundleIdentifier": "com.pbordjadze.toy.mold",
+      "developerName": "pbordjadze",
+      "subtitle": "A slime mold finds the night's cities",
+      "localizedDescription": "A glowing mold on the night Earth seeks the cities' lights and finds the routes between them. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/mold-icon.png",
+      "tintColor": "#E8B84A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:24:49Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-197/mold.ipa",
+          "size": 21500333,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.149",
+          "buildVersion": "149",
+          "date": "2026-11-04T23:38:24Z",
+          "localizedDescription": "Merge mold-three-marks: Mold's three marks, the rules and where they came from (painting-company row 219) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-149/mold.ipa",
+          "size": 21022623,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T19:37:47Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-114/mold.ipa",
+          "size": 21019088,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:27:53Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-108/mold.ipa",
+          "size": 21006217,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.103",
+          "buildVersion": "103",
+          "date": "2026-11-03T18:38:39Z",
+          "localizedDescription": "Merge toy-mold (6a93bcc): Mold round 4, wherever the camera goes the mold reads as tubes, it rests on lit land",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-103/mold.ipa",
+          "size": 20987960,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:24:49Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/mold-build-197/mold.ipa",
+      "size": 21500333,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Fireflies",
+      "bundleIdentifier": "com.pbordjadze.toy.fireflies",
+      "developerName": "pbordjadze",
+      "subtitle": "Every night city a firefly",
+      "localizedDescription": "Each city of the night Earth blinks its own rhythm; nudge one and continents fall into step. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/fireflies-icon.png",
+      "tintColor": "#F2D16B",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:32:02Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-197/fireflies.ipa",
+          "size": 20902533,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:58:21Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-114/fireflies.ipa",
+          "size": 20420670,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T13:58:53Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-108/fireflies.ipa",
+          "size": 20410806,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.66",
+          "buildVersion": "66",
+          "date": "2026-11-03T07:59:18Z",
+          "localizedDescription": "Merge toy-fireflies: Fireflies round 6, the resting globe sings",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-66/fireflies.ipa",
+          "size": 20325559,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.50",
+          "buildVersion": "50",
+          "date": "2026-11-03T06:05:50Z",
+          "localizedDescription": "Toys: the launch check finds a relative IPA path [toys-ipa all] (painting-company rows 201\u2013204)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-50/fireflies.ipa",
+          "size": 20322003,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:32:02Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-197/fireflies.ipa",
+      "size": 20902533,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Bell",
+      "bundleIdentifier": "com.pbordjadze.toy.bell",
+      "developerName": "pbordjadze",
+      "subtitle": "Strike the Earth and hear it ring",
+      "localizedDescription": "Tap the Earth and it rings in its own measured free oscillations, the chord heard from the place facing you. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/bell-icon.png",
+      "tintColor": "#B8C8D8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:12:27Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-197/bell.ipa",
+          "size": 20846181,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.174",
+          "buildVersion": "174",
+          "date": "2026-11-06T08:33:43Z",
+          "localizedDescription": "Merge terra-first-minute: Terra's first minute, six rounds of newcomer testers (painting-company row 246)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-174/bell.ipa",
+          "size": 20372088,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:34:03Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-114/bell.ipa",
+          "size": 20364693,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:36:35Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-108/bell.ipa",
+          "size": 20351527,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.68",
+          "buildVersion": "68",
+          "date": "2026-11-03T08:24:28Z",
+          "localizedDescription": "Merge toy-bell-swell: Bell and Swell, two new toys (rounds 1\u20134)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-68/bell.ipa",
+          "size": 20270176,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:12:27Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-197/bell.ipa",
+      "size": 20846181,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Swell",
+      "bundleIdentifier": "com.pbordjadze.toy.swell",
+      "developerName": "pbordjadze",
+      "subtitle": "Waves on the real sea floor",
+      "localizedDescription": "Touch the sea and a wave crosses the ocean at the speed its real depth gives it; the coasts chime where it arrives. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/swell-icon.png",
+      "tintColor": "#6FA8D0",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:22:07Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-197/swell.ipa",
+          "size": 21146204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T19:44:02Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-114/swell.ipa",
+          "size": 20663967,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:16:39Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-108/swell.ipa",
+          "size": 20649761,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.68",
+          "buildVersion": "68",
+          "date": "2026-11-03T08:26:56Z",
+          "localizedDescription": "Merge toy-bell-swell: Bell and Swell, two new toys (rounds 1\u20134)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-68/swell.ipa",
+          "size": 20567964,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:22:07Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-197/swell.ipa",
+      "size": 21146204,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Carol",
+      "bundleIdentifier": "com.pbordjadze.toy.carol",
+      "developerName": "pbordjadze",
+      "subtitle": "Tap a piece, then where it goes",
+      "localizedDescription": "A wooden chess set that knows its lines: tap a piece, then where it goes. The right move slides home with a note and the other side answers; a wrong one bumps back. Twenty-four drills, openings and puzzles, the missed ones coming back first. A toy; offline.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/carol-icon.png",
+      "tintColor": "#B5824F",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T08:57:35Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-197/carol.ipa",
+          "size": 4308080,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.113",
+          "buildVersion": "113",
+          "date": "2026-11-04T17:23:41Z",
+          "localizedDescription": "Merge toy-carol: Carol, a toy chess trainer as its own app [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-113/carol.ipa",
+          "size": 3814501,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T08:57:35Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-197/carol.ipa",
+      "size": 4308080,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Shortcut",
+      "bundleIdentifier": "com.pbordjadze.toy.jam",
+      "developerName": "pbordjadze",
+      "subtitle": "Build a road, and watch traffic get worse",
+      "localizedDescription": "A small town at night round a lake, its cars each taking the way that looks quickest. Draw a road from one road to another, slash one closed, and see what the drivers do: the obvious bridge can make everyone's trip slower (Braess's paradox), and nothing tells you so but the colour of the cars. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/jam-icon.png",
+      "tintColor": "#D8321E",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:42:18Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-197/jam.ipa",
+          "size": 4277525,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.192",
+          "buildVersion": "192",
+          "date": "2026-11-07T06:38:12Z",
+          "localizedDescription": "Merge toy-jam-braess: the cars toy becomes Shortcut, Braess's paradox to play with (painting-company row 255)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-192/jam.ipa",
+          "size": 3841461,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.163",
+          "buildVersion": "163",
+          "date": "2026-11-06T07:24:30Z",
+          "localizedDescription": "Merge toy-jam: Salt Flat, the car toy opened up (painting-company row 244)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-163/jam.ipa",
+          "size": 3779099,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.144",
+          "buildVersion": "144",
+          "date": "2026-11-04T23:51:22Z",
+          "localizedDescription": "Merge toy-frost: Frost, frost on a cabin window at Oymyakon; the finger is warm (painting-company row 218) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-144/jam.ipa",
+          "size": 3769326,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:42:18Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-197/jam.ipa",
+      "size": 4277525,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Meander",
+      "bundleIdentifier": "com.pbordjadze.toy.meander",
+      "developerName": "pbordjadze",
+      "subtitle": "Draw a river and watch it wander",
+      "localizedDescription": "The Rio Beni's real floodplain in Bolivia. Draw a river with your finger: its bends grow and drift, and when a loop's neck closes the river cuts through and leaves an oxbow lake, the same shape as the real ones beneath. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/meander-icon.png",
+      "tintColor": "#C2A178",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:13:40Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-202/meander.ipa",
+          "size": 5009582,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.200",
+          "buildVersion": "200",
+          "date": "2026-11-07T09:50:19Z",
+          "localizedDescription": "Merge toy-terra-scale: Terra, discovery through scale (painting-company row 258)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-200/meander.ipa",
+          "size": 5009580,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:37:26Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-197/meander.ipa",
+          "size": 4987704,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.189",
+          "buildVersion": "189",
+          "date": "2026-11-07T06:13:38Z",
+          "localizedDescription": "Merge row-253-meander-multitouch: Meander takes several fingers at once, each a push of its own (painting-company row 253)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-189/meander.ipa",
+          "size": 4546095,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.169",
+          "buildVersion": "169",
+          "date": "2026-11-06T07:10:47Z",
+          "localizedDescription": "Merge toy-meander: Meander's river is pushed, not redrawn (painting-company row 243)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-169/meander.ipa",
+          "size": 4509159,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.202",
+      "versionDate": "2026-11-07T11:13:40Z",
+      "versionDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-202/meander.ipa",
+      "size": 5009582,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Taste",
+      "bundleIdentifier": "com.pbordjadze.toy.taste",
+      "developerName": "pbordjadze",
+      "subtitle": "A creature that becomes what you like",
+      "localizedDescription": "A small creature keeps changing its shape and colour. Rest a finger on it while you like what it is: it keeps trying on a slightly different self, and keeps the new one as often as you held it. It lingers where you linger, still wanders off, and every so often pulls back to show the path it took. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/taste-icon.png",
+      "tintColor": "#A054F5",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:13:46Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-202/taste.ipa",
+          "size": 4306233,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:15:57Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-197/taste.ipa",
+          "size": 4284607,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.154",
+          "buildVersion": "154",
+          "date": "2026-11-05T01:12:30Z",
+          "localizedDescription": "Merge toy-jam: Ghost Jam's handoff (painting-company row 218) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-154/taste.ipa",
+          "size": 3812638,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.202",
+      "versionDate": "2026-11-07T11:13:46Z",
+      "versionDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-202/taste.ipa",
+      "size": 4306233,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Frost",
+      "bundleIdentifier": "com.pbordjadze.toy.frost",
+      "developerName": "pbordjadze",
+      "subtitle": "Your finger is warm",
+      "localizedDescription": "A cabin window at Oymyakon, about \u221250 \u00b0C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: what you wipe stays clear, the frost creeping back only slowly from its edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/frost-icon.png",
+      "tintColor": "#5F7FA8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:00:34Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-197/frost.ipa",
+          "size": 4305660,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.193",
+          "buildVersion": "193",
+          "date": "2026-11-07T07:09:49Z",
+          "localizedDescription": "Merge frost-music: Frost plays, the window a glass instrument (painting-company row 254)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-193/frost.ipa",
+          "size": 3865777,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.173",
+          "buildVersion": "173",
+          "date": "2026-11-06T07:49:26Z",
+          "localizedDescription": "Merge toy-frost: Frost's finger only melts, its wipes last and heal over minutes; a shake renews the window (painting-company row 242)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-173/frost.ipa",
+          "size": 3821149,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.143",
+          "buildVersion": "143",
+          "date": "2026-11-04T23:24:36Z",
+          "localizedDescription": "Merge toy-frost: Frost, frost on a cabin window at Oymyakon; the finger is warm (painting-company row 218) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-143/frost.ipa",
+          "size": 3815559,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:00:34Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-197/frost.ipa",
+      "size": 4305660,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Night Walk",
+      "bundleIdentifier": "com.pbordjadze.toy.walk",
+      "developerName": "pbordjadze",
+      "subtitle": "A walker's footprints map a land no one can see",
+      "localizedDescription": "A walker crosses a land in the dark. Each step it picks a spot at random within its stride: higher ground it always takes, lower only sometimes. Where its footprints pile up, a map rises; at dawn the real land comes up under it. Touch to set how far it steps. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/walk-icon.png",
+      "tintColor": "#E8B86A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:07:52Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-197/walk.ipa",
+          "size": 4270439,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.151",
+          "buildVersion": "151",
+          "date": "2026-11-05T01:00:40Z",
+          "localizedDescription": "Merge remote-tracking branch 'origin/main'",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-151/walk.ipa",
+          "size": 3796268,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:07:52Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-197/walk.ipa",
+      "size": 4270439,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Screw",
+      "bundleIdentifier": "com.pbordjadze.toy.screw",
+      "developerName": "pbordjadze",
+      "subtitle": "Chop and screw a song of your own",
+      "localizedDescription": "A record turning on a dark page. Open a song of yours from Files; tap and it plays. Push it down and it slows, the voice dropping with it, as Houston's DJ Screw rode a turntable's pitch. Tap and it says the last beat again, in time; flick it back two bars. Your song stays on your phone. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/screw-icon.png",
+      "tintColor": "#8E4FB0",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:33:48Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-197/screw.ipa",
+          "size": 4269664,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.183",
+          "buildVersion": "183",
+          "date": "2026-11-06T19:26:40Z",
+          "localizedDescription": "Merge toy-screw: Screw, a record of your own song to chop and screw; the kit opens a sound file from Files (painting-company row 250)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-183/screw.ipa",
+          "size": 3801037,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:33:48Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-197/screw.ipa",
+      "size": 4269664,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Throats",
+      "bundleIdentifier": "com.pbordjadze.toy.throats",
+      "developerName": "pbordjadze",
+      "subtitle": "Rock, paper, scissors on a hillside of lizards",
+      "localizedDescription": "A sunny California slope seen from above, every rock held by a side-blotched lizard with an orange, blue or yellow throat. Orange takes blue's rock, blue takes yellow's, yellow takes orange's, and the colours chase each other round in spirals. Draw to pour in a colour; it breaks into new arms. Pinch out for the whole hill. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/throats-icon.png",
+      "tintColor": "#F07A1A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:11:29Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-202/throats.ipa",
+          "size": 4398692,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:32:23Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-197/throats.ipa",
+          "size": 4373692,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.195",
+          "buildVersion": "195",
+          "date": "2026-11-07T07:28:03Z",
+          "localizedDescription": "Merge toy-throats: Throats, side-blotched lizards on a California hillside playing rock-paper-scissors in turning spirals (painting-company row 257)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-195/throats.ipa",
+          "size": 3935963,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.202",
+      "versionDate": "2026-11-07T11:11:29Z",
+      "versionDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-202/throats.ipa",
+      "size": 4398692,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}

@@ -1,0 +1,370 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "C42CA2CA-D7A5-4C45-B287-33175FC9089D.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "31-pack-panel_0_2D76A2A8-7F5C-487E-ADBD-A629ED74C650.png",
+        "timestamp" : 1794549075.839
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "FDD7EB1E-1D12-4E61-AAB2-1A86ED3F9C8A.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "30-pack-on-globe_0_566DD25E-A4AE-4F45-BEF8-32A396235541.png",
+        "timestamp" : 1794549071.926
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testBundledPackRunsOnTheGlobe()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testBundledPackRunsOnTheGlobe"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "BDA18E61-9F7F-45C3-B6ED-4C1596CDBCF4.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "45-clouds-on-again_0_CB63F7F8-229B-4BED-8D0B-2BBB27672655.png",
+        "timestamp" : 1794549472.871
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "2F513F88-1D87-43B4-A8CC-C41F37D44F21.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "44-clouds-off_0_841D5135-FA8E-4A4F-B811-90B1A65CB244.png",
+        "timestamp" : 1794549467.976
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "533E938A-041A-41EE-A0A3-EEAB8A66540D.txt",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "43-clouds-cost_0_ACA1C723-38BD-444E-B046-08FAA156A186.txt",
+        "timestamp" : 1794549360.91
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "35ED6002-C21C-4C9B-8C75-4AD3C9927451.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "43-clouds-workbench_0_024C5B91-0BB0-4C63-8396-9B2C724EECD5.png",
+        "timestamp" : 1794549360.358
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "8B87B80C-C3C2-4F99-B63A-450600D373E7.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "42-clouds-below_0_515810CA-3453-4FB9-B200-910CFE782E38.png",
+        "timestamp" : 1794549202.503
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "E8FE2C17-7EA5-498A-A27A-B8393595CA8A.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "41-clouds-passing_0_C0F6FCC9-5A14-4425-8B21-AAC57A855CE2.png",
+        "timestamp" : 1794549197.642
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "AC4AC14A-BB2B-480C-B94F-0776E3E19256.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "40-clouds-earth_0_E00961B3-2F16-4BC0-B222-90EFAD14667D.png",
+        "timestamp" : 1794549191.692
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testCloudsAreOnTheGlobeAndTurnOff()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testCloudsAreOnTheGlobeAndTurnOff"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "687F55A1-7D0F-4CBE-BD80-D3B121112E3E.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "01-workbench_0_4BC5BB59-76E9-459A-B3B1-952E226EEC9F.png",
+        "timestamp" : 1794549494.01
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "2383F58C-79D1-46A3-A8BF-DED854F62D00.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "00-plain-globe_0_EF49EF84-7001-4CBB-B539-BC073EDA8B42.png",
+        "timestamp" : 1794549488.208
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testColdLaunchIsThePlainGlobe()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testColdLaunchIsThePlainGlobe"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "92EF9683-E151-467A-916C-882D692CB5C0.txt",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "Debug description for `\"workbenchButton\" Button`_0_C73AA46D-71CF-4D71-B832-95BF5380B2B5.txt",
+        "timestamp" : 1794549655.462
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "AE0C5408-DFFD-4B81-A7A5-CFCBCE15F44E",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-11-13 at 06.00.55 AM",
+        "timestamp" : 1794549655.462
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "AB52B4BF-DAE9-4AC0-B353-D1C7B663C28F.mp4",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "Screen Recording 2026-11-13 at 06.00.31 AM.mp4",
+        "timestamp" : 1794549631.837
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "7F5DE134-4AB5-40C7-B6C9-950BA09E1D1F.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 2,
+        "suggestedHumanReadableName" : "01-workbench_0_ACAEAAEA-8460-44BB-8072-4C3C305595FC.png",
+        "timestamp" : 1794549691.501
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testEveryPrototypeIsListed()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testEveryPrototypeIsListed"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "7D355C79-FB88-4756-B219-E839F6828544.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "56-today-again_0_72EE844B-B007-4C70-AC9A-F18B195B1C6F.png",
+        "timestamp" : 1794550084.52
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "7C0677E9-6650-4CE9-8F57-0DC029837F50.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "55-quiet-frame_0_07D9C01A-AAF6-45AF-9455-65364B26C731.png",
+        "timestamp" : 1794549970.003
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "19D96189-847F-4E30-9441-36E19309F17F.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "54-night_0_31F2501C-547C-43D3-8AF7-EB99418CC519.png",
+        "timestamp" : 1794549899.413
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "A6B189B3-B834-4613-AC12-5557F0610164.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "53-clouds-clear-where-you-look_0_C378ED69-E645-41CC-89A4-FB13CA1EF5D2.png",
+        "timestamp" : 1794549824.59
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "59036773-8997-469B-B809-33994DE1C53F.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "52-names-touched_0_CDCBB830-8868-4803-8B69-3D24012E824E.png",
+        "timestamp" : 1794549766.115
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "5BCD55F4-0F58-40B2-8C66-F7A27EC137D5.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "51-names-on-demand_0_6A306884-C7B0-42F1-A125-8D25EF53737E.png",
+        "timestamp" : 1794549763.022
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "0FE837B1-97DF-42F8-A580-B7DF1A8916A3.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "50-today_0_0276BCEF-02F7-4F58-9BA5-88342589D135.png",
+        "timestamp" : 1794549707.847
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testQuietGlobeRulesRunTogetherAndLeaveNothingBehind()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testQuietGlobeRulesRunTogetherAndLeaveNothingBehind"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "C6442B9E-67BC-4DC7-B856-80B05B81EC2F.txt",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "53-ocean-cost_0_D89A8695-D5D5-4B45-A139-9EA2D3B78C7C.txt",
+        "timestamp" : 1794550260.603
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "2E18352F-C14D-4564-BD68-281516BC0063.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "52-ocean-closer_0_47C79AD5-5CBC-46B0-B33B-33DF6673EF49.png",
+        "timestamp" : 1794550198.083
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "2DD9D58F-D609-4A3A-AB9E-B1420F897682.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "51-ocean-touched_0_66A49F37-1850-4B4E-8647-50845BBFAD7B.png",
+        "timestamp" : 1794550193.921
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "4434F62D-F442-4EC3-A6AA-152AB3A427D9.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "50-ocean-gulf-stream_0_9BBB7198-34E5-4DD4-A12A-C52660C677D2.png",
+        "timestamp" : 1794550191.569
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testTheOceanMovesAndRingsWhereTouched()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testTheOceanMovesAndRingsWhereTouched"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "DDEE2FFC-3157-4157-BE03-9E7404E81865.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "12-live-after_0_3A4E8C53-4FBA-4756-87A4-A7FC88E4C00E.png",
+        "timestamp" : 1794550565.823
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "FF628EF2-29A1-4F8A-92B0-9A0BF71E90C0.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "11-night-and-pack_0_FEEDE38A-C2AC-423D-82D7-20F9BEA162FC.png",
+        "timestamp" : 1794550437.448
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "8F18D842-9AB8-4CC3-B320-D553ABBA5F45.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "10-night_0_4E62D57A-8B24-4A0E-8AD5-03FA67E3C2CE.png",
+        "timestamp" : 1794550380.976
+      }
+    ],
+    "testIdentifier" : "PlaygroundTests/testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "275943A3-F4E8-48D9-B55E-A8E1A267F7F0.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "42-offline_0_1CAA39E7-975C-4F23-8630-2820DF10F945.png",
+        "timestamp" : 1794550961.992
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "E4DA426A-A029-4AC3-BDB7-986D4569A9E4.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "41-remote-revision_0_7B507469-CE7F-460F-AD83-2A7C9B507475.png",
+        "timestamp" : 1794550631.122
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "DB583BD5-6F19-4286-9D9A-6107486CAA5E",
+        "deviceName" : "TerraIncognita-iphone",
+        "exportedFileName" : "3C739A8F-5D05-4B49-82EA-59C4D8B8838B.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "40-update-listed_0_583F3233-A981-4C90-995C-BFCE335927C3.png",
+        "timestamp" : 1794550628.138
+      }
+    ],
+    "testIdentifier" : "RemotePackTests/testRemoteRevisionArrivesRollsBackAndWorksOffline()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/RemotePackTests/testRemoteRevisionArrivesRollsBackAndWorksOffline"
+  }
+]

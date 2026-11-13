@@ -1,0 +1,1 @@
+Merge guardrails: a pre-commit hook, Claude Code hooks, and one ratchet for file length, function complexity and Python types (painting-company row 325)

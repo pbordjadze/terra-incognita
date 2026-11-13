@@ -1,0 +1,16 @@
+Attributes: Button, 0x106466a80, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench'
+Element subtree:
+ →Button, 0x106466a80, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench'
+Path to element:
+ →Application, 0x106465f40, pid: 8633, label: 'Terra Incognita'
+  ↳Window, 0x106466d00, {{0.0, 0.0}, {402.0, 874.0}}
+   ↳Other, 0x106466bc0, {{0.0, 0.0}, {402.0, 874.0}}
+    ↳Other, 0x106464dc0, {{0.0, 0.0}, {402.0, 874.0}}
+     ↳Other, 0x106465a40, {{0.0, 0.0}, {402.0, 874.0}}
+      ↳Other, 0x106465540, {{inf, inf}, {0.0, 0.0}}
+       ↳Button, 0x106466a80, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench'
+Query chain:
+ →Find: Target Application 'com.pbordjadze.terraincognita'
+  ↪︎Find: Descendants matching type Button
+    ↪︎Find: Elements matching predicate '"workbenchButton" IN identifiers'
+      ↪︎Find: First Match
