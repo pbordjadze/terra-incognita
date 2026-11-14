@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The info mark's line, the rules and their origins, the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
+The info mark's line, the rules and their origins, the switches panel (switches.rs), the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
 so a check's frame lacks them; the check writes what was showing beside each shot as
 `<shot>.shell.json` (size, ppp, line, rules, origins, top: the card hung from the top). This draws them as the shell lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
@@ -68,10 +68,11 @@ def rules(img, text, k, top=False):
         y += lh
 
 
-def glass(img, box, k, radius):
-    """UIKit's ultra-thin dark material with the shell's 0.62 tint, over `box` (pixels)."""
+def glass(img, box, k, radius, tint=0.75):
+    """UIKit's ultra-thin dark material with the shell's tint (0.62 alpha; the switches' panel 0.3, drawn as 0.4), over
+    `box` (pixels)."""
     g = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
-    g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), 0.75)
+    g = Image.blend(g, Image.new("RGB", g.size, (15, 15, 17)), tint)
     mask = Image.new('L', g.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, g.size[0] - 1, g.size[1] - 1), radius=round(radius * k), fill=255)
     img.paste(g, box[:2], mask)
@@ -100,6 +101,35 @@ def caption(img, text, k):
         d.text(((W * k - tw) / 2, (y0 + pad[0] + i * lh + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, 242))
 
 
+def switches(img, text, k):
+    """The switches panel (main.swift's layoutSwitches): small, in the bottom right corner, its foot 60 points
+    above the screen's, on a lighter glass; a row a rule, its label (footnote, right-aligned, dimmer when off)
+    beside an iOS switch at three quarters size (38 by 23 points; green when on)."""
+    W, H = img.size[0] / k, img.size[1] / k
+    rows = [r.split('\t') for r in text.split('\n') if r.count('\t') == 1]
+    pad, gap, row, sw, sh = 10, 8, 30, 38.25, 23.25
+    f = ImageFont.truetype(FONT, round(13 * k))
+    d = ImageDraw.Draw(img, 'RGBA')
+    most = min(W - 32, 320) - 2 * pad - gap - sw
+    label_w = min(max((d.textlength(lb, font=f) / k for lb, _ in rows), default=0), most)
+    w = pad + label_w + gap + sw + pad
+    h = pad + row * len(rows) + pad - 6
+    x0, y0 = W - 16 - w, H - 60 - h
+    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 14, 0.4)
+    d = ImageDraw.Draw(img, 'RGBA')
+    for i, (label, on) in enumerate(rows):
+        on = on == '1'
+        mid = y0 + pad - 3 + row * (i + 0.5)
+        tw = d.textlength(label, font=f)
+        d.text(((x0 + pad + label_w) * k - tw, (mid - 8) * k), label, font=f,
+               fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
+        sx, sy = x0 + w - pad - sw, mid - sh / 2
+        track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
+        d.rounded_rectangle([sx * k, sy * k, (sx + sw) * k, (sy + sh) * k], radius=sh / 2 * k, fill=track)
+        kx, r = sx + (sw - sh / 2 if on else sh / 2), sh / 2 - 1.5
+        d.ellipse([(kx - r) * k, (mid - r) * k, (kx + r) * k, (mid + r) * k], fill=(255, 255, 255, 255))
+
+
 def title(img, text, k):
     """The toy's quiet title line (Toy::title): footnote, white at 0.55, centred at the top."""
     W = img.size[0] / k
@@ -120,6 +150,8 @@ def main():
             img = Image.open(shot).convert('RGB')
             if s.get('rules') or s.get('origins'):
                 rules(img, s.get('rules') or s['origins'], s['ppp'], s.get('top', False))
+            if s.get('switches'):
+                switches(img, s['switches'], s['ppp'])
             if s.get('title'):
                 title(img, s['title'], s['ppp'])
             if s.get('line'):

@@ -1,0 +1,1 @@
+{"_": "The switches mark: with walk out of the wind off, no penguin leaves the windward edge, and the huddle stops turning over.", "size": [1170, 2532], "ppp": 3, "seconds": 61, "fps": 20, "events": [{"t": 0.5, "tap": "switches"}, {"t": 0.8, "switch": [0, false]}], "shots": [{"t": 0.7, "name": "open"}, {"t": 30, "name": "still"}, {"t": 60, "name": "frosted-edge"}]}

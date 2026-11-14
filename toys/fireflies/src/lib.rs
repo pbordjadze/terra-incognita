@@ -410,10 +410,20 @@ impl Toy for Fireflies {
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
-                "Some fireflies flash in unison, like those in the Smoky Mountains.",
-                "Each flashes on its own rhythm, but seeing a neighbour light up nudges it a little sooner. No one leads, yet slowly they fall into step, in waves.",
-                "Here every city light is a firefly, and green is a flash. Tap to knock a crowd out of step, and watch it fall back in.",
+            "Some fireflies flash in unison, like those in the Smoky Mountains. No one leads, yet slowly they fall into step, in waves.",
+            "Here every city light is a firefly, and green is a flash. The three dots show the rule each follows: switch it off to see what it does.",
+            "Tap to knock a crowd out of step, and watch it fall back in.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&sim::RULES, &self.swarm.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.swarm.on.get_mut(i) {
+            *o = on;
+        }
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

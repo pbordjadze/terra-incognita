@@ -107,7 +107,13 @@ pub struct Colony {
     pub swerved: u32,
     /// where the hawks are now: every bat keeps clear of them
     pub hawks: Vec<[f32; 3]>,
+    /// The two rules, each on or off (the switches mark; `RULES`): a bat near a hawk jinks away from
+    /// it; a bat copies a neighbour's jink a moment later.
+    pub on: [bool; 2],
 }
+
+/// The rules as the switches mark names them, in `Colony::on`'s order.
+pub const RULES: [&str; 2] = ["Dodge the hawk", "Copy a neighbour"];
 
 const CELL: f32 = 4.0;
 /// How near a neighbour must be to pass a swerve on, metres; and how long it takes, seconds.
@@ -224,6 +230,7 @@ impl Colony {
             indexed: false,
             swerved: 0,
             hawks: Vec::new(),
+            on: [true; 2],
         }
     }
 
@@ -346,7 +353,7 @@ impl Colony {
         b.v = add(b.v, mul(away, 3.0 * strength));
         self.swerved += 1;
         let next = strength * PASS;
-        if next < 0.12 {
+        if next < 0.12 || !self.on[1] {
             return;
         }
         let p = b.p;
@@ -375,7 +382,7 @@ impl Colony {
         for h in &self.hawks {
             let d = sub(b.p, *h);
             let r = len(d);
-            if r < CLEAR {
+            if r < CLEAR && self.on[0] {
                 want = add(want, mul(d, 26.0 * (CLEAR - r) / (CLEAR * r.max(0.5))));
             }
         }
@@ -496,7 +503,7 @@ impl Colony {
                 caught = Some(j);
                 continue;
             }
-            if self.bats[j].rest <= 0.0 {
+            if self.bats[j].rest <= 0.0 && self.on[0] {
                 // away from the hawk, mostly across its path
                 let away = norm(add(norm(d), mul(norm(v), -0.3)));
                 self.startle(j, away, 1.0);

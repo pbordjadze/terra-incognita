@@ -315,9 +315,19 @@ impl Toy for Elkmont {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
             "On June nights at Elkmont, in the Great Smoky Mountains, the fireflies flash together in waves.",
-            "Each male flashes four to eight times, then rests until the woods go dark. Rested, he starts at the first flash he sees.",
-            "So the first to start sets them all off, about every twelve seconds. Hold your light low: a female may answer.",
+            "Each male flashes a few times, rests until the woods go dark, then starts on the first flash he sees. The three dots show his rest: switch it off to see what it does.",
+            "Hold your light low: a female may answer.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&swarm::RULES, &self.swarm.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.swarm.on.get_mut(i) {
+            *o = on;
+        }
     }
 
     fn save(&self) -> Option<String> {

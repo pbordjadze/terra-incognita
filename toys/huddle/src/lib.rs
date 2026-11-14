@@ -402,10 +402,20 @@ impl Toy for Huddle {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-            "In the Antarctic winter, emperor penguins on Atka Bay's sea ice huddle against the wind.",
-            "The ones on the windward edge get cold and walk round to press in on the sheltered side, so the huddle turns over and creeps downwind. Now and then a wave of tiny steps runs through it.",
-            "Drag to turn the wind; touch a penguin to start a wave.",
+            "In the Antarctic winter, emperor penguins on Atka Bay's sea ice huddle against the wind. No one leads, yet the huddle turns over and creeps downwind.",
+            "The three dots show the rule each penguin follows: switch it off to see what it does.",
+            "Drag to turn the wind; touch a penguin to start a wave of steps.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&flock::RULES, &self.flock.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.flock.on.get_mut(i) {
+            *o = on;
+        }
     }
 }
 

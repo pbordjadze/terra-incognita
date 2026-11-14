@@ -93,7 +93,13 @@ pub struct Hill {
     pending: Vec<Flip>,
     pub rng: Rng,
     counts: [Vec<u16>; 3],
+    /// The two rules, each on or off (the switches mark; `RULES`): a lizard loses its rock to the colour
+    /// that beats its own; only when `THRESHOLD` of its neighbours wear it (off: one is enough).
+    pub on: [bool; 2],
 }
+
+/// The rules as the switches mark names them, in `Hill::on`'s order.
+pub const RULES: [&str; 2] = ["Lose to what beats you", "Only when outnumbered"];
 
 impl Hill {
     pub fn new(w: usize, h: usize, seed: u64) -> Hill {
@@ -112,6 +118,7 @@ impl Hill {
             pending: Vec::new(),
             rng: Rng(seed | 1),
             counts: [vec![0; n], vec![0; n], vec![0; n]],
+            on: [true; 2],
         };
         hill.seed_pinwheels(seed);
         hill.warm(WARM);
@@ -339,13 +346,14 @@ impl Hill {
             }
         }
         let mut next = self.kind.clone();
+        let threshold = if self.on[1] { THRESHOLD } else { 1 };
         for i in 0..w * h {
             let k = self.kind[i];
-            if k == BOULDER {
+            if k == BOULDER || !self.on[0] {
                 continue;
             }
             let p = beater(k);
-            if self.counts[(p - 1) as usize][i] as u32 >= THRESHOLD && self.rng.unit() < TAKE {
+            if self.counts[(p - 1) as usize][i] as u32 >= threshold && self.rng.unit() < TAKE {
                 next[i] = p;
                 let from = self.nearest(i, p);
                 let at = self.rng.unit();

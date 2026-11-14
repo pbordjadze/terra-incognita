@@ -82,7 +82,14 @@ pub struct Huddle {
     /// penguins that stepped, joined, or set off this step (for the sound)
     pub stepped: u32,
     pub joined: Vec<[f32; 2]>,
+    /// The rule, on or off (the switches mark; `RULES`): a cold penguin on the windward edge walks
+    /// round to the lee. (Stepping after a neighbour shows only when the reader starts a wave, so it
+    /// isn't a switch.)
+    pub on: [bool; 1],
 }
+
+/// The rules as the switches mark names them, in `Huddle::on`'s order.
+pub const RULES: [&str; 1] = ["Walk out of the wind"];
 
 fn sub(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {
     [a[0] - b[0], a[1] - b[1]]
@@ -159,6 +166,7 @@ impl Huddle {
             t: 0.0,
             rng,
             next_wave: 4.0,
+            on: [true; 1],
             cells: HashMap::new(),
             stepped: 0,
             joined: Vec::new(),
@@ -380,7 +388,7 @@ impl Huddle {
                 // the backs to the wind
                 b.face = turn(b.face, w, dt * 0.05);
                 // cold on the windward edge: off it goes, round the nearer side
-                if b.cold > 1.0 && b.exposed > 0.5 {
+                if b.cold > 1.0 && b.exposed > 0.5 && self.on[0] {
                     let side = [-w[1], w[0]];
                     // on the left of the wind it goes clockwise to the lee, on the right anticlockwise,
                     // and stops on its own side of the lee

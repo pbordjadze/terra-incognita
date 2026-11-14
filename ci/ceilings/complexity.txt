@@ -46,7 +46,7 @@ toys/carol/src/lib.rs::draw 283 45
 toys/carol/src/lib.rs::new 106 5
 toys/carol/src/lib.rs::pointer 79 26
 toys/crates/toy-kit/src/check.rs::main_with 89 21
-toys/crates/toy-kit/src/check.rs::play_with 299 74
+toys/crates/toy-kit/src/check.rs::play_with 291 70
 toys/crates/toy-kit/src/globe/mod.rs::pointer 162 41
 toys/crates/toy-kit/src/globe/rivers.rs::mask 123 14
 toys/crates/toy-kit/src/globe/rivers.rs::new 176 4

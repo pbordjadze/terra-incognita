@@ -1,0 +1,1 @@
+{"_": "The switches mark: with shelter behind crests off, the wind reaches every slope and the crescents round into heaps.", "size": [1170, 2532], "ppp": 3, "seconds": 40, "fps": 20, "events": [{"t": 2, "tap": "switches"}, {"t": 2.3, "switch": [1, false]}], "shots": [{"t": 2.2, "name": "open"}, {"t": 20, "name": "rounding"}, {"t": 39, "name": "heaps"}]}

@@ -412,11 +412,20 @@ impl Toy for Wave {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-            "A Mexican wave in Estadio Azteca: each person stands when enough of the people round them stand, then sits.",
-            "It takes a few dozen at once to start one. It runs one way round, about 20 seats a second.",
-            "People tire of it: after a lap or two it thins and dies.",
+            "A Mexican wave in Estadio Azteca. It takes a few dozen at once to start one, and after a lap or two people tire of it and it dies.",
+            "Each person follows three rules. The three dots show them: switch one off to see what it does.",
             "Swipe along the stands to start one.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&crowd::RULES, &self.crowd.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.crowd.on.get_mut(i) {
+            *o = on;
+        }
     }
 }
 

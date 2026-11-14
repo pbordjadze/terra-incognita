@@ -36,8 +36,9 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | The globe by day and night, its hand (drag, pinch, fling), project/unproject | `globe/` | ✓ | adrift-core, Nov 2 |
 | Real data: a manifest, files by name, the bundle or a directory | `assets.rs` | ✓ | |
 | Sound: a `Synth` on the audio thread | `lib.rs` | ✓ | |
-| The device's C ABI, `ios_shell!` | `shell.rs` | ✓ | |
+| The device's C ABI, `ios_shell!` | `shell.rs`, `ios.rs` | ✓ | |
 | A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptic` | `lib.rs` | ✓ | Terra, Nov 4 |
+| The switches mark: a toy's rules as switches over the live scene (`Toy::switches`, `set_switch`; `toy_switches_*`) | `switches.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and seven more, Nov 13 |
 | VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
 | **Launch safety**: the iPhone's GPU limits requested on Linux (`KIT_IPHONE_LIMITS=1`), so a pipeline the phone refuses fails the check; GPU memory counted as it is allocated; a budget in `toy.json` | `gpu/`, `budget.rs` | + | the two launch crashes |
@@ -203,6 +204,20 @@ by standing on the kit:
   asked as a card opens, hangs it from the top (Mold: over whichever half has less lit land). On Mold
   only, as a trial; any toy adopts it by giving `origins()`. Judged by two fresh critics on
   `plans/rules.json` (now "?", then the asterisk); the Simulator keeps `rules.png` and `origins.png`.
+- **The switches mark** (Nov 13, painting-company row 335; chosen from three mockups): three joined
+  dots, left of the other marks, for a toy whose crowd follows a few local rules (`Toy::switches`,
+  `set_switch`; `switches.rs`). Tapped, the rules show as small native switches on a light glass in
+  the corner, over the live scene (the shell's panel, VoiceOver reads them as toggles); a rule off
+  shows what it was holding together; the panel stays while the reader plays and the scene keeps its
+  touches; a second tap, or any card opening, closes it and turns every rule back on. The "?" then
+  needs only the place, the gesture and a pointer to the dots. A plan taps `"switches"` and turns a
+  rule with `"switch": [i, false]`; `shell_text.py` draws the panel. On Murmuration, Elkmont, Wave,
+  Barchans, Fireflies, Bats, Throats and Huddle (`plans/switches.json` each). A rule whose switch
+  changes nothing you can see within a few seconds is left off the panel (Fireflies' blind spell,
+  Huddle's stepping after a neighbour, Elkmont's bursts and starting on a flash, which show a burst
+  or two later; Bubblers has none: its bolting shows only after the reader's touch, its feeding only
+  over half a minute); `tools/toys/switch_ab.py` plays a toy with each rule on and off, side by
+  side.
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.

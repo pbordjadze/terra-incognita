@@ -1,0 +1,1 @@
+{"_": "The switches mark: with wait a moment off, whoever sits down can stand at once, and the wave floods the stands in stripes.", "size": [1170, 2532], "ppp": 3, "seconds": 12, "fps": 28, "events": [{"t": 2, "tap": "switches"}, {"t": 2.5, "switch": [2, false]}], "shots": [{"t": 2.4, "name": "open"}, {"t": 7, "name": "stripes"}, {"t": 11.5, "name": "flood"}]}

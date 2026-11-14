@@ -443,10 +443,20 @@ impl Toy for Throats {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-                "On California hillsides, male side-blotched lizards have orange, blue or yellow throats. Each dot here is one lizard guarding its patch.",
-                "Orange beats blue, blue beats yellow, yellow beats orange, like rock, paper, scissors. A lizard loses its patch when too many neighbours have the colour that beats it.",
-                "Nothing wins for long: the colours chase each other in spirals. Each stroke you draw pours in the next colour.",
+            "On California hillsides, male side-blotched lizards have orange, blue or yellow throats. Each dot is one lizard guarding its patch.",
+            "Orange beats blue, blue beats yellow, yellow beats orange, like rock, paper, scissors. Nothing wins for long: the colours chase each other in spirals. The three dots show the rules: switch one off to see what it does.",
+            "Each stroke you draw pours in the next colour.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&sim::RULES, &self.hill.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.hill.on.get_mut(i) {
+            *o = on;
+        }
     }
 }
 

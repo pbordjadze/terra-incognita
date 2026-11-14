@@ -9,6 +9,8 @@
 
 pub const V0: f32 = 10.0;
 const NEIGHBOURS: usize = 7;
+/// The rules as the switches mark names them, in `Flock::on`'s order.
+pub const RULES: [&str; 3] = ["Don't collide", "Match heading", "Keep close"];
 const SEP_R: f32 = 1.0;
 const W_SEP: f32 = 22.0;
 const W_ALIGN: f32 = 3.5;
@@ -120,6 +122,9 @@ pub struct Flock {
     /// How far you lean (0..1): the birds round you feel the lean that much.
     pub lean_field: f32,
     pub roost: V3,
+    /// The three rules, each on or off (the switches mark; `RULES`): don't collide, match heading,
+    /// keep close.
+    pub on: [bool; 3],
     centre_now: V3,
     startle: Option<(V3, V3, f32)>,
     startle_in: f32,
@@ -176,6 +181,7 @@ impl Flock {
             lean_field: 0.0,
             roost,
             centre_now: roost,
+            on: [true; 3],
             startle: None,
             startle_in: 3.0,
             rng,
@@ -509,18 +515,31 @@ impl Flock {
             centre = scale(centre, 1.0 / wsum);
             // Centrality: neighbours all to one side means the flock's edge; pull in harder there.
             let edge = length(dirs) / nb.len() as f32;
-            a = addv(a, scale(sep, W_SEP));
-            a = addv(a, scale(sub(avg_v, v), W_ALIGN));
-            a = addv(a, scale(sub(centre, p), W_COH * (0.2 + 2.6 * edge * edge)));
+            let [sep_on, align_on, coh_on] = self.on.map(|o| o as u8 as f32);
+            a = addv(a, scale(sep, W_SEP * sep_on));
+            a = addv(a, scale(sub(avg_v, v), W_ALIGN * align_on));
+            a = addv(
+                a,
+                scale(sub(centre, p), W_COH * coh_on * (0.2 + 2.6 * edge * edge)),
+            );
         }
         // Cruise speed.
         let speed = length(v).max(0.1);
         let f = scale(v, 1.0 / speed);
         a = addv(a, scale(f, (V0 - speed) * W_SPEED));
         // The roost: turn back toward it beyond its circle (horizontally), and keep the height.
+        // The roost's pull is shared: part toward it from the flock's middle, the same for every bird (a
+        // common heading, so with "match heading" off each bird heads for the roost from where it is, and
+        // the flock mills about it like midges), part from the bird's own place (a pull together, so with
+        // "keep close" off the flock still turns for home but no bird is drawn toward the rest).
+        let own = match self.on {
+            [_, false, _] => 1.0,
+            [_, _, false] => 0.0,
+            _ => 0.4,
+        };
         let to = addv(
-            scale(sub(self.roost, self.centre_now), 0.6),
-            scale(sub(self.roost, p), 0.4),
+            scale(sub(self.roost, self.centre_now), 1.0 - own),
+            scale(sub(self.roost, p), own),
         );
         let hd = (to[0] * to[0] + to[2] * to[2]).sqrt();
         if hd > ROOST_R {

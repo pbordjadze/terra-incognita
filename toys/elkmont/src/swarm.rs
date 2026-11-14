@@ -31,6 +31,8 @@ const INTERFLASH_SPREAD: f64 = 0.03;
 /// Flashes in a burst (inclusive).
 const BURST_MIN: u32 = 4;
 const BURST_MAX: u32 = 8;
+/// The rules as the switches mark names them, in `Swarm::on`'s order.
+pub const RULES: [&str; 1] = ["Rest till dark"];
 /// After a burst, the rest in which nothing sets him off (s, mean and spread), measured from the
 /// burst's last flash.
 const REST_S: f64 = 3.0;
@@ -149,6 +151,9 @@ pub struct Swarm {
     bursting: bool,
     /// Males out now (grows to MALES over EMERGE_S).
     pub out: usize,
+    /// The rule, on or off (the switches mark; `RULES`): rest until the woods go dark. (The burst and
+    /// starting on a flash seen show only a burst or two later, so they aren't switches.)
+    pub on: [bool; 1],
     /// The light of the whole swarm this step (the sum of the flashes' light, for the woods' glow).
     pub light: f32,
 }
@@ -215,6 +220,7 @@ impl Swarm {
             last_any: -100.0,
             bursting: false,
             out: 0,
+            on: [true; 1],
             light: 0.0,
         };
         sw.emerge();
@@ -417,6 +423,7 @@ impl Swarm {
         let mut seen_now: Vec<Seen> = std::mem::take(&mut self.pending);
         let mut seed = self.seed;
         let mut any_burst = false;
+        let [wait_dark] = self.on;
         for (i, m) in self.males[..self.out].iter_mut().enumerate() {
             Self::fly(m, t, dt, &mut seed);
             // see, and flash
@@ -439,7 +446,8 @@ impl Swarm {
                 State::Resting { until } => {
                     // rested, and the woods around him dark a moment
                     // rested once the woods round him have been dark a while
-                    if t >= until && t - m.saw.max(m.last_flash) > m.dark {
+                    let dark = t - m.saw.max(m.last_flash) > m.dark;
+                    if t >= until && (dark || !wait_dark) {
                         let wait = WAIT_MEAN_S * -rand(&mut seed).max(1e-9).ln();
                         m.state = State::Ready { own: t + wait };
                     }

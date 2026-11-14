@@ -278,10 +278,20 @@ impl Toy for Barchans {
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
-            "South of Tarfaya, in Morocco, crescent dunes walk across the bare desert floor.",
-            "The wind lifts sand wherever it reaches and drops it a little downwind. Behind each crest is a lee it can't reach, and a slope too steep slides.",
-            "So heaps grow into crescents, horns downwind, small ones walking faster than big. Drag to turn the wind; hold still to pour sand.",
+            "South of Tarfaya, in Morocco, crescent dunes walk across the bare desert floor, small ones faster than big.",
+            "The wind lifts sand wherever it reaches and drops it a little downwind. The three dots show the other rules: switch one off to see what it does.",
+            "Drag to turn the wind; hold still to pour sand.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&dunes::RULES, &self.dunes.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(o) = self.dunes.on.get_mut(i) {
+            *o = on;
+        }
     }
 }
 

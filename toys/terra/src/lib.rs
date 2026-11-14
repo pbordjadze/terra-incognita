@@ -594,13 +594,6 @@ impl Terra {
         homecoming(home, self.life.doors[self.door].at)
     }
 
-    fn inside(&self) -> bool {
-        matches!(
-            self.state,
-            State::Opening { .. } | State::Inside | State::Closing { .. }
-        )
-    }
-
     fn strike(&self, degree: i32, amp: f32, pan: f32) {
         self.bells.strike(Note {
             freq: pentatonic(392.0, degree),
@@ -694,14 +687,10 @@ impl Terra {
         };
     }
 
-    /// Back to the Earth: the toy goes down into it, at the toy's own camera.
-    fn leave(&mut self, ctx: &mut Ctx, t: f64) {
-        self.leave_from(ctx, t, None);
-    }
-
     /// Back to the Earth; a scene pinched part way back into its light (`squeezed`: the Earth's camera as
     /// the fingers left it) rises on from there.
-    fn leave_from(&mut self, ctx: &mut Ctx, t: f64, squeezed: Option<Camera>) {
+    pub(crate) fn leave_from(&mut self, ctx: &mut Ctx, t: f64, squeezed: Option<Camera>) {
+        self.rules_back_on();
         if let Some(c) = self.room.as_ref().and_then(|r| r.camera()) {
             self.globe.camera = c;
         }
@@ -1939,11 +1928,15 @@ impl Toy for Terra {
     }
 
     fn origins(&self) -> Option<Rules> {
-        // the open toy's, while it is open and settled (none on the Earth)
-        if matches!(self.state, State::Inside) {
-            return self.room.as_ref().and_then(|r| r.origins());
-        }
-        None
+        self.held_origins()
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        self.held_switches()
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        self.set_held_switch(i, on);
     }
 
     fn info_at_start(&self) -> bool {
