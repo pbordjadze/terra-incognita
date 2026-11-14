@@ -10,6 +10,7 @@ and which are built as IPAs on the shared macOS runners. Prints `check=<json lis
 - built: on main, every toy whose own directory changed (one IPA a toy a merge: a round's merge is one
   build), plus any named; on a branch only the toys named by `[toys-ipa <toy> ...]` (or `all`) in the
   commit's first line. A run started by hand checks its `toy` (or all) and builds it when `ipa`.
+- web: a change to toys/terra-web checks Terra (on main its check is followed by the web build).
 - kit: whether toy-kit changed (or a run started by hand): its library forms are built (no globe; web).
 """
 import json
@@ -47,6 +48,9 @@ else:
     check = TOYS if shared else own
     # Terra holds the other toys (toys/terra): a change to any of them is checked inside it too
     if own and 'terra' in TOYS and 'terra' not in check:
+        check = check + ['terra']
+    # Terra on the web (toys/terra-web, not a toy of its own): checked as Terra, whose check on main builds it
+    if any(f.startswith('toys/terra-web/') for f in files) and 'terra' not in check:
         check = check + ['terra']
     build = sorted(set((own if ref == 'main' else []) + named))
     check = sorted(set(check + build))

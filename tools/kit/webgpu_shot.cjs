@@ -3,8 +3,10 @@
 //
 // Headless Chromium hands out a WebGPU adapter with only --enable-unsafe-webgpu, and the page draws,
 // but the screenshot comes back blank: the canvas's frames never reach the headless compositor. With
-// Vulkan on SwiftShader for both Dawn and ANGLE (the flags in FLAGS, each one needed: found by taking
-// them away one at a time on Nov 3, 2026) the canvas is composited and the screenshot shows it. All in
+// Vulkan on SwiftShader for Dawn and ANGLE on SwiftShader (the flags in FLAGS, each one needed: found by
+// taking them away one at a time on Nov 3, 2026; on Nov 14 the headless shell's ANGLE could no longer start
+// on Vulkan without a window, which lost the device at the first frame, and `--use-angle=swiftshader`
+// composites it again) the canvas is composited and the screenshot shows it. All in
 // software: slow (seconds a frame at phone size), but every pixel is the page's own.
 //
 //     node tools/kit/webgpu_shot.cjs <dir | url> <out.png> [--size 390x844] [--dpr 3] [--wait 8]
@@ -21,7 +23,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const FLAGS = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-angle=vulkan'];
+const FLAGS = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-angle=swiftshader'];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm',
   '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.css': 'text/css',
   '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.svg': 'image/svg+xml' };

@@ -327,6 +327,31 @@ impl Flock {
     }
 
     /// One step of `dt` seconds (keep it at a sixtieth or less).
+    /// Each bird's nearest, found on every core (the search only reads); on one core (a browser's
+    /// WebAssembly has no threads) in turn, with no thread spawned.
+    fn find_neighbours(&self, nbs: &mut [([(f32, u32); NEIGHBOURS], usize)]) {
+        let threads = std::thread::available_parallelism()
+            .map(|t| t.get())
+            .unwrap_or(1)
+            .clamp(1, 6);
+        if threads == 1 {
+            for (i, e) in nbs.iter_mut().enumerate() {
+                e.1 = self.nearest(i, &mut e.0);
+            }
+            return;
+        }
+        let chunk = nbs.len().div_ceil(threads).max(1);
+        std::thread::scope(|sc| {
+            for (c, part) in nbs.chunks_mut(chunk).enumerate() {
+                sc.spawn(move || {
+                    for (k, e) in part.iter_mut().enumerate() {
+                        e.1 = self.nearest(c * chunk + k, &mut e.0);
+                    }
+                });
+            }
+        });
+    }
+
     pub fn step(&mut self, dt: f32) {
         self.time += dt as f64;
         // The flock's pull wanders over the reed bed: a slow figure (StarDisplay's roost is fixed; a
@@ -344,23 +369,7 @@ impl Flock {
         // The neighbours, found on every core (the search only reads), then the rules in turn.
         let mut nbs = std::mem::take(&mut self.nbs);
         nbs.resize(n, ([(0.0, 0); NEIGHBOURS], 0));
-        let threads = std::thread::available_parallelism()
-            .map(|t| t.get())
-            .unwrap_or(1)
-            .clamp(1, 6);
-        let chunk = n.div_ceil(threads);
-        {
-            let me = &*self;
-            std::thread::scope(|sc| {
-                for (c, part) in nbs.chunks_mut(chunk).enumerate() {
-                    sc.spawn(move || {
-                        for (k, e) in part.iter_mut().enumerate() {
-                            e.1 = me.nearest(c * chunk + k, &mut e.0);
-                        }
-                    });
-                }
-            });
-        }
+        self.find_neighbours(&mut nbs);
         let mut lost: Vec<usize> = Vec::new();
         for i in 0..n {
             let (nb, found) = nbs[i];

@@ -62,10 +62,7 @@ pub fn sunset(lon: f64, lat: f64, day: f64) -> f64 {
 
 /// Days since 2000-01-01 00:00 UTC, now.
 pub fn now_days() -> f64 {
-    let s = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs_f64())
-        .unwrap_or(0.0);
+    let s = toy_kit::wall_clock();
     (s - 946_684_800.0) / 86_400.0
 }
 

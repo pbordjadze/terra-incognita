@@ -2,10 +2,7 @@
 
 /// The month now (0 = January), from the clock (a fixed month without one).
 pub fn this_month() -> u32 {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let secs = toy_kit::wall_clock() as u64;
     // civil from days (Howard Hinnant's algorithm)
     let z = (secs / 86_400) as i64 + 719_468;
     let doe = z.rem_euclid(146_097);

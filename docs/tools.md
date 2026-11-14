@@ -44,3 +44,4 @@ Rebuild, never hand-edit.
 | --- | --- | --- |
 | Versions | Rust (`rust-toolchain.toml`, installed by `ci/rust.sh`), Xcode (`ci/xcode.sh`), crates (`Cargo.toml` + `Cargo.lock`), actions, Python (`tools/requirements.txt`); Dependabot's weekly grouped bumps | CLAUDE.md › Staying current; `.github/dependabot.yml` |
 | SideStore | the source JSON listing every app's newest IPAs (`ci/sidestore_apps.json`) | `ci/sidestore_source.py`, `ci/sidestore_publish.sh`; `toys.yml` and `adrift.yml` after a release |
+| Terra for the web | Terra's library as WebAssembly (`toys/terra-web`: the iPhone shell's calls for JavaScript) with its page and data, a directory any static server serves; `--shot` screenshots it headless (`webgpu_shot.cjs`). On `main` CI pushes it to the `web` branch, which the owner's site serves at an unlisted path | `bash tools/toys/web_build.sh [out-dir] [--shot]`; `toys.yml`'s `web` job |

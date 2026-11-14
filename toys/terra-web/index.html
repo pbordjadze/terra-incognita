@@ -1,0 +1,328 @@
+<!doctype html>
+<!-- Terra on the web: what toys/ios/Sources/main.swift does on the iPhone, in HTML over a WebGPU canvas
+     (toys/terra-web/src/lib.rs exports the same calls). Built by tools/toys/web_build.sh; change both
+     shells together. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Terra Incognita</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root { --glass: rgba(15, 15, 15, 0.62); --font: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100dvh; display: block; touch-action: none; }
+  #safe { position: fixed; visibility: hidden; pointer-events: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .glass { position: fixed; background: var(--glass); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4); opacity: 0; transition: opacity .25s; font-family: var(--font); color: rgba(255,255,255,.95); }
+  .glass.on { opacity: 1; }
+  #caption { pointer-events: none; border-radius: 14px; padding: 8px 14px; font-size: 16px; line-height: 1.3;
+    text-align: center; white-space: pre-line; transition-duration: .35s; max-width: min(calc(100vw - 48px), 560px); box-sizing: border-box; }
+  #card { border-radius: 16px; padding: 14px 16px; box-sizing: border-box; overflow-y: auto; display: none; }
+  #card p { margin: 0 0 7px; font-size: 16px; line-height: 1.35; }
+  #card p.note { font-size: 13px; color: rgba(255,255,255,.64); margin: 6px 0 0; }
+  #switches { border-radius: 14px; padding: 7px 10px 4px; box-sizing: border-box; display: none; background: rgba(15,15,15,.3); }
+  #switches label { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px;
+    font-size: 13px; white-space: nowrap; }
+  #switches label.off span { opacity: .58; }
+  #switches input { appearance: none; -webkit-appearance: none; margin: 0; width: 38px; height: 23px; border-radius: 12px;
+    background: rgba(120,120,128,.32); position: relative; transition: background .2s; cursor: pointer; flex: none; }
+  #switches input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+  #switches input:checked { background: #34c759; }
+  #switches input:checked::after { transform: translateX(15px); }
+  #title { position: fixed; left: 48px; right: 48px; text-align: center; font: 13px var(--font); color: rgba(255,255,255,.55);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; opacity: 0; transition: opacity .6s; }
+  #loading { position: fixed; left: 50%; top: 50%; width: 120px; height: 2px; margin: -1px 0 0 -60px; background: rgba(255,255,255,.12);
+    border-radius: 1px; overflow: hidden; transition: opacity .6s; }
+  #loading div { height: 100%; width: 0; background: rgba(255,255,255,.7); transition: width .2s; }
+  #status { position: fixed; left: 24px; right: 24px; top: 50%; transform: translateY(-50%); text-align: center;
+    font: 16px/1.45 var(--font); color: rgba(255,255,255,.75); display: none; }
+  #marks { position: fixed; inset: 0; pointer-events: none; }
+  #marks button { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="terra"></canvas>
+<div id="safe"></div>
+<div id="marks" role="group"></div>
+<div id="title" aria-live="polite"></div>
+<div id="caption" class="glass" role="status" aria-live="polite"></div>
+<div id="card" class="glass" role="dialog"></div>
+<div id="switches" class="glass" role="group"></div>
+<div id="loading"><div></div></div>
+<div id="status" role="alert"></div>
+<script type="module">
+import init, { start } from './terra_web.js';
+
+const $ = id => document.getElementById(id);
+const canvas = $('terra');
+const say = text => { $('loading').style.opacity = 0; const s = $('status'); s.textContent = text; s.style.display = 'block'; };
+// (the site's other pages share this page's storage: a key of Terra's own)
+const KEY = 'terra-incognita:state';
+let shell = null;
+
+function size() {
+  const dpr = window.devicePixelRatio || 1, r = canvas.getBoundingClientRect();
+  return [Math.max(1, Math.round(r.width * dpr)), Math.max(1, Math.round(r.height * dpr)), dpr, r.width, r.height];
+}
+function safe() {
+  const s = getComputedStyle($('safe'));
+  return { top: parseFloat(s.paddingTop) || 0, bottom: parseFloat(s.paddingBottom) || 0 };
+}
+
+async function load() {
+  const index = await (await fetch('data/index.json')).json();
+  const total = Object.values(index).reduce((a, b) => a + b, 0);
+  let got = 0;
+  const bar = $('loading').firstElementChild;
+  const names = Object.keys(index);
+  const files = await Promise.all(names.map(async name => {
+    const resp = await fetch('data/' + name);
+    if (!resp.ok) throw new Error(name + ': ' + resp.status);
+    const reader = resp.body.getReader(), parts = [];
+    let n = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); n += value.length; got += value.length;
+      bar.style.width = (100 * got / total).toFixed(1) + '%';
+    }
+    const out = new Uint8Array(n);
+    let at = 0;
+    for (const p of parts) { out.set(p, at); at += p.length; }
+    return out;
+  }));
+  return [names, files];
+}
+
+async function main() {
+  if (!navigator.gpu) { say('Terra needs WebGPU: Safari 26 or newer on iPhone, iPad and Mac, or Chrome or Edge.'); return; }
+  await init();
+  const [names, files] = await load();
+  const [w, h, dpr] = size();
+  canvas.width = w; canvas.height = h;
+  const dark = matchMedia('(prefers-color-scheme: dark)'), still = matchMedia('(prefers-reduced-motion: reduce)');
+  shell = await start(canvas, w, h, dpr, names, files, Date.now() / 1000, dark.matches, still.matches);
+  try { const s = localStorage.getItem(KEY); if (s) shell.restore(s); } catch (e) { /* no storage: start fresh */ }
+  dark.addEventListener('change', e => shell.set_night(e.matches));
+  still.addEventListener('change', e => shell.set_reduce_motion(e.matches));
+  $('loading').style.opacity = 0;
+  wire();
+  requestAnimationFrame(tick);
+}
+
+// ---- touches (the canvas's; the panels keep their own) and the sound, which starts with the first touch
+function wire() {
+  const phases = { pointerdown: 0, pointermove: 1, pointerup: 2, pointercancel: 3 };
+  for (const [name, phase] of Object.entries(phases)) {
+    canvas.addEventListener(name, e => {
+      const r = canvas.getBoundingClientRect();
+      if (phase === 0) { try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* gone already */ } startSound(); }
+      e.preventDefault();
+      shell.pointer(e.pointerId >>> 0, phase, e.clientX - r.left, e.clientY - r.top, performance.now() / 1000);
+    });
+  }
+  // a mouse's wheel is a pinch about the pointer, as a trackpad's pinch (ctrlKey) is in every browser
+  canvas.addEventListener('wheel', e => { e.preventDefault(); wheel(e); }, { passive: false });
+  for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, e => e.preventDefault());
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  $('card').addEventListener('click', closeCard);
+  const keep = () => { try { const s = shell.save(); if (s) localStorage.setItem(KEY, s); } catch (_) { /* no storage */ } };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { keep(); shell.pause(); if (audio) audio.suspend(); } else if (audio) audio.resume(); });
+  addEventListener('pagehide', keep);
+}
+
+// two pretend fingers either side of the pointer, moved apart or together by the wheel, let go after a pause
+let pinch = null;
+const A = 4000000001, B = 4000000002;
+function wheel(e) {
+  const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, t = performance.now() / 1000;
+  const k = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002));
+  if (!pinch) {
+    pinch = { x, y, d: 60 };
+    shell.pointer(A, 0, x - 60, y, t); shell.pointer(B, 0, x + 60, y, t);
+  }
+  pinch.d = Math.min(Math.max(pinch.d * k, 4), 4000);
+  shell.pointer(A, 1, pinch.x - pinch.d, pinch.y, t); shell.pointer(B, 1, pinch.x + pinch.d, pinch.y, t);
+  clearTimeout(pinch.end);
+  pinch.end = setTimeout(() => {
+    const t2 = performance.now() / 1000;
+    shell.pointer(A, 2, pinch.x - pinch.d, pinch.y, t2); shell.pointer(B, 2, pinch.x + pinch.d, pinch.y, t2);
+    pinch = null;
+  }, 180);
+}
+
+let audio = null;
+function startSound() {
+  if (audio) { if (audio.state !== 'running') audio.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  audio = new AC();
+  const node = audio.createScriptProcessor(2048, 0, 2);
+  let buf = new Float32Array(4096);
+  node.onaudioprocess = e => {
+    const out = e.outputBuffer, n = out.length;
+    if (buf.length !== n * 2) buf = new Float32Array(n * 2);
+    shell.audio(buf, audio.sampleRate);
+    const l = out.getChannelData(0), r = out.getChannelData(1);
+    for (let i = 0; i < n; i++) { l[i] = buf[2 * i]; r[i] = buf[2 * i + 1]; }
+  };
+  node.connect(audio.destination);
+  audio.resume();
+}
+
+// ---- each frame: the picture, then the shell's text as main.swift's tick shows it
+function tick() {
+  try { frame(); } catch (e) { console.error(e); say('Terra stopped here. ' + (e && e.message ? e.message : e)); return; }
+  requestAnimationFrame(tick);
+}
+function frame() {
+  const [w, h, dpr] = size();
+  if (w !== canvas.width || h !== canvas.height) { canvas.width = w; canvas.height = h; shell.resize(w, h, dpr); layout(); }
+  shell.frame(performance.now() / 1000, Date.now() / 1000);
+  if (shell.take_haptic() && navigator.vibrate) navigator.vibrate(8);
+  showTitle(shell.title() ?? null);
+  showCaption(shell.info_line() ?? null);
+  showCard(shell.rules_text() ?? shell.origins_text() ?? null);
+  showSwitches(shell.switches_text() ?? null);
+  marks();
+}
+
+let titleText = null;
+function showTitle(text) {
+  if (text === titleText) return;
+  titleText = text;
+  const el = $('title');
+  if (text !== null) el.textContent = text;
+  el.style.top = (safe().top + 14) + 'px';
+  el.style.opacity = text === null ? 0 : 1;
+}
+
+// the info mark's line: as wide as it needs (two lines at most), its middle 74 points above the safe area's foot;
+// a line too long for one breaks after its first sentence
+let captionText = null;
+function showCaption(text) {
+  if (text === captionText) return;
+  captionText = text;
+  const el = $('caption');
+  if (text === null) { el.classList.remove('on'); return; }
+  el.textContent = text;
+  el.style.left = '0'; el.style.top = '0';
+  el.style.whiteSpace = 'nowrap'; el.style.maxWidth = 'none';
+  const most = Math.min(innerWidth - 48, 560);
+  if (el.scrollWidth > most && text.includes('. ')) el.textContent = text.replace('. ', '.\n');
+  el.style.whiteSpace = 'pre-line'; el.style.maxWidth = '';
+  const mid = innerHeight - safe().bottom - 74;
+  el.style.left = ((innerWidth - el.offsetWidth) / 2) + 'px';
+  el.style.top = (mid - el.offsetHeight / 2) + 'px';
+  el.classList.add('on');
+}
+
+// the rules (or origins) card: at most 480 wide, centred, its foot 60 above the screen's, or hung from the top
+let cardText = null, cardTop = false;
+function showCard(text) {
+  if (text === cardText) return;
+  cardText = text;
+  const el = $('card');
+  if (text === null) { el.classList.remove('on'); setTimeout(() => { if (cardText === null) el.style.display = 'none'; }, 300); return; }
+  const parts = text.split('\n\n');
+  el.replaceChildren();
+  for (const line of parts[0].split('\n')) { const p = document.createElement('p'); p.textContent = line; el.append(p); }
+  const note = parts.slice(1).join('\n').trim();
+  if (note) for (const line of note.split('\n')) { const p = document.createElement('p'); p.className = 'note'; p.textContent = line; el.append(p); }
+  el.setAttribute('aria-label', parts.join('. '));
+  cardTop = shell.card_at_top();
+  el.style.display = 'block';
+  layoutCard();
+  requestAnimationFrame(() => el.classList.add('on'));
+}
+function layoutCard() {
+  const el = $('card');
+  if (cardText === null) return;
+  const w = Math.min(innerWidth - 32, 480), foot = innerHeight - 60, top = safe().top;
+  el.style.width = w + 'px'; el.style.left = ((innerWidth - w) / 2) + 'px';
+  el.style.maxHeight = (foot - top - 8) + 'px';
+  el.style.height = 'auto';
+  el.style.top = (cardTop ? top + 8 : foot - el.offsetHeight) + 'px';
+}
+function closeCard() {
+  if (cardText === null) return;
+  if (shell.origins_text() != null) shell.origins_open(); else shell.rules_open();
+}
+
+// the switches panel: in the bottom right corner, its foot 60 above the screen's; a row a rule
+let switchesText = null;
+function showSwitches(text) {
+  if (text === switchesText) return;
+  const opening = switchesText === null;
+  switchesText = text;
+  const el = $('switches');
+  if (text === null) { el.classList.remove('on'); setTimeout(() => { if (switchesText === null) el.style.display = 'none'; }, 300); return; }
+  const rows = text.split('\n').map(r => r.split('\t')).filter(r => r.length === 2);
+  if (el.children.length !== rows.length) {
+    el.replaceChildren();
+    rows.forEach((_, i) => {
+      const label = document.createElement('label'), span = document.createElement('span'), input = document.createElement('input');
+      input.type = 'checkbox'; input.setAttribute('role', 'switch');
+      input.addEventListener('change', () => shell.switch_set(i, input.checked));
+      label.append(span, input); el.append(label);
+    });
+  }
+  rows.forEach(([name, on], i) => {
+    const label = el.children[i];
+    label.firstChild.textContent = name;
+    label.className = on === '1' ? '' : 'off';
+    label.lastChild.checked = on === '1';
+  });
+  el.style.display = 'block';
+  layoutSwitches();
+  if (opening) requestAnimationFrame(() => el.classList.add('on'));
+}
+function layoutSwitches() {
+  const el = $('switches');
+  if (switchesText === null) return;
+  el.style.maxWidth = Math.min(innerWidth - 32, 320) + 'px';
+  el.style.right = '16px';
+  el.style.bottom = '60px';
+}
+
+function layout() { layoutCard(); layoutSwitches(); captionText = null; }
+
+// the marks and Terra's lights as buttons a screen reader can press (the picture draws them)
+let marksKey = '';
+function marks() {
+  const list = [];
+  for (const line of shell.buttons().split('\n')) {
+    const f = line.split('\t');
+    if (f.length === 3) list.push([f[0], +f[1], +f[2], i => shell.press(i, performance.now() / 1000), list.length]);
+  }
+  const named = [['Switch the rules', shell.switches_spot(), () => shell.switches_open()],
+    ['Where the rules come from', shell.origins_spot(), () => shell.origins_open()],
+    ['How it works', shell.rules_spot(), () => shell.rules_open()],
+    ['About this', shell.info_spot(), () => shell.info_open(performance.now() / 1000)]];
+  for (const [label, p, act] of named) if (p) list.push([label, p[0], p[1], act, 0]);
+  const key = list.map(m => m[0] + Math.round(m[1] / 8) + ',' + Math.round(m[2] / 8)).join('|');
+  if (key === marksKey) return;
+  marksKey = key;
+  const box = $('marks');
+  box.replaceChildren(...list.map(([label, x, y, act, i]) => {
+    const b = document.createElement('button');
+    b.setAttribute('aria-label', label); b.style.left = x + 'px'; b.style.top = y + 'px';
+    b.addEventListener('click', () => act(i));
+    return b;
+  }));
+}
+
+main().catch(e => { console.error(e); say('Terra could not start here. ' + (e && e.message ? e.message : e)); });
+</script>
+</body>
+</html>

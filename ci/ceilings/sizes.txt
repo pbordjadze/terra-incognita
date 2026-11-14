@@ -15,7 +15,7 @@ adrift/crates/adrift-core/src/touch/gestures.rs 2273
 toys/carol/src/lib.rs 1345
 toys/crates/toy-kit/src/check.rs 1591
 toys/crates/toy-kit/src/globe/mod.rs 1116
-toys/frost/src/lib.rs 1261
+toys/frost/src/lib.rs 1258
 toys/jam/src/lib.rs 1129
 toys/jam/src/town.rs 872
 toys/meander/src/toy.rs 1001

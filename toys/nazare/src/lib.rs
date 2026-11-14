@@ -122,7 +122,20 @@ pub struct Nazare {
 }
 
 /// A swell being solved on its own thread: its field and its texels.
+#[cfg(not(target_arch = "wasm32"))]
 type Solving = std::thread::JoinHandle<(Field, Vec<u8>)>;
+/// A browser's WebAssembly has no threads: the swell is solved at once (a frame's stall) and taken up as
+/// late as on the phone.
+#[cfg(target_arch = "wasm32")]
+type Solving = Solved;
+#[cfg(target_arch = "wasm32")]
+struct Solved((Field, Vec<u8>));
+#[cfg(target_arch = "wasm32")]
+impl Solved {
+    fn join(self) -> Result<(Field, Vec<u8>), ()> {
+        Ok(self.0)
+    }
+}
 
 const SEA_WGSL: &str = r#"
 // u.p0 = [the floor's left, top (px), px a cell, the swell's phase now]; u.p1 = [cells across, down,
@@ -353,11 +366,15 @@ impl Nazare {
         let floor = std::sync::Arc::clone(&self.floor);
         let shade = std::sync::Arc::clone(&self.shade);
         let (period, from) = self.want;
-        let job = std::thread::spawn(move || {
+        let solve = move || {
             let field = Field::new(&floor, period, from);
             let data = texels(&floor, &shade, &field);
             (field, data)
-        });
+        };
+        #[cfg(not(target_arch = "wasm32"))]
+        let job = std::thread::spawn(solve);
+        #[cfg(target_arch = "wasm32")]
+        let job = Solved(solve());
         self.pending = Some((job, self.clock + SOLVE_S));
     }
 

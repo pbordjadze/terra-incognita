@@ -11,10 +11,12 @@ name: Toys
 #           (tools/toys/sim_launch.sh), failing if it closes. On main it is released as `<toy>-build-<n>` (the five newest kept);
 #           on a branch it is the `<toy>-ipa` artifact.
 #   publish on main after a release: the SideStore source regenerated with every app (ci/sidestore_publish.sh).
+#   web     on main once Terra is checked: Terra for the web (tools/toys/web_build.sh) on the `web` branch, which the
+#           owner's site serves at an unlisted path. CI owns that branch.
 
 on:
   push:
-    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    branches-ignore: ['ci-shots/**', 'sidestore', 'web', 'packs']
     paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml', 'Globe/**', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
@@ -113,6 +115,36 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with: { name: '${{ matrix.toy }}-check', path: toys/build/out, if-no-files-found: error }
+
+  web:
+    needs: [plan, check]
+    if: ${{ !cancelled() && github.ref_name == 'main' && contains(fromJSON(needs.plan.outputs.check), 'terra') && needs.check.result == 'success' }}
+    name: Terra for the web
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    # one push at a time; a newer one waiting replaces an older one waiting
+    concurrency: { group: toys-web, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: toys, key: web }
+      - name: Build
+        run: |
+          command -v wasm-bindgen > /dev/null || cargo install -q wasm-bindgen-cli --version 0.2.130 --locked
+          bash tools/toys/web_build.sh build/web
+      - name: Push the web branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd build/web
+          git init -q && git checkout -q -b web && git add -A
+          git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "Terra for the web, from ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "web:refs/heads/web"
 
   kit:
     # toy-kit as other repositories use it (docs/kit.md): without the globe, and the web shell for
