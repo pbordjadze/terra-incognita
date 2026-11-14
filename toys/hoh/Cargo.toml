@@ -1,0 +1,25 @@
+[package]
+name = "hoh"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Hoh (a working title): the rainforest at the foot of Mount Olympus, where seedlings live only on fallen logs and grow into straight rows of spruce on stilts."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "hoh-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

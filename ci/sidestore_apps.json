@@ -276,6 +276,17 @@
       "iconSource": "toys/pando/icon.png",
       "tintColor": "#F2B22A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "hoh-build",
+      "name": "Hoh",
+      "bundleIdentifier": "com.pbordjadze.toy.hoh",
+      "subtitle": "The rainforest below Mount Olympus, where fallen logs grow rows of trees",
+      "localizedDescription": "The Hoh, at the foot of Mount Olympus in Washington. Moss smothers every seedling on the forest floor; only those on a fallen log live, so young trees grow in lines along the logs, and when a log rots away its trees stand in a row on stilts. Drag to run the years; tap a giant to fell it. Working title; a toy in the making.",
+      "icon": "hoh-icon.png",
+      "iconSource": "toys/hoh/icon.png",
+      "tintColor": "#5E8C3A",
+      "minOSVersion": "17.0"
     }
   ]
 }

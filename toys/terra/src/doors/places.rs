@@ -4,7 +4,7 @@ use super::Door;
 use crate::rooms;
 
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 14] = [
+pub const SCENES: [&str; 15] = [
     "murmuration",
     "fireflies",
     "swell",
@@ -19,6 +19,7 @@ pub const SCENES: [&str; 14] = [
     "barchans",
     "pando",
     "moonroad",
+    "hoh",
 ];
 
 /// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
@@ -164,6 +165,15 @@ fn ground_scenes() -> Vec<Door> {
             night: false,
             degree: 4,
             open: rooms::open::<pando::Pando>,
+        },
+        Door {
+            id: "hoh",
+            name: "Hoh",
+            at: [hoh::PLACE.0, hoh::PLACE.1],
+            tint: [0.52, 0.80, 0.40],
+            night: false,
+            degree: 6,
+            open: rooms::open::<hoh::Hoh>,
         },
     ]
 }

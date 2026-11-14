@@ -1,0 +1,6 @@
+{ "_": "Drags run the years: the fresh log's seedlings shoot up, crowd, thin to a few; the old logs sink and their trees stand on stilts.", "size": [1179, 2556], "ppp": 3, "seconds": 40, "fps": 30,
+  "events": [ { "t": 1.0, "drag": [[60, 700], [340, 640]], "for": 0.5 }, { "t": 2.0, "drag": [[340, 640], [60, 700]], "for": 0.5 },
+              { "t": 3.0, "drag": [[60, 700], [340, 640]], "for": 0.5 }, { "t": 4.0, "drag": [[340, 640], [60, 700]], "for": 0.5 },
+              { "t": 5.0, "drag": [[60, 700], [340, 640]], "for": 0.5 }, { "t": 6.0, "drag": [[340, 640], [60, 700]], "for": 0.5 },
+              { "t": 7.0, "drag": [[60, 700], [340, 640]], "for": 0.5 }, { "t": 8.0, "drag": [[340, 640], [60, 700]], "for": 0.5 } ],
+  "shots": [0.5, 5.0, 10.0, 20.0, 40.0] }

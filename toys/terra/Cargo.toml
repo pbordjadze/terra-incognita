@@ -26,6 +26,7 @@ catatumbo = { path = "../catatumbo" }
 bubblers = { path = "../bubblers" }
 barchans = { path = "../barchans" }
 pando = { path = "../pando" }
+hoh = { path = "../hoh" }
 moonroad = { path = "../moonroad" }
 throats = { path = "../throats" }
 bats = { path = "../bats" }
