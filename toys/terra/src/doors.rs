@@ -9,6 +9,7 @@ use toy_kit::{Assets, Ctx, Globe, LonLat};
 
 use crate::rooms::Room;
 
+mod fresh;
 mod likeness;
 mod places;
 pub use places::{doors, SCENES};
@@ -47,6 +48,10 @@ pub struct Life {
     rings: Vec<(LonLat, f64)>,
     /// The light that beckons until the first touch (Terra sets it at launch).
     pub beckon: Option<usize>,
+    /// Lights whose toys an update brought and that have not been opened yet (`fresh`).
+    new: Vec<bool>,
+    /// Toys known before, which this build's map no longer holds (kept in the saved list).
+    away: Vec<String>,
 }
 
 impl Default for Life {
@@ -79,6 +84,8 @@ impl Life {
             stir_at: vec![-100.0; n],
             rings: Vec::new(),
             beckon: None,
+            new: vec![false; n],
+            away: Vec::new(),
         };
         life.scatter_flies();
         life
@@ -530,10 +537,10 @@ impl Life {
                 }
                 _ => likeness::paint(p, d.id, c, r, k, tm, a, halo, i, tint),
             }
+            self.paint_new(p, i, c, r, k, t, a * halo, reduce_motion);
             // touched: it stirs (a ring of its colour going out)
-            let st = t - self.stir_at[i];
-            if (0.0..1.0).contains(&st) {
-                let u = st;
+            let u = t - self.stir_at[i];
+            if (0.0..1.0).contains(&u) {
                 p.ring(
                     c,
                     ((r * 0.6 + r * 2.6 * u) * k) as f32,
