@@ -7,7 +7,11 @@ fn main() {
         .and_then(|s| s.parse().ok())
         .unwrap_or(0.0);
     let mut f = hoh::history::opening(hoh::SEED);
-    f.run(years);
+    // a year at a time, letting each fall land, as the toy does frame by frame
+    for _ in 0..years.round() as u32 {
+        f.run(1.0);
+        f.tick(hoh::forest::FALL_S);
+    }
     for l in &f.logs {
         println!(
             "L {} {} {} {} {} {}",
