@@ -12,7 +12,7 @@ use super::Life;
 const NEW_BEFORE_THE_LIST: [&str; 2] = ["pando", "moonroad"];
 
 /// The mark's gold: warm, as a lit town's sodium glow is, against the night map's cool.
-const GOLD: [f32; 3] = [0.88, 0.66, 0.23];
+const GOLD: [f32; 3] = [0.95, 0.74, 0.32];
 
 /// The ring's beat (s).
 const BEAT: f64 = 3.2;
@@ -25,6 +25,7 @@ impl Life {
             .zip(&self.new)
             .filter(|(_, &n)| !n)
             .map(|(d, _)| d.id.to_string())
+            .chain(self.away.iter().cloned())
             .collect()
     }
 
@@ -39,7 +40,16 @@ impl Life {
                 None => NEW_BEFORE_THE_LIST.contains(&d.id),
             })
             .collect();
+        // toys known but off this build's map (Bell, the whales): kept, so they are not new if they come back
+        self.away = known
+            .unwrap_or_default()
+            .iter()
+            .filter(|id| !self.doors.iter().any(|d| d.id == id.as_str()))
+            .cloned()
+            .collect();
         let first = self.new.iter().position(|&n| n)?;
+        // the light that beckons is the new one the Earth opens turned toward
+        self.beckon = Some(first);
         Some(self.doors[first].at)
     }
 
@@ -78,13 +88,15 @@ impl Life {
         let breath = if still {
             0.8
         } else {
-            0.65 + 0.25 * (std::f64::consts::TAU * ph).cos()
+            0.8 + 0.2 * (std::f64::consts::TAU * ph).cos()
         } as f32;
         let at = (r * 1.4 * k) as f32;
-        p.ring(c, at, 1.0 * kf, 1.0, [g0, g1, g2, 0.95 * breath * a]);
+        p.ring(c, at, 1.5 * kf, 1.0, [g0, g1, g2, breath * a]);
         if !still {
-            let out = (r * (1.4 + 1.2 * ph) * k) as f32;
-            let fade = ((1.0 - ph).powf(1.6) * 0.6) as f32 * a;
+            // a pulse: out and gone in the first two thirds of the beat, then a rest
+            let u = (ph / 0.65).min(1.0);
+            let out = (r * (1.4 + 1.2 * u) * k) as f32;
+            let fade = ((1.0 - u).powf(1.6) * 0.6) as f32 * a;
             p.ring(c, out, 0.8 * kf, 1.2, [g0, g1, g2, fade]);
         }
     }

@@ -50,6 +50,8 @@ pub struct Life {
     pub beckon: Option<usize>,
     /// Lights whose toys an update brought and that have not been opened yet (`fresh`).
     new: Vec<bool>,
+    /// Toys known before, which this build's map no longer holds (kept in the saved list).
+    away: Vec<String>,
 }
 
 impl Default for Life {
@@ -83,6 +85,7 @@ impl Life {
             rings: Vec::new(),
             beckon: None,
             new: vec![false; n],
+            away: Vec::new(),
         };
         life.scatter_flies();
         life
