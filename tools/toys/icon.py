@@ -636,7 +636,35 @@ def moonroad():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad}
+def hoh():
+    # the Hoh: a row of young spruces standing on their root stilts along a mossy nurse log, in green mist
+    img = Image.new('RGBA', (N, N), (0, 0, 0, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        g = y / N
+        d.line([(0, y), (N, y)], fill=(int(150 - 80 * g), int(172 - 70 * g), int(146 - 90 * g), 255))
+    for x0, w, a in ((120, 60, 70), (830, 80, 80), (470, 40, 50)):
+        d.rectangle([x0, 0, x0 + w, 700], fill=(110, 124, 106, a + 100))
+    d.rectangle([0, 760, N, N], fill=(64, 98, 36, 255))
+    # the log, mossed
+    d.rounded_rectangle([60, 700, 964, 800], radius=50, fill=(84, 62, 44, 255))
+    d.rounded_rectangle([70, 690, 954, 740], radius=25, fill=(108, 150, 52, 255))
+    for i, (cx, h) in enumerate(((210, 380), (390, 470), (560, 420), (740, 500), (880, 340))):
+        top = 700 - h
+        # stilts
+        for k in range(-2, 3):
+            d.line([(cx + k * 6, 690), (cx + k * 26, 800)], fill=(70, 54, 40, 255), width=9)
+        d.line([(cx, 700), (cx, top)], fill=(70, 54, 40, 255), width=12)
+        tiers = 9
+        for j in range(tiers):
+            u = j / tiers
+            y = top + 30 + u * (h - 90)
+            r = 22 + u * h * 0.22
+            d.polygon([(cx, y - 40), (cx - r, y + 30), (cx + r, y + 30)], fill=(30, 74 + i * 4, 44, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad, 'hoh': hoh}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
