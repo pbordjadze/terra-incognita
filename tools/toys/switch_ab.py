@@ -24,7 +24,17 @@ def play(toy: str, plan: dict, out: Path, size: str) -> None:
     p.write_text(json.dumps(plan))
     exe = Path("toys/target/release") / f"{toy}-check"
     r = subprocess.run(
-        [str(exe), "play", str(p), str(out), "--size", size, "--ppp", "1", "--no-tap-check"],
+        [
+            str(exe),
+            "play",
+            str(p),
+            str(out),
+            "--size",
+            size,
+            "--ppp",
+            "1",
+            "--no-tap-check",
+        ],
         capture_output=True,
         text=True,
         check=False,
@@ -44,15 +54,23 @@ def main() -> None:
     ap.add_argument("rules", type=int)
     ap.add_argument("--at", type=float, default=2.0)
     ap.add_argument("--size", default="390x844")
-    ap.add_argument("--keep", help="a folder to keep the runs' frames in, and a sheet of them")
-    ap.add_argument("--after", default="1,2,4,8", help="seconds after the switch to compare, commas")
-    ap.add_argument("--restore", help="the toy's saved state to start from, as a plan's \"restore\"")
-    ap.add_argument("--then", default="[]", help="events after the switch, JSON (a touch, say)")
+    ap.add_argument(
+        "--keep", help="a folder to keep the runs' frames in, and a sheet of them"
+    )
+    ap.add_argument(
+        "--after", default="1,2,4,8", help="seconds after the switch to compare, commas"
+    )
+    ap.add_argument(
+        "--restore", help="the toy's saved state to start from, as a plan's \"restore\""
+    )
+    ap.add_argument(
+        "--then", default="[]", help="events after the switch, JSON (a touch, say)"
+    )
     a = ap.parse_args()
     if a.at < 0.5:
         ap.error("--at is at least 0.5 (the panel opens 0.4 s before the switch)")
     global AFTER
-    AFTER = [float(x) if '.' in x else int(x) for x in a.after.split(",")]
+    AFTER = [float(x) if "." in x else int(x) for x in a.after.split(",")]
     shots = [{"t": a.at + s, "name": f"s{s}"} for s in AFTER]
     base = {"seconds": a.at + max(AFTER) + 0.5, "fps": 20, "shots": shots}
     if a.restore:
@@ -67,7 +85,10 @@ def main() -> None:
             ev = open_only + [{"t": a.at, "switch": [i, False]}] + then
             play(a.toy, {**base, "events": ev}, root / f"off{i}", a.size)
             assert (root / "on" / f"s{AFTER[0]}.png").exists(), "no shots"
-            row = [diff(root / "on" / f"s{s}.png", root / f"off{i}" / f"s{s}.png") for s in AFTER]
+            row = [
+                diff(root / "on" / f"s{s}.png", root / f"off{i}" / f"s{s}.png")
+                for s in AFTER
+            ]
             print(a.toy, i, " ".join(f"{v:5.1f}" for v in row))
         if a.keep:
             sheet(root, a.rules)
@@ -81,7 +102,10 @@ def sheet(root: Path, rules: int) -> None:
     out = Image.new("RGB", (w * len(AFTER), h * len(runs)))
     for r, run in enumerate(runs):
         for c, s in enumerate(AFTER):
-            out.paste(Image.open(root / run / f"s{s}.png").convert("RGB").resize((w, h)), (c * w, r * h))
+            out.paste(
+                Image.open(root / run / f"s{s}.png").convert("RGB").resize((w, h)),
+                (c * w, r * h),
+            )
     out.save(root / "sheet.png")
 
 
