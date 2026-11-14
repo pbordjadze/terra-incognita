@@ -77,6 +77,8 @@ pub struct Tree {
     pub seed: u32,
     /// The log it rooted on, while that log lasts.
     pub log: Option<u32>,
+    /// The way the log it rooted on lay (its stilts straddle that line), or a way of its own.
+    pub lay: [f32; 2],
     /// Years spent overtopped, running.
     shaded: f32,
     /// A seedling on the moss: the years it has left (none when it will live).
@@ -225,7 +227,9 @@ impl Forest {
 
     pub fn plant(&mut self, x: f32, z: f32, h: f32, base: f32) {
         let seed = self.rng.next_u64() as u32;
+        let a = self.rng.range(0.0, std::f32::consts::TAU);
         self.trees.push(Tree {
+            lay: [a.cos(), a.sin()],
             x,
             z,
             base,
@@ -318,7 +322,7 @@ impl Forest {
                     if o.dying || o.h < t.h * 1.15 + 0.2 {
                         continue;
                     }
-                    let reach = 0.3 + 0.075 * o.h.min(40.0);
+                    let reach = 0.3 + 0.05 * o.h.min(40.0);
                     let d2 = (o.x - t.x).powi(2) + (o.z - t.z).powi(2);
                     if d2 < reach * reach {
                         return true;
@@ -426,14 +430,15 @@ impl Forest {
                 let (d, _) = l.dist([x, z]);
                 let r = l.r();
                 if d < r * 0.7 && roll < 0.55 * l.seedbed() {
-                    on_log = Some((l.id, r * 2.0 * (1.0 - 0.15 * (d / r).powi(2))));
+                    on_log = Some((l.id, r * 2.0 * (1.0 - 0.15 * (d / r).powi(2)), l.dir()));
                     break;
                 }
             }
-            if let Some((id, top)) = on_log {
+            if let Some((id, top, lay)) = on_log {
                 self.plant(x, z, 0.04, top);
                 let t = self.trees.last_mut().expect("just planted");
                 t.log = Some(id);
+                t.lay = lay;
                 continue;
             }
             // on the moss: a few show, and (while the moss smothers) are gone within a year or two
@@ -443,7 +448,7 @@ impl Forest {
                     self.plant(x, z, 0.04, 0.0);
                     self.trees.last_mut().expect("just planted").doomed = Some(left);
                 }
-            } else if roll < 0.04 {
+            } else if roll < 0.12 {
                 self.plant(x, z, 0.04, 0.0);
             }
         }
@@ -469,16 +474,28 @@ impl Forest {
     }
 
     /// A way for tree `k` to fall: across the view, a little toward or away (always away when it is
-    /// near the eye), to the left or right of `side` (a sign) if given.
+    /// near the eye), toward `side` (a sign: +1 right) if a finger felled it.
     pub fn way(&mut self, k: usize, side: Option<f32>) -> [f32; 2] {
         let t = &self.trees[k];
         let s = side.unwrap_or(if self.rng.f() < 0.5 { -1.0 } else { 1.0 });
-        let away = if t.z < 14.0 || self.rng.f() < 0.7 {
+        // felled by a finger it comes down across the view, a little toward the eye if it stood back,
+        // so it lands where it can be watched
+        let away = if side.is_some() {
+            if t.z > 18.0 {
+                -1.0
+            } else {
+                1.0
+            }
+        } else if t.z < 14.0 || self.rng.f() < 0.7 {
             1.0
         } else {
             -1.0
         };
-        let a = self.rng.range(0.35, 1.0);
+        let a = if side.is_some() {
+            self.rng.range(0.12, 0.45)
+        } else {
+            self.rng.range(0.35, 1.0)
+        };
         [s * a.cos(), away * a.sin()]
     }
 

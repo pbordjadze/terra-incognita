@@ -91,11 +91,9 @@ impl Hoh {
         let Some(k) = self.giant_at(q) else {
             return;
         };
-        let v = self.view();
         let t = &self.forest.trees[k];
-        let foot = v.project([t.x, 0.0, t.z]).unwrap_or(q);
-        // pushed: it falls away from the side the finger touched
-        let side = if q[0] <= foot[0] { 1.0 } else { -1.0 };
+        // it comes down toward the middle of the view, into the open
+        let side = if t.x < 0.0 { 1.0 } else { -1.0 };
         self.size = t.h;
         let dir = self.forest.way(k, Some(side));
         self.forest.fell(k, dir);

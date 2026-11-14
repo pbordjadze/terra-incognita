@@ -8,9 +8,9 @@ use crate::forest::{Forest, FALL_S, X, Z1};
 /// When each chosen giant went over (years before the opening), where its foot was, its way down, and
 /// how tall it was (m).
 const FELLED: [(f32, [f32; 2], [f32; 2], f32); 3] = [
-    (-330.0, [-11.0, 17.0], [0.85, 0.527], 66.0),
-    (-110.0, [12.0, 22.0], [0.2, 0.98], 62.0),
-    (-14.0, [-6.5, 9.2], [0.94, 0.341], 56.0),
+    (-330.0, [-22.0, 34.0], [0.95, 0.31], 66.0),
+    (-110.0, [18.0, 24.0], [0.2, 0.98], 62.0),
+    (-14.0, [-9.0, 12.0], [0.8, 0.6], 56.0),
 ];
 const START: f32 = -480.0;
 
@@ -31,7 +31,7 @@ pub fn opening(seed: u64) -> Forest {
     for _ in 0..3000 {
         let p = [f.rng.range(-X, X), f.rng.range(12.0, Z1 * 0.8)];
         // (and none between the eye and the fresh log and its row behind it, but at the sides)
-        let open = p[1] < 16.0 && p[0].abs() < p[1] * 0.6;
+        let open = p[1] < 28.0 && p[0].abs() < p[1] * 0.7;
         if open || !clear_of(p, 3.0) || at.iter().any(|q| (q[0] - p[0]).hypot(q[1] - p[1]) < 8.5) {
             continue;
         }

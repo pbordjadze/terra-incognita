@@ -7,7 +7,7 @@ use crate::forest::{Forest, Log, Tree, FALL_S};
 use toy_kit::paint::Painter;
 
 /// The eye's height above the floor (m): standing on a low log.
-pub const EYE: f32 = 5.5;
+pub const EYE: f32 = 6.5;
 
 pub struct View {
     pub f: f32,
@@ -20,7 +20,7 @@ impl View {
         View {
             f: 0.75 * w.max(0.42 * h),
             cx: 0.5 * w,
-            horizon: 0.5 * h,
+            horizon: 0.52 * h,
         }
     }
     pub fn project(&self, p: [f32; 3]) -> Option<[f32; 2]> {
@@ -200,9 +200,11 @@ impl Scene<'_> {
             let legs = mix3(scale3(bark, 0.8), MIST, fz);
             self.stilts(p, t, k, legs, alpha);
         }
-        // the trunk, tapering, its lit side to the upper left
-        let segs = [(0.0, 0.42, 1.0), (0.42, 0.75, 0.72), (0.75, 1.0, 0.4)];
-        for (a, b, w) in segs {
+        // the trunk, tapering: short pieces, each a little narrower, so no step shows where they meet
+        let n = if hw > 3.0 * self.ppp { 12 } else { 4 };
+        for i in 0..n {
+            let (a, b) = (i as f32 / n as f32, (i + 1) as f32 / n as f32);
+            let w = 1.0 - 0.88 * b.powf(1.6);
             let (Some(pa), Some(pb)) = (
                 self.axis(t, lean, a * t.h, 0.0),
                 self.axis(t, lean, b * t.h, 0.0),
@@ -213,13 +215,19 @@ impl Scene<'_> {
                 continue;
             }
             p.line(pa, pb, hw * w, soft, rgba(bark_f, alpha));
-            if hw > 1.5 * self.ppp {
+        }
+        // the lit side, one stroke, so its translucent ends don't stack where pieces meet
+        if hw > 1.5 * self.ppp {
+            if let (Some(pa), Some(pb)) = (
+                self.axis(t, lean, 0.0, 0.0),
+                self.axis(t, lean, 0.7 * t.h, 0.0),
+            ) {
                 let lit = mix3(scale3(bark, 1.55), MIST, fz);
-                let o = -hw * w * 0.38;
+                let o = -hw * 0.3;
                 p.line(
                     [pa[0] + o, pa[1]],
-                    [pb[0] + o, pb[1]],
-                    hw * w * 0.36,
+                    [pb[0] + o * 0.5, pb[1]],
+                    hw * 0.26,
                     hw * 0.5,
                     rgba(lit, alpha * 0.55),
                 );
@@ -237,20 +245,24 @@ impl Scene<'_> {
         let legs = 5 + (hash(t.seed, 3) * 3.0) as u32;
         // a young tree's roots are fine and hug its log; a grown one's stand as legs
         let grown = ((t.h - 2.0) / 25.0).clamp(0.0, 1.0);
-        let spread = d * 0.55 + t.base * 0.5 * (0.25 + 0.75 * grown);
+        let spread = d * 0.4 + t.base * (0.5 + 0.2 * grown);
         let r = (d * 0.12 * k).max(0.4 * self.ppp);
-        let reach_z = t.base * 0.45 * grown;
+        // the legs straddle the line the log lay along, so where it was is a tunnel under them
+        let across = [-t.lay[1], t.lay[0]];
+        let at = |side: f32, out: f32, along: f32, y: f32| {
+            [
+                t.x + across[0] * side * out + t.lay[0] * along,
+                y,
+                t.z + across[1] * side * out + t.lay[1] * along,
+            ]
+        };
         for i in 0..legs {
-            let u = i as f32 / (legs - 1) as f32 * 2.0 - 1.0;
-            let jit = hash(t.seed, 20 + i) - 0.5;
-            let dz = (hash(t.seed, 40 + i) * 2.0 - 1.0) * reach_z;
-            let foot = [t.x + u * spread + jit * 0.3, 0.0, t.z + dz];
-            let top = [t.x + u * d * 0.35, t.base + d * 0.15, t.z];
-            let knee = [
-                t.x + u * (d * 0.5 + spread * 0.75),
-                t.base * 0.55,
-                t.z + dz * 0.6,
-            ];
+            let side = if i % 2 == 0 { 1.0 } else { -1.0 };
+            let along = (i as f32 / (legs - 1) as f32 - 0.5) * d * 1.4 + (hash(t.seed, 20 + i) - 0.5) * 0.3;
+            let out = spread * (0.85 + 0.3 * hash(t.seed, 40 + i));
+            let top = at(side, d * 0.3, along * 0.3, t.base + d * 0.15);
+            let knee = at(side, out * 0.8, along * 0.7, t.base * 0.55);
+            let foot = at(side, out, along, 0.0);
             let pts = [top, knee, foot].map(|q| self.view.project(q));
             if let [Some(a), Some(b), Some(c)] = pts {
                 p.line(a, b, r * 1.15, self.ppp, rgba(bark, alpha));
@@ -416,9 +428,9 @@ impl Scene<'_> {
                     let earth = mix3([0.22, 0.17, 0.12], MIST, fz);
                     let root = mix3([0.30, 0.24, 0.19], MIST, fz);
                     let rk = wad * k;
-                    for i in 0..14u32 {
-                        let a = std::f32::consts::TAU * (i as f32 + hash(l.seed, 700 + i)) / 14.0;
-                        let len = rk * (1.1 + 0.7 * hash(l.seed, 720 + i));
+                    for i in 0..9u32 {
+                        let a = std::f32::consts::TAU * (i as f32 + hash(l.seed, 700 + i)) / 9.0;
+                        let len = rk * (0.8 + 0.5 * hash(l.seed, 720 + i));
                         let tip = [c[0] + a.cos() * len, c[1] + a.sin() * len * 0.9];
                         p.line(
                             c,
