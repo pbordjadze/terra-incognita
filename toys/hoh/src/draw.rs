@@ -20,7 +20,7 @@ impl View {
         View {
             f: 0.75 * w.max(0.42 * h),
             cx: 0.5 * w,
-            horizon: 0.52 * h,
+            horizon: 0.57 * h,
         }
     }
     pub fn project(&self, p: [f32; 3]) -> Option<[f32; 2]> {
@@ -139,7 +139,9 @@ impl Scene<'_> {
             let len = (d[0] * d[0] + d[1] * d[1]).sqrt();
             // finer pieces where it comes near, so each piece's size steps only a little from the next
             let near = l.a[1].min(l.b[1]).max(Z0);
-            let n = (len / (0.25 + 0.05 * near).min(1.2)).ceil().clamp(1.0, 160.0) as usize;
+            let n = (len / (0.25 + 0.05 * near).min(1.2))
+                .ceil()
+                .clamp(1.0, 160.0) as usize;
             for k in 0..n {
                 let (u0, u1) = (k as f32 / n as f32, (k + 1) as f32 / n as f32);
                 let zm = l.a[1] + d[1] * (u0 + u1) * 0.5;
@@ -187,7 +189,11 @@ impl Scene<'_> {
 
     fn tree(&self, p: &mut Painter, t: &Tree, lean: Option<([f32; 2], f32)>) {
         let k = self.k(t.z);
-        let fz = fog(t.z);
+        // going over toward the eye it comes out of the mist as it comes nearer
+        let zf = lean.map_or(t.z, |(dir, a)| {
+            (t.z + dir[1] * a.sin() * t.h * 0.5).clamp(Z0, t.z)
+        });
+        let fz = fog(zf);
         let light = self.forest.light_at([t.x, t.z]);
         let alpha = t.fade.clamp(0.0, 1.0);
         let brown = 1.0 - alpha;
@@ -207,11 +213,18 @@ impl Scene<'_> {
                 let s = j as f32 / 2.0 - 1.0;
                 let (Some(top), Some(foot)) = (
                     self.axis(t, None, d * 0.9, 0.0),
-                    self.view.project([t.x + s * d * 0.95, 0.0, t.z - 0.2 * (1.0 - s.abs())]),
+                    self.view
+                        .project([t.x + s * d * 0.95, 0.0, t.z - 0.2 * (1.0 - s.abs())]),
                 ) else {
                     continue;
                 };
-                p.line(top, foot, hw * (0.5 - 0.2 * s.abs()), soft, rgba(bark_f, alpha));
+                p.line(
+                    top,
+                    foot,
+                    hw * (0.5 - 0.2 * s.abs()),
+                    soft,
+                    rgba(bark_f, alpha),
+                );
             }
         }
         // the trunk, tapering: short pieces, each a little narrower, so no step shows where they meet
@@ -219,7 +232,11 @@ impl Scene<'_> {
         for i in 0..n {
             let (a, b) = (i as f32 / n as f32, (i + 1) as f32 / n as f32);
             // the first piece starts its own half-width up, so its round end sits on the foot, not below it
-            let a = if i == 0 { (hw / k).min(0.5 * b * t.h) / t.h } else { a };
+            let a = if i == 0 {
+                (hw / k).min(0.5 * b * t.h) / t.h
+            } else {
+                a
+            };
             let w = 1.0 - 0.88 * b.powf(1.6);
             let (Some(pa), Some(pb)) = (
                 self.axis(t, lean, a * t.h, 0.0),
@@ -258,11 +275,11 @@ impl Scene<'_> {
     /// Roots that grew down round a log to the floor: legs, splayed, as tall as the log was.
     fn stilts(&self, p: &mut Painter, t: &Tree, k: f32, bark: [f32; 3], alpha: f32) {
         let d = t.d();
-        let legs = 5 + (hash(t.seed, 3) * 3.0) as u32;
-        // a young tree's roots are fine and hug its log; a grown one's stand as legs
+        // a young tree's roots are few and hug its log; a grown one's stand as legs
         let grown = ((t.h - 2.0) / 25.0).clamp(0.0, 1.0);
+        let legs = 3 + ((hash(t.seed, 3) + 4.0 * grown) as u32).min(4);
         let spread = d * 0.4 + t.base * (0.5 + 0.2 * grown);
-        let r = (d * 0.12 * k).max(0.4 * self.ppp);
+        let r = ((d * 0.12).max(0.06 * t.base) * k).max(0.4 * self.ppp);
         // the legs straddle the line the log lay along, so where it was is a tunnel under them
         let across = [-t.lay[1], t.lay[0]];
         let at = |side: f32, out: f32, along: f32, y: f32| {
@@ -274,7 +291,8 @@ impl Scene<'_> {
         };
         for i in 0..legs {
             let side = if i % 2 == 0 { 1.0 } else { -1.0 };
-            let along = (i as f32 / (legs - 1) as f32 - 0.5) * d * 1.4 + (hash(t.seed, 20 + i) - 0.5) * 0.3;
+            let along =
+                (i as f32 / (legs - 1) as f32 - 0.5) * d * 1.4 + (hash(t.seed, 20 + i) - 0.5) * 0.3;
             let out = spread * (0.85 + 0.3 * hash(t.seed, 40 + i));
             let top = at(side, d * 0.3, along * 0.3, t.base + d * 0.15);
             let knee = at(side, out * 0.8, along * 0.7, t.base * 0.55);

@@ -49,7 +49,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let fine = clamp(fwidth(z) * 0.3, 0.0, 1.0);
   let clump = mix(n1 * 0.6 + n3 * 0.4, 0.5, fine);
   var c = mix(vec3<f32>(0.16, 0.25, 0.08), vec3<f32>(0.30, 0.42, 0.13), clump);
-  c = mix(c, vec3<f32>(0.22, 0.17, 0.10), smoothstep(0.62, 0.8, n2) * 0.5);
+  c = mix(c, vec3<f32>(0.22, 0.17, 0.10), smoothstep(0.62, 0.8, n2) * 0.18);
   // the light let down: the floor brightens yellow-green where the canopy is open
   let l = light_at(x, z);
   c = c * (0.62 + 0.5 * l) + vec3<f32>(0.06, 0.07, 0.01) * smoothstep(0.4, 0.9, l);

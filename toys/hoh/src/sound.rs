@@ -146,89 +146,112 @@ impl Synth for Forest {
                 let (_, low) = svf(&mut self.low[c], n[c], f_low, 1.0);
                 s[c] = self.level * (band * 0.7 + low * 0.9);
             }
-            // drips off the moss
-            self.drip_owed += (1.6 + 4.0 * hurry) * dt;
-            if self.drip_owed >= 1.0 {
-                self.drip_owed -= 1.0;
-                if self.drips.len() < 14 {
-                    let freq = 1400.0 + 2400.0 * self.rand();
-                    let amp = 0.015 + 0.03 * self.rand();
-                    let pan = self.rand();
-                    self.drips.push(Drip {
-                        phase: 0.0,
-                        freq,
-                        amp,
-                        pan,
-                        age: 0.0,
-                    });
-                }
-            }
-            for d in &mut self.drips {
-                // a drop's note falls a little as it rings
-                let env = (-d.age / 0.035).exp();
-                let v = (d.phase * std::f32::consts::TAU).sin() * d.amp * env;
-                s[0] += v * (1.0 - d.pan);
-                s[1] += v * d.pan;
-                d.phase += d.freq * (1.0 - d.age * 2.0) * dt;
-                d.age += dt;
-            }
-            self.drips.retain(|d| d.age < 0.2);
-            // the varied thrush
-            self.thrush_in -= dt;
-            if self.thrush.is_none() && self.thrush_in <= 0.0 {
-                let i = (self.rand() * THRUSH.len() as f32) as usize % THRUSH.len();
-                let len = 1.4 + 0.8 * self.rand();
-                let pan = 0.2 + 0.6 * self.rand();
-                self.thrush = Some(Thrush {
-                    phase: 0.0,
-                    freq: THRUSH[i],
-                    age: 0.0,
-                    len,
-                    pan,
-                });
-                self.thrush_in = 7.0 + 9.0 * self.rand();
-            }
-            if let Some(t) = self.thrush.as_mut() {
-                let env = (t.age / 0.18).min(1.0) * ((t.len - t.age) / 0.6).clamp(0.0, 1.0);
-                // buzzy: the whistle beaten at some 70 Hz, a faint octave over it
-                let buzz = 0.6 + 0.4 * (t.age * 70.0 * std::f32::consts::TAU).sin();
-                let ph = t.phase * std::f32::consts::TAU;
-                let v = (ph.sin() + 0.12 * (2.0 * ph).sin()) * env * buzz * 0.035;
-                s[0] += v * (1.0 - t.pan);
-                s[1] += v * t.pan;
-                t.phase += t.freq * dt;
-                t.age += dt;
-                if t.age >= t.len {
-                    self.thrush = None;
-                }
-            }
-            // a giant going: the crack, splintering
-            if self.crack > 0.0 {
-                let k = self.crack / 0.5;
-                let splinter = if self.rand() < 0.004 { 1.0 } else { 0.0 };
-                for c in 0..2 {
-                    let (band, _) = svf(&mut self.crack_f[c], n[c] + splinter * 4.0, f_crack, 0.5);
-                    s[c] += band * k * k * 0.25 * size;
-                }
-                self.crack -= dt;
-            }
-            // and the thud of it landing, felt more than heard
-            if self.thud > 0.0 {
-                let env = (-self.thud / 0.55).exp() * (self.thud / 0.01).min(1.0);
-                let (_, low) = svf(&mut self.thud_f, n[0], f_thud, 0.7);
-                let sine = (self.thud_phase * std::f32::consts::TAU).sin();
-                let v = (sine * 0.5 + low * 1.4) * env * 0.5 * size;
-                s[0] += v;
-                s[1] += v;
-                self.thud_phase += (48.0 - 10.0 * self.thud) * dt;
-                self.thud += dt;
-                if self.thud > 3.0 {
-                    self.thud = 0.0;
-                }
+            let d = self.drips(dt, hurry);
+            let t = self.thrush(dt);
+            let g = self.fall(n, dt, f_crack, f_thud, size);
+            for c in 0..2 {
+                s[c] += d[c] + t[c] + g[c];
             }
             for c in 0..channels {
                 out[f * channels + c] = s[c.min(1)].clamp(-1.0, 1.0);
             }
         }
+    }
+}
+
+impl Forest {
+    /// Water dripping off the moss, more as the years run faster.
+    fn drips(&mut self, dt: f32, hurry: f32) -> [f32; 2] {
+        let mut s = [0.0f32; 2];
+        self.drip_owed += (1.6 + 4.0 * hurry) * dt;
+        if self.drip_owed >= 1.0 {
+            self.drip_owed -= 1.0;
+            if self.drips.len() < 14 {
+                let freq = 1400.0 + 2400.0 * self.rand();
+                let amp = 0.015 + 0.03 * self.rand();
+                let pan = self.rand();
+                self.drips.push(Drip {
+                    phase: 0.0,
+                    freq,
+                    amp,
+                    pan,
+                    age: 0.0,
+                });
+            }
+        }
+        for d in &mut self.drips {
+            // a drop's note falls a little as it rings
+            let env = (-d.age / 0.035).exp();
+            let v = (d.phase * std::f32::consts::TAU).sin() * d.amp * env;
+            s[0] += v * (1.0 - d.pan);
+            s[1] += v * d.pan;
+            d.phase += d.freq * (1.0 - d.age * 2.0) * dt;
+            d.age += dt;
+        }
+        self.drips.retain(|d| d.age < 0.2);
+        s
+    }
+
+    /// Now and then a varied thrush: one long buzzy whistle on one pitch.
+    fn thrush(&mut self, dt: f32) -> [f32; 2] {
+        let mut s = [0.0f32; 2];
+        self.thrush_in -= dt;
+        if self.thrush.is_none() && self.thrush_in <= 0.0 {
+            let i = (self.rand() * THRUSH.len() as f32) as usize % THRUSH.len();
+            let len = 1.4 + 0.8 * self.rand();
+            let pan = 0.2 + 0.6 * self.rand();
+            self.thrush = Some(Thrush {
+                phase: 0.0,
+                freq: THRUSH[i],
+                age: 0.0,
+                len,
+                pan,
+            });
+            self.thrush_in = 7.0 + 9.0 * self.rand();
+        }
+        if let Some(t) = self.thrush.as_mut() {
+            let env = (t.age / 0.18).min(1.0) * ((t.len - t.age) / 0.6).clamp(0.0, 1.0);
+            // buzzy: the whistle beaten at some 70 Hz, a faint octave over it
+            let buzz = 0.6 + 0.4 * (t.age * 70.0 * std::f32::consts::TAU).sin();
+            let ph = t.phase * std::f32::consts::TAU;
+            let v = (ph.sin() + 0.12 * (2.0 * ph).sin()) * env * buzz * 0.035;
+            s[0] += v * (1.0 - t.pan);
+            s[1] += v * t.pan;
+            t.phase += t.freq * dt;
+            t.age += dt;
+            if t.age >= t.len {
+                self.thrush = None;
+            }
+        }
+        s
+    }
+
+    /// A giant going: the crack, splintering, then the thud of it landing.
+    fn fall(&mut self, n: [f32; 2], dt: f32, f_crack: f32, f_thud: f32, size: f32) -> [f32; 2] {
+        let mut s = [0.0f32; 2];
+        if self.crack > 0.0 {
+            let k = self.crack / 0.5;
+            let splinter = if self.rand() < 0.004 { 1.0 } else { 0.0 };
+            for c in 0..2 {
+                let (band, _) = svf(&mut self.crack_f[c], n[c] + splinter * 4.0, f_crack, 0.5);
+                s[c] += band * k * k * 0.25 * size;
+            }
+            self.crack -= dt;
+        }
+        // and the thud of it landing, felt more than heard
+        if self.thud > 0.0 {
+            let env = (-self.thud / 0.55).exp() * (self.thud / 0.01).min(1.0);
+            let (_, low) = svf(&mut self.thud_f, n[0], f_thud, 0.7);
+            let sine = (self.thud_phase * std::f32::consts::TAU).sin();
+            let v = (sine * 0.5 + low * 1.4) * env * 0.5 * size;
+            s[0] += v;
+            s[1] += v;
+            self.thud_phase += (48.0 - 10.0 * self.thud) * dt;
+            self.thud += dt;
+            if self.thud > 3.0 {
+                self.thud = 0.0;
+            }
+        }
+        s
     }
 }

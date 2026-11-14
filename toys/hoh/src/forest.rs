@@ -489,7 +489,11 @@ impl Forest {
             let a = self.rng.range(0.12, 0.45);
             return [s * a.cos(), a.sin()];
         }
-        let away = if t.z < 14.0 || self.rng.f() < 0.7 { 1.0 } else { -1.0 };
+        let away = if t.z < 14.0 || self.rng.f() < 0.7 {
+            1.0
+        } else {
+            -1.0
+        };
         let a = self.rng.range(0.35, 1.0);
         [s * a.cos(), away * a.sin()]
     }
