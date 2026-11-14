@@ -38,7 +38,8 @@ if want rust; then
   run "clippy (ios)" bash -c 'cd toys && cargo clippy -p toy-kit --target aarch64-apple-ios -- -D warnings &&
     cd ../adrift && cargo clippy -p adrift-core --target aarch64-apple-ios -- -D warnings'
   run "clippy (web)" bash -c 'cd adrift && cargo clippy -p adrift-web --target wasm32-unknown-unknown -- -D warnings &&
-    cd ../toys && cargo clippy -p toy-kit --no-default-features --features web --target wasm32-unknown-unknown -- -D warnings'
+    cd ../toys && cargo clippy -p toy-kit --no-default-features --features web --target wasm32-unknown-unknown -- -D warnings &&
+    cargo clippy -p terra-web --target wasm32-unknown-unknown -- -D warnings'
 fi
 if want python; then
   run ruff ruff check .

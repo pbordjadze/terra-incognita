@@ -7,7 +7,7 @@ name: Lint
 on:
   workflow_call:
   push:
-    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    branches-ignore: ['ci-shots/**', 'sidestore', 'web', 'packs']
     # toys.yml and adrift.yml call this first for these
     paths-ignore: ['Globe/**', 'toys/**', 'tools/toys/**', 'tools/kit/**', 'adrift/**', 'tools/adrift/**']
   workflow_dispatch:

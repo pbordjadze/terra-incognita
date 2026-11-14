@@ -65,9 +65,46 @@ pub fn set_log(path: std::path::PathBuf) {
     }
 }
 
+/// Seconds since 1970 by the wall clock. A browser's WebAssembly has no clock of its own (std's
+/// `SystemTime::now` panics there), so on wasm32 the web shell sets it each frame (`set_wall_clock`).
+pub fn wall_clock() -> f64 {
+    #[cfg(target_arch = "wasm32")]
+    {
+        f64::from_bits(WALL.load(std::sync::atomic::Ordering::Relaxed))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .unwrap_or(0.0)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+static WALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// The page's clock (JavaScript's `Date.now() / 1000`), for `wall_clock` on wasm32.
+#[cfg(target_arch = "wasm32")]
+pub fn set_wall_clock(secs: f64) {
+    WALL.store(secs.to_bits(), std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Where else the log's lines go: a browser's console (stderr goes nowhere in a browser's
+/// WebAssembly; the web shell sets it).
+static SINK: OnceLock<fn(&str)> = OnceLock::new();
+
+/// Sends the log's lines to `sink` too (the web shell: the browser's console).
+pub fn set_log_sink(sink: fn(&str)) {
+    let _ = SINK.set(sink);
+}
+
 /// One line in the device's log (and stderr), stamped with seconds since 1970.
 pub fn log(line: &str) {
     eprintln!("toy: {line}");
+    if let Some(sink) = SINK.get() {
+        sink(line);
+    }
     if let Some(p) = LOG.get() {
         use std::io::Write;
         let t = std::time::SystemTime::now()
@@ -94,7 +131,10 @@ pub fn step(what: &str) {
         "launch: {what}; {} MB available",
         shell::available_mb()
     ));
-    #[cfg(not(target_os = "ios"))]
+    // (in a browser: its console, through the web shell's sink)
+    #[cfg(target_arch = "wasm32")]
+    log(&format!("launch: {what}"));
+    #[cfg(not(any(target_os = "ios", target_arch = "wasm32")))]
     if std::env::var("KIT_STEPS").is_ok_and(|v| v == "1") {
         eprintln!("toy: launch: {what}");
     }

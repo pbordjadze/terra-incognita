@@ -7,6 +7,10 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **Terra on the web** (toys/terra-web): `wall_clock()`, seconds since 1970 (a browser's WebAssembly has
+  no clock of its own; the web shell sets it with `set_wall_clock`), for any toy that reads the date;
+  `set_log_sink` sends the log's lines (and the launch's steps) to the browser's console. New; nothing
+  else changes.
 - **A field** (painting-company row 327, Bubblers and Barchans): `field::Field`, a grid of four numbers a
   cell written on the CPU and drawn by a full-screen fragment of the toy's own, uploaded as Rgba16Float
   (`field::half`). New; nothing else changes.

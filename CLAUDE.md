@@ -24,6 +24,10 @@ before design work. Keep design discussions and plans in that private repository
 - **The toys and Terra** (`toys/`): the toy kit (`toys/crates/toy-kit`: the `Toy` trait, the shared
   globe, paint, sound, the headless check), the one iOS shell (`toys/ios/`), each toy's crate, and Terra, the host that
   links them. `toys/README.md` is their map and what a toy should be; `docs/kit.md` the kit's tools.
+- **Terra on the web** (`toys/terra-web/`): the same library behind the iPhone shell's calls for JavaScript, and a page
+  (`index.html`) doing what `main.swift` does; built by `tools/toys/web_build.sh`, pushed by CI to the `web` branch
+  (CI owns it), which the owner's site serves at an unlisted path. Browsers' WebAssembly has no threads or clock:
+  a toy uses `toy_kit::wall_clock()` and never spawns a thread on wasm32.
 - **Adrift** (`adrift/`): glass floats on the real sea, Rust on wgpu; `adrift/README.md`, its rulings
   in `DECISIONS.md`, its sources in `SOURCES.md`.
 - **The Earth's data** (`Globe/`): the coast's and borders' distance fields (`geo.png`), terrain,

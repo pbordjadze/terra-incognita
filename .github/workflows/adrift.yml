@@ -13,7 +13,7 @@ name: Adrift
 
 on:
   push:
-    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    branches-ignore: ['ci-shots/**', 'sidestore', 'web', 'packs']
     paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh', 'Globe/**', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
