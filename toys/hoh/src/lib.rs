@@ -257,7 +257,7 @@ impl Toy for Hoh {
             .forest
             .trees
             .iter()
-            .filter(|t| t.h > 40.0 && !t.dying() && t.z < 22.0 && t.x.abs() < t.z * 0.4)
+            .filter(|t| t.h > 40.0 && !t.dying() && t.z < 45.0 && t.x.abs() < t.z * 0.5)
             .min_by(|a, b| (a.x.abs() + a.z * 0.2).total_cmp(&(b.x.abs() + b.z * 0.2)));
         if let Some(t) = giant {
             if let Some(q) = v.project([t.x, t.base + EYE * 0.7, t.z]) {

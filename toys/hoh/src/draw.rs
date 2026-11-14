@@ -3,7 +3,7 @@
 //! stilts, sword ferns, the light let down through a gap; far off, all of it goes into the mist.
 //! Painted far to near (toy-kit paint.rs); the floor and the mist are the field's (scene.wgsl).
 
-use crate::forest::{Forest, Log, Tree, FALL_S};
+use crate::forest::{Forest, Log, Tree, FALL_S, Z0};
 use toy_kit::paint::Painter;
 
 /// The eye's height above the floor (m): standing on a low log.
@@ -82,7 +82,7 @@ pub struct Fern {
 }
 
 pub fn ferns(seed: u32) -> Vec<Fern> {
-    // in clumps, as sword ferns grow, thinner near the trail
+    // in clumps, as sword ferns grow
     let mut out = Vec::new();
     for c in 0..40u32 {
         let cz = 3.0 + 45.0 * hash(seed, c * 7).powf(1.4);
@@ -92,9 +92,7 @@ pub fn ferns(seed: u32) -> Vec<Fern> {
             let j = c * 16 + i;
             let z = cz + (hash(seed, j * 5 + 3) - 0.5) * 3.0;
             let x = cx + (hash(seed, j * 5 + 4) - 0.5) * 3.5;
-            // none on the trail (scene.wgsl's course)
-            let on_trail = z < 8.5 && (x - (0.6 - 0.12 * z * z)).abs() < 1.3;
-            if z < 2.0 || on_trail {
+            if z < 2.0 {
                 continue;
             }
             out.push(Fern {
@@ -132,12 +130,16 @@ impl Scene<'_> {
             items.push((t.z - 1.5, Item::Tree(i)));
         }
         for (i, fl) in f.falls.iter().enumerate() {
-            items.push((fl.tree.z - 1.5, Item::Fall(i)));
+            // going over toward the eye it comes in front of what stands nearer than its foot
+            let mid = fl.tree.z + fl.dir[1] * fl.angle().sin() * fl.tree.h * 0.5;
+            items.push((mid.min(fl.tree.z) - 1.5, Item::Fall(i)));
         }
         for (i, l) in f.logs.iter().enumerate() {
             let d = [l.b[0] - l.a[0], l.b[1] - l.a[1]];
             let len = (d[0] * d[0] + d[1] * d[1]).sqrt();
-            let n = (len / 1.2).ceil().max(1.0) as usize;
+            // finer pieces where it comes near, so each piece's size steps only a little from the next
+            let near = l.a[1].min(l.b[1]).max(Z0);
+            let n = (len / (0.25 + 0.05 * near).min(1.2)).ceil().clamp(1.0, 160.0) as usize;
             for k in 0..n {
                 let (u0, u1) = (k as f32 / n as f32, (k + 1) as f32 / n as f32);
                 let zm = l.a[1] + d[1] * (u0 + u1) * 0.5;
@@ -199,11 +201,25 @@ impl Scene<'_> {
         if t.base > 0.05 && lean.is_none() && t.h > 1.5 {
             let legs = mix3(scale3(bark, 0.8), MIST, fz);
             self.stilts(p, t, k, legs, alpha);
+        } else if lean.is_none() && t.h > 1.5 {
+            // rooted on the floor: a flare of roots into the moss
+            for j in 0..5 {
+                let s = j as f32 / 2.0 - 1.0;
+                let (Some(top), Some(foot)) = (
+                    self.axis(t, None, d * 0.9, 0.0),
+                    self.view.project([t.x + s * d * 0.95, 0.0, t.z - 0.2 * (1.0 - s.abs())]),
+                ) else {
+                    continue;
+                };
+                p.line(top, foot, hw * (0.5 - 0.2 * s.abs()), soft, rgba(bark_f, alpha));
+            }
         }
         // the trunk, tapering: short pieces, each a little narrower, so no step shows where they meet
         let n = if hw > 3.0 * self.ppp { 12 } else { 4 };
         for i in 0..n {
             let (a, b) = (i as f32 / n as f32, (i + 1) as f32 / n as f32);
+            // the first piece starts its own half-width up, so its round end sits on the foot, not below it
+            let a = if i == 0 { (hw / k).min(0.5 * b * t.h) / t.h } else { a };
             let w = 1.0 - 0.88 * b.powf(1.6);
             let (Some(pa), Some(pb)) = (
                 self.axis(t, lean, a * t.h, 0.0),
@@ -413,7 +429,6 @@ impl Scene<'_> {
         let moss = l.moss();
         let light = self.forest.light_at([l.a[0] + d[0] * u0, zm]);
         let bark = mix3([0.29, 0.21, 0.16], [0.30, 0.17, 0.11], rot);
-        let shadow = mix3([0.10, 0.09, 0.06], MIST, fz);
         let green = mix3([0.26, 0.40, 0.12], [0.42, 0.56, 0.18], light);
         // the root wad at its foot, standing up, earth and roots, sinking as it rots
         if u0 == 0.0 && !top {
@@ -465,26 +480,15 @@ impl Scene<'_> {
             p.line(a, b, rp, self.ppp, rgba(body, 1.0));
             return;
         }
-        // its underside in shadow: a thin dark band along the bottom (thin, so the joins don't show)
-        let low = rp * 0.72;
-        p.line(
-            [a[0], a[1] + low],
-            [b[0], b[1] + low],
-            rp * 0.26,
-            rp * 0.2,
-            rgba(shadow, 0.85),
-        );
-        // moss over its back, thicker with the years
+        // moss over its back, thicker with the years, placed in the world rather than by the piece's
+        // size, so where the log comes toward the eye the pieces still meet end to end
         // (opaque, its colour from the bark to the moss: overlapping pieces would show if translucent)
         let cap = mix3(mix3(bark, green, 0.25 + 0.75 * moss), MIST, fz);
-        let lift = rp * (0.5 - 0.3 * moss);
-        p.line(
-            [a[0], a[1] - lift],
-            [b[0], b[1] - lift],
-            rp * (0.3 + 0.5 * moss),
-            self.ppp,
-            rgba(cap, 1.0),
-        );
+        let lift = r * (1.5 - 0.3 * moss);
+        let (Some(ca), Some(cb)) = (at(u0, lift), at(u1, lift)) else {
+            return;
+        };
+        p.line(ca, cb, rp * (0.3 + 0.5 * moss), self.ppp, rgba(cap, 1.0));
     }
 
     fn fern(&self, p: &mut Painter, fe: &Fern) {

@@ -42,8 +42,6 @@ pub const FALL_S: f32 = 2.6;
 const CELL: f32 = 2.0;
 const NEAR_CELL: f32 = 4.0;
 const MAX_TREES: usize = 1600;
-/// The trail the eye stands on: nothing takes root nearer than this (m).
-pub const TRAIL: f32 = 8.0;
 
 pub struct Rng(u64);
 
@@ -421,8 +419,7 @@ impl Forest {
             let x = self.rng.range(-X, X);
             let z = self.rng.range(Z0 + 0.5, Z1 * 0.75);
             let roll = self.rng.f();
-            // where the eye stands is the trail, trodden bare of seedlings
-            if self.trees.len() >= MAX_TREES || z < TRAIL {
+            if self.trees.len() >= MAX_TREES {
                 continue;
             }
             let mut on_log = None;
@@ -443,12 +440,15 @@ impl Forest {
             }
             // on the moss: a few show, and (while the moss smothers) are gone within a year or two
             if self.on[FLOOR] {
-                if roll < 0.012 {
+                // near the eye more are shown, so the dying is seen where the floor is large
+                let near = 1.0 - smooth((z - 5.0) / 9.0);
+                if roll < 0.012 + 0.25 * near {
                     let left = self.rng.range(0.4, 1.8);
-                    self.plant(x, z, 0.04, 0.0);
+                    self.plant(x, z, 0.1, 0.0);
                     self.trees.last_mut().expect("just planted").doomed = Some(left);
                 }
-            } else if roll < 0.12 {
+            } else if roll < 0.12 && z > 9.0 {
+                // (not at the eye's feet, where a tree would stand in front of everything)
                 self.plant(x, z, 0.04, 0.0);
             }
         }
@@ -478,24 +478,19 @@ impl Forest {
     pub fn way(&mut self, k: usize, side: Option<f32>) -> [f32; 2] {
         let t = &self.trees[k];
         let s = side.unwrap_or(if self.rng.f() < 0.5 { -1.0 } else { 1.0 });
-        // felled by a finger it comes down across the view, a little toward the eye if it stood back,
-        // so it lands where it can be watched
-        let away = if side.is_some() {
+        if side.is_some() {
+            // felled by a finger it lands where it can be watched: from back in the stand it comes
+            // down toward the eye, its top in the open; from near, across the view
             if t.z > 18.0 {
-                -1.0
-            } else {
-                1.0
+                let to = [s * 4.0 - 0.7 * t.x, 7.0 - t.z];
+                let n = to[0].hypot(to[1]).max(1e-3);
+                return [to[0] / n, to[1] / n];
             }
-        } else if t.z < 14.0 || self.rng.f() < 0.7 {
-            1.0
-        } else {
-            -1.0
-        };
-        let a = if side.is_some() {
-            self.rng.range(0.12, 0.45)
-        } else {
-            self.rng.range(0.35, 1.0)
-        };
+            let a = self.rng.range(0.12, 0.45);
+            return [s * a.cos(), a.sin()];
+        }
+        let away = if t.z < 14.0 || self.rng.f() < 0.7 { 1.0 } else { -1.0 };
+        let a = self.rng.range(0.35, 1.0);
         [s * a.cos(), away * a.sin()]
     }
 
