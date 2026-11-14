@@ -9,6 +9,7 @@
 //! hex grid; the pane keeps who holds each patch of glass (the mask) and what the finished crystals
 //! left (the field), and how deep the glaze is (where a melt froze smooth), which `draw` (pane.wgsl) lights. painting-company row 218.
 
+mod readback;
 mod sound;
 
 use toy_kit::{info, Ctx, Phase, PointerEvent, Toy};
@@ -188,7 +189,7 @@ pub struct Frost {
     op: wgpu::Buffer,
     look: wgpu::Buffer,
     stats: wgpu::Buffer,
-    readback: wgpu::Buffer,
+    readback: readback::Readback,
     binds: [wgpu::BindGroup; 2],
     draw_bind: wgpu::BindGroup,
     grow: wgpu::ComputePipeline,
@@ -571,12 +572,7 @@ impl Toy for Frost {
             usage: st | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
-        let readback = gpu.buffer(&wgpu::BufferDescriptor {
-            label: Some("frost readback"),
-            size: SLOTS as u64 * 16 + 16,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+        let readback = readback::Readback::new(gpu, SLOTS as u64 * 16 + 16);
         let ub = |label, size: usize| {
             dev.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(label),
@@ -994,6 +990,7 @@ impl Toy for Frost {
                 cp.set_bind_group(0, &self.binds[0], &[]);
                 cp.set_pipeline(&self.probe);
                 cp.dispatch_workgroups(1, 1, 1);
+                self.readback.probed();
             }
             for p in 0..2 {
                 cp.set_bind_group(0, &self.binds[p], &[]);
@@ -1041,29 +1038,22 @@ impl Toy for Frost {
             cp.set_pipeline(&self.paint);
             cp.dispatch_workgroups(fw.div_ceil(8), fh.div_ceil(8), 1);
         }
-        enc.copy_buffer_to_buffer(&self.stats, 0, &self.readback, 0, SLOTS as u64 * 16 + 16);
-        gpu.queue.submit([enc.finish()]);
-
-        // what froze this frame (read back at once: a few bytes, and the same on every run)
-        let slice = self.readback.slice(..);
-        slice.map_async(wgpu::MapMode::Read, |_| {});
-        let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
-        let counts: Vec<u32> =
-            bytemuck::cast_slice(&slice.get_mapped_range().expect("mapped")).to_vec();
-        self.readback.unmap();
+        // what froze this frame (readback.rs: at once, but in a browser a frame or two late)
+        let (counts, fresh) = self.readback.read(gpu, enc, &self.stats);
         let mut strike = None;
         let mut touch = (0.0, 0.0, 0.0, 0.0, 0.0);
         let [pw, ph] = self.pane;
         if let Some(f) = &mut self.finger {
             let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
             if f.mode == Mode::Undecided {
-                // (on dry glass a lifted print has nothing to show while it waits: its stars come at once)
-                let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
-                f.ice = ice;
-                f.mode = Mode::Melt;
-                strike = Some((f.at, ice));
-                if std::env::var("FROST_LOG").is_ok() {
-                    eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
+                // (on dry glass a lifted print has nothing to show while it waits: its stars come at once;
+                // in a browser the probe's answer may be a frame or two away, and the finger waits for it)
+                if fresh {
+                    let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
+                    f.ice = ice;
+                    f.mode = Mode::Melt;
+                    strike = Some((f.at, ice));
+                    log_probe(t, ice, depth);
                 }
             } else if dt > 0.0 {
                 // the finger's way this frame: the ice it melts (ahead of it, as it goes; round it,
@@ -1259,3 +1249,10 @@ impl Toy for Frost {
 }
 
 toy_kit::ios_shell!(Frost);
+
+/// The probe's answer on stderr, under FROST_LOG.
+fn log_probe(t: f64, ice: f64, depth: f64) {
+    if std::env::var("FROST_LOG").is_ok() {
+        eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
+    }
+}

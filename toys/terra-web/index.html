@@ -66,7 +66,8 @@ import init, { start } from './terra_web.js';
 const $ = id => document.getElementById(id);
 const canvas = $('terra');
 const say = text => { $('loading').style.opacity = 0; const s = $('status'); s.textContent = text; s.style.display = 'block'; };
-const KEY = 'terra';
+// (the site's other pages share this page's storage: a key of Terra's own)
+const KEY = 'terra-incognita:state';
 let shell = null;
 
 function size() {
@@ -181,6 +182,10 @@ function startSound() {
 
 // ---- each frame: the picture, then the shell's text as main.swift's tick shows it
 function tick() {
+  try { frame(); } catch (e) { console.error(e); say('Terra stopped here. ' + (e && e.message ? e.message : e)); return; }
+  requestAnimationFrame(tick);
+}
+function frame() {
   const [w, h, dpr] = size();
   if (w !== canvas.width || h !== canvas.height) { canvas.width = w; canvas.height = h; shell.resize(w, h, dpr); layout(); }
   shell.frame(performance.now() / 1000, Date.now() / 1000);
@@ -190,7 +195,6 @@ function tick() {
   showCard(shell.rules_text() ?? shell.origins_text() ?? null);
   showSwitches(shell.switches_text() ?? null);
   marks();
-  requestAnimationFrame(tick);
 }
 
 let titleText = null;
@@ -213,10 +217,10 @@ function showCaption(text) {
   if (text === null) { el.classList.remove('on'); return; }
   el.textContent = text;
   el.style.left = '0'; el.style.top = '0';
-  el.style.whiteSpace = 'nowrap';
+  el.style.whiteSpace = 'nowrap'; el.style.maxWidth = 'none';
   const most = Math.min(innerWidth - 48, 560);
-  if (el.offsetWidth > most && text.includes('. ')) el.textContent = text.replace('. ', '.\n');
-  el.style.whiteSpace = 'pre-line';
+  if (el.scrollWidth > most && text.includes('. ')) el.textContent = text.replace('. ', '.\n');
+  el.style.whiteSpace = 'pre-line'; el.style.maxWidth = '';
   const mid = innerHeight - safe().bottom - 74;
   el.style.left = ((innerWidth - el.offsetWidth) / 2) + 'px';
   el.style.top = (mid - el.offsetHeight / 2) + 'px';
@@ -279,7 +283,6 @@ function showSwitches(text) {
     label.className = on === '1' ? '' : 'off';
     label.lastChild.checked = on === '1';
   });
-  for (const ev of ['pointerdown', 'pointermove', 'pointerup']) el.addEventListener(ev, e => e.stopPropagation());
   el.style.display = 'block';
   layoutSwitches();
   if (opening) requestAnimationFrame(() => el.classList.add('on'));

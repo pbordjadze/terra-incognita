@@ -54,8 +54,8 @@ toys/crates/toy-kit/src/gpu/mod.rs::new 103 6
 toys/crates/toy-kit/src/info.rs::draw 111 20
 toys/crates/toy-kit/src/web.rs::run 188 30
 toys/fireflies/src/look.rs::new 127 1
-toys/frost/src/lib.rs::new 216 2
-toys/frost/src/lib.rs::update 352 62
+toys/frost/src/lib.rs::new 211 2
+toys/frost/src/lib.rs::update 346 62
 toys/frost/src/sound.rs::render 175 27
 toys/jam/src/lib.rs::draw 381 60
 toys/jam/src/lib.rs::pointer 128 29
