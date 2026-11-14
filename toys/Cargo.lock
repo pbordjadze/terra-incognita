@@ -382,6 +382,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoh"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "huddle"
 version = "0.1.0"
 dependencies = [
@@ -1032,6 +1044,7 @@ dependencies = [
  "catatumbo",
  "elkmont",
  "frost",
+ "hoh",
  "huddle",
  "meander",
  "moonroad",
