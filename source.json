@@ -1,0 +1,1331 @@
+{
+  "name": "Terra Incognita (CI builds)",
+  "identifier": "com.pbordjadze.terraincognita.source",
+  "subtitle": "Automatic builds",
+  "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+  "website": "https://github.com/pbordjadze/terra-incognita",
+  "tintColor": "#C9A243",
+  "apps": [
+    {
+      "name": "Terra Incognita",
+      "bundleIdentifier": "com.pbordjadze.terraincognita",
+      "developerName": "pbordjadze",
+      "subtitle": "The world, and the toys on it",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys, each where its thing really happens: starlings in Somerset, fireflies in the Smokies, the swell at Nazar\u00e9, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+      "tintColor": "#C9A243",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.1287",
+          "buildVersion": "1287",
+          "date": "2026-11-14T08:49:46Z",
+          "localizedDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-287/terra.ipa",
+          "size": 26038279,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1282",
+          "buildVersion": "1282",
+          "date": "2026-11-14T04:01:47Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-282/terra.ipa",
+          "size": 26004330,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1279",
+          "buildVersion": "1279",
+          "date": "2026-11-14T02:42:48Z",
+          "localizedDescription": "Merge: a new toy's light wears a gold ring until it is opened once (#30)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-279/terra.ipa",
+          "size": 25996813,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1275",
+          "buildVersion": "1275",
+          "date": "2026-11-14T01:00:35Z",
+          "localizedDescription": "Merge: Terra holds local toys for now, Bell and Whales off the map, no rivers on the globe (#26)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-275/terra.ipa",
+          "size": 25991849,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1273",
+          "buildVersion": "1273",
+          "date": "2026-11-14T00:34:26Z",
+          "localizedDescription": "Merge claude/project-thread-i8lk1t: Moon Road, Lake Superior at moonrise as a numbered template the moon paints (#27)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-273/terra.ipa",
+          "size": 45560079,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.1287",
+      "versionDate": "2026-11-14T08:49:46Z",
+      "versionDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-287/terra.ipa",
+      "size": 26038279,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Adrift",
+      "bundleIdentifier": "com.pbordjadze.adrift",
+      "developerName": "pbordjadze",
+      "subtitle": "Glass floats on the real sea",
+      "localizedDescription": "Tap the open sea and it rings; rest a beat longer and a glass float is yours, lamp amber on a cool sea. The month's real currents and winds, measured by drifting buoys, carry it; nothing scripts where it goes. Written from scratch in Rust on the GPU. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/adrift-icon.png",
+      "tintColor": "#E0A040",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.176",
+          "buildVersion": "176",
+          "date": "2026-11-14T10:39:37Z",
+          "localizedDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-176/Adrift.ipa",
+          "size": 33635203,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.174",
+          "buildVersion": "174",
+          "date": "2026-11-14T08:21:33Z",
+          "localizedDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-174/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.170",
+          "buildVersion": "170",
+          "date": "2026-11-14T00:38:50Z",
+          "localizedDescription": "Merge: Terra holds local toys for now, Bell and Whales off the map, no rivers on the globe (#26)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-170/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.168",
+          "buildVersion": "168",
+          "date": "2026-11-13T23:11:30Z",
+          "localizedDescription": "Merge claude/project-thread-i8lk1t: Moon Road, Lake Superior at moonrise as a numbered template the moon paints (#27)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-168/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.165",
+          "buildVersion": "165",
+          "date": "2026-11-13T22:17:14Z",
+          "localizedDescription": "Pando: the aspen clone in Utah, from the grove down to one leaf's pores (#28)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-165/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.176",
+      "versionDate": "2026-11-14T10:39:37Z",
+      "versionDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-176/Adrift.ipa",
+      "size": 33635203,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Whales",
+      "bundleIdentifier": "com.pbordjadze.toy.whales",
+      "developerName": "pbordjadze",
+      "subtitle": "Two whales, their songs and their travels",
+      "localizedDescription": "Pick two whales and hear them sing as they travel the real oceans. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/whales-icon.png",
+      "tintColor": "#4A7FA8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T13:24:40Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-221/whales.ipa",
+          "size": 21960564,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:10:43Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-202/whales.ipa",
+          "size": 21960376,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T08:59:04Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-197/whales.ipa",
+          "size": 21939796,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:36:56Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-114/whales.ipa",
+          "size": 21455200,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:23:28Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-108/whales.ipa",
+          "size": 21442535,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T13:24:40Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/whales-build-221/whales.ipa",
+      "size": 21960564,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Murmuration",
+      "bundleIdentifier": "com.pbordjadze.toy.murmuration",
+      "developerName": "pbordjadze",
+      "subtitle": "A flock, and you one of them",
+      "localizedDescription": "Hundreds of birds on simple rules over the real sky; lean and the flock bends around you. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/murmuration-icon.png",
+      "tintColor": "#C98A6A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.289",
+          "buildVersion": "289",
+          "date": "2026-11-14T11:06:16Z",
+          "localizedDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-289/murmuration.ipa",
+          "size": 4311093,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T06:29:02Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-282/murmuration.ipa",
+          "size": 4311491,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T13:27:14Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-221/murmuration.ipa",
+          "size": 4295704,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:18:00Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-197/murmuration.ipa",
+          "size": 4272554,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.181",
+          "buildVersion": "181",
+          "date": "2026-11-06T12:26:37Z",
+          "localizedDescription": "Merge toy-terra-passages: the Toys checks' apt step stops the runner's own updaters and requires only the Vulkan driver (the last merge's checks ran into their time limit); Terra's passages released (painting-company row 245)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-181/murmuration.ipa",
+          "size": 3799608,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.289",
+      "versionDate": "2026-11-14T11:06:16Z",
+      "versionDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/murmuration-build-289/murmuration.ipa",
+      "size": 4311093,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Fireflies",
+      "bundleIdentifier": "com.pbordjadze.toy.fireflies",
+      "developerName": "pbordjadze",
+      "subtitle": "Every night city a firefly",
+      "localizedDescription": "Each city of the night Earth blinks its own rhythm; nudge one and continents fall into step. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/fireflies-icon.png",
+      "tintColor": "#F2D16B",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T04:16:36Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-282/fireflies.ipa",
+          "size": 20940932,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T11:49:38Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-221/fireflies.ipa",
+          "size": 20926084,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:32:02Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-197/fireflies.ipa",
+          "size": 20902533,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:58:21Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-114/fireflies.ipa",
+          "size": 20420670,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T13:58:53Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-108/fireflies.ipa",
+          "size": 20410806,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T04:16:36Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/fireflies-build-282/fireflies.ipa",
+      "size": 20940932,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Bell",
+      "bundleIdentifier": "com.pbordjadze.toy.bell",
+      "developerName": "pbordjadze",
+      "subtitle": "Strike the Earth and hear it ring",
+      "localizedDescription": "Tap the Earth and it rings in its own measured free oscillations, the chord heard from the place facing you. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/bell-icon.png",
+      "tintColor": "#B8C8D8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T12:48:56Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-221/bell.ipa",
+          "size": 20870365,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:12:27Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-197/bell.ipa",
+          "size": 20846181,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.174",
+          "buildVersion": "174",
+          "date": "2026-11-06T08:33:43Z",
+          "localizedDescription": "Merge terra-first-minute: Terra's first minute, six rounds of newcomer testers (painting-company row 246)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-174/bell.ipa",
+          "size": 20372088,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T18:34:03Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-114/bell.ipa",
+          "size": 20364693,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:36:35Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-108/bell.ipa",
+          "size": 20351527,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T12:48:56Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bell-build-221/bell.ipa",
+      "size": 20870365,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Swell",
+      "bundleIdentifier": "com.pbordjadze.toy.swell",
+      "developerName": "pbordjadze",
+      "subtitle": "Waves on the real sea floor",
+      "localizedDescription": "Touch the sea and a wave crosses the ocean at the speed its real depth gives it; the coasts chime where it arrives. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/swell-icon.png",
+      "tintColor": "#6FA8D0",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T13:11:13Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-221/swell.ipa",
+          "size": 21171347,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:22:07Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-197/swell.ipa",
+          "size": 21146204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.114",
+          "buildVersion": "114",
+          "date": "2026-11-04T19:44:02Z",
+          "localizedDescription": "Merge toys-rules: a rules mark in every toy, the few rules behind each scene",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-114/swell.ipa",
+          "size": 20663967,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.108",
+          "buildVersion": "108",
+          "date": "2026-11-04T14:16:39Z",
+          "localizedDescription": "Merge toys-unify: Mold's launch crash fixed; one globe camera and an info mark in every app",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-108/swell.ipa",
+          "size": 20649761,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.68",
+          "buildVersion": "68",
+          "date": "2026-11-03T08:26:56Z",
+          "localizedDescription": "Merge toy-bell-swell: Bell and Swell, two new toys (rounds 1\u20134)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-68/swell.ipa",
+          "size": 20567964,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T13:11:13Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/swell-build-221/swell.ipa",
+      "size": 21171347,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Carol",
+      "bundleIdentifier": "com.pbordjadze.toy.carol",
+      "developerName": "pbordjadze",
+      "subtitle": "Tap a piece, then where it goes",
+      "localizedDescription": "A wooden chess set that knows its lines: tap a piece, then where it goes. The right move slides home with a note and the other side answers; a wrong one bumps back. Twenty-four drills, openings and puzzles, the missed ones coming back first. A toy; offline.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/carol-icon.png",
+      "tintColor": "#B5824F",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T08:57:35Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-197/carol.ipa",
+          "size": 4308080,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.113",
+          "buildVersion": "113",
+          "date": "2026-11-04T17:23:41Z",
+          "localizedDescription": "Merge toy-carol: Carol, a toy chess trainer as its own app [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-113/carol.ipa",
+          "size": 3814501,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T08:57:35Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/carol-build-197/carol.ipa",
+      "size": 4308080,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Shortcut",
+      "bundleIdentifier": "com.pbordjadze.toy.jam",
+      "developerName": "pbordjadze",
+      "subtitle": "Build a road, and watch traffic get worse",
+      "localizedDescription": "A small town at night round a lake, its cars each taking the way that looks quickest. Draw a road from one road to another, slash one closed, and see what the drivers do: the obvious bridge can make everyone's trip slower (Braess's paradox), and nothing tells you so but the colour of the cars. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/jam-icon.png",
+      "tintColor": "#D8321E",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T12:33:08Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-221/jam.ipa",
+          "size": 4298971,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:42:18Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-197/jam.ipa",
+          "size": 4277525,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.192",
+          "buildVersion": "192",
+          "date": "2026-11-07T06:38:12Z",
+          "localizedDescription": "Merge toy-jam-braess: the cars toy becomes Shortcut, Braess's paradox to play with (painting-company row 255)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-192/jam.ipa",
+          "size": 3841461,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.163",
+          "buildVersion": "163",
+          "date": "2026-11-06T07:24:30Z",
+          "localizedDescription": "Merge toy-jam: Salt Flat, the car toy opened up (painting-company row 244)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-163/jam.ipa",
+          "size": 3779099,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.144",
+          "buildVersion": "144",
+          "date": "2026-11-04T23:51:22Z",
+          "localizedDescription": "Merge toy-frost: Frost, frost on a cabin window at Oymyakon; the finger is warm (painting-company row 218) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-144/jam.ipa",
+          "size": 3769326,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T12:33:08Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/jam-build-221/jam.ipa",
+      "size": 4298971,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Meander",
+      "bundleIdentifier": "com.pbordjadze.toy.meander",
+      "developerName": "pbordjadze",
+      "subtitle": "Draw a river and watch it wander",
+      "localizedDescription": "The Rio Beni's real floodplain in Bolivia. Draw a river with your finger: its bends grow and drift, and when a loop's neck closes the river cuts through and leaves an oxbow lake, the same shape as the real ones beneath. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/meander-icon.png",
+      "tintColor": "#C2A178",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T11:39:04Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-221/meander.ipa",
+          "size": 5010224,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:13:40Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-202/meander.ipa",
+          "size": 5009582,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.200",
+          "buildVersion": "200",
+          "date": "2026-11-07T09:50:19Z",
+          "localizedDescription": "Merge toy-terra-scale: Terra, discovery through scale (painting-company row 258)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-200/meander.ipa",
+          "size": 5009580,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:37:26Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-197/meander.ipa",
+          "size": 4987704,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.189",
+          "buildVersion": "189",
+          "date": "2026-11-07T06:13:38Z",
+          "localizedDescription": "Merge row-253-meander-multitouch: Meander takes several fingers at once, each a push of its own (painting-company row 253)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-189/meander.ipa",
+          "size": 4546095,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T11:39:04Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/meander-build-221/meander.ipa",
+      "size": 5010224,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Taste",
+      "bundleIdentifier": "com.pbordjadze.toy.taste",
+      "developerName": "pbordjadze",
+      "subtitle": "A creature that becomes what you like",
+      "localizedDescription": "A small creature keeps changing its shape and colour. Rest a finger on it while you like what it is: it keeps trying on a slightly different self, and keeps the new one as often as you held it. It lingers where you linger, still wanders off, and every so often pulls back to show the path it took. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/taste-icon.png",
+      "tintColor": "#A054F5",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T12:28:38Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-221/taste.ipa",
+          "size": 4304524,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:13:46Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-202/taste.ipa",
+          "size": 4306233,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:15:57Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-197/taste.ipa",
+          "size": 4284607,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.154",
+          "buildVersion": "154",
+          "date": "2026-11-05T01:12:30Z",
+          "localizedDescription": "Merge toy-jam: Ghost Jam's handoff (painting-company row 218) [skip ci]",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-154/taste.ipa",
+          "size": 3812638,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T12:28:38Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/taste-build-221/taste.ipa",
+      "size": 4304524,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Frost",
+      "bundleIdentifier": "com.pbordjadze.toy.frost",
+      "developerName": "pbordjadze",
+      "subtitle": "Your finger is warm",
+      "localizedDescription": "A cabin window at Oymyakon, about \u221250 \u00b0C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: what you wipe stays clear, the frost creeping back only slowly from its edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/frost-icon.png",
+      "tintColor": "#5F7FA8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.289",
+          "buildVersion": "289",
+          "date": "2026-11-14T11:12:34Z",
+          "localizedDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-289/frost.ipa",
+          "size": 4338802,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T13:02:08Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-221/frost.ipa",
+          "size": 4324745,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:00:34Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-197/frost.ipa",
+          "size": 4305660,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.193",
+          "buildVersion": "193",
+          "date": "2026-11-07T07:09:49Z",
+          "localizedDescription": "Merge frost-music: Frost plays, the window a glass instrument (painting-company row 254)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-193/frost.ipa",
+          "size": 3865777,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.173",
+          "buildVersion": "173",
+          "date": "2026-11-06T07:49:26Z",
+          "localizedDescription": "Merge toy-frost: Frost's finger only melts, its wipes last and heal over minutes; a shake renews the window (painting-company row 242)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-173/frost.ipa",
+          "size": 3821149,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.289",
+      "versionDate": "2026-11-14T11:12:34Z",
+      "versionDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/frost-build-289/frost.ipa",
+      "size": 4338802,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Night Walk",
+      "bundleIdentifier": "com.pbordjadze.toy.walk",
+      "developerName": "pbordjadze",
+      "subtitle": "A walker's footprints map a land no one can see",
+      "localizedDescription": "A walker crosses a land in the dark. Each step it picks a spot at random within its stride: higher ground it always takes, lower only sometimes. Where its footprints pile up, a map rises; at dawn the real land comes up under it. Touch to set how far it steps. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/walk-icon.png",
+      "tintColor": "#E8B86A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T12:06:56Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-221/walk.ipa",
+          "size": 4290999,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:07:52Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-197/walk.ipa",
+          "size": 4270439,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.151",
+          "buildVersion": "151",
+          "date": "2026-11-05T01:00:40Z",
+          "localizedDescription": "Merge remote-tracking branch 'origin/main'",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-151/walk.ipa",
+          "size": 3796268,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.221",
+      "versionDate": "2026-11-13T12:06:56Z",
+      "versionDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/walk-build-221/walk.ipa",
+      "size": 4290999,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Screw",
+      "bundleIdentifier": "com.pbordjadze.toy.screw",
+      "developerName": "pbordjadze",
+      "subtitle": "Chop and screw a song of your own",
+      "localizedDescription": "A record turning on a dark page. Open a song of yours from Files; tap and it plays. Push it down and it slows, the voice dropping with it, as Houston's DJ Screw rode a turntable's pitch. Tap and it says the last beat again, in time; flick it back two bars. Your song stays on your phone. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/screw-icon.png",
+      "tintColor": "#8E4FB0",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:33:48Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-197/screw.ipa",
+          "size": 4269664,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.183",
+          "buildVersion": "183",
+          "date": "2026-11-06T19:26:40Z",
+          "localizedDescription": "Merge toy-screw: Screw, a record of your own song to chop and screw; the kit opens a sound file from Files (painting-company row 250)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-183/screw.ipa",
+          "size": 3801037,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.197",
+      "versionDate": "2026-11-07T09:33:48Z",
+      "versionDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/screw-build-197/screw.ipa",
+      "size": 4269664,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Throats",
+      "bundleIdentifier": "com.pbordjadze.toy.throats",
+      "developerName": "pbordjadze",
+      "subtitle": "Rock, paper, scissors on a hillside of lizards",
+      "localizedDescription": "A sunny California slope seen from above, every rock held by a side-blotched lizard with an orange, blue or yellow throat. Orange takes blue's rock, blue takes yellow's, yellow takes orange's, and the colours chase each other round in spirals. Draw to pour in a colour; it breaks into new arms. Pinch out for the whole hill. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/throats-icon.png",
+      "tintColor": "#F07A1A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T05:37:18Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-282/throats.ipa",
+          "size": 4410429,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.221",
+          "buildVersion": "221",
+          "date": "2026-11-13T12:18:44Z",
+          "localizedDescription": "Merge info-polish: the info opens on a first visit, reads on any scene; the ? says the real rules (#16)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-221/throats.ipa",
+          "size": 4397490,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.202",
+          "buildVersion": "202",
+          "date": "2026-11-07T11:11:29Z",
+          "localizedDescription": "Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-202/throats.ipa",
+          "size": 4398692,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.197",
+          "buildVersion": "197",
+          "date": "2026-11-07T09:32:23Z",
+          "localizedDescription": "Merge ci-deps-lint-2: the toys and Adrift on wgpu 30 and Rust 1.99.1 named in rust-toolchain.toml, the actions current, Dependabot, and the standard linters first in CI (painting-company row 252)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-197/throats.ipa",
+          "size": 4373692,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.195",
+          "buildVersion": "195",
+          "date": "2026-11-07T07:28:03Z",
+          "localizedDescription": "Merge toy-throats: Throats, side-blotched lizards on a California hillside playing rock-paper-scissors in turning spirals (painting-company row 257)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-195/throats.ipa",
+          "size": 3935963,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T05:37:18Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/throats-build-282/throats.ipa",
+      "size": 4410429,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Nazar\u00e9",
+      "bundleIdentifier": "com.pbordjadze.toy.nazare",
+      "developerName": "pbordjadze",
+      "subtitle": "The canyon that makes the biggest waves",
+      "localizedDescription": "The Atlantic swell over the real sea floor off Nazar\u00e9, Portugal, where a canyon reaches almost to the beach. Watch it bend round the canyon and stack up at Praia do Norte. Drag to turn the swell or lengthen it. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/nazare-icon.png",
+      "tintColor": "#4F8FB8",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.289",
+          "buildVersion": "289",
+          "date": "2026-11-14T11:23:27Z",
+          "localizedDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/nazare-build-289/nazare.ipa",
+          "size": 4820414,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.268",
+          "buildVersion": "268",
+          "date": "2026-11-13T23:16:07Z",
+          "localizedDescription": "Merge Nazar\u00e9: a swipe sends a swell and its set breaks at Praia do Norte (#23)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/nazare-build-268/nazare.ipa",
+          "size": 4814507,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.239",
+          "buildVersion": "239",
+          "date": "2026-11-13T14:08:27Z",
+          "localizedDescription": "Merge Nazar\u00e9: the swell bent by the canyon into Praia do Norte, Terra's swell light (painting-company row 217)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/nazare-build-239/nazare.ipa",
+          "size": 4802248,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.289",
+      "versionDate": "2026-11-14T11:23:27Z",
+      "versionDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/nazare-build-289/nazare.ipa",
+      "size": 4820414,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Elkmont",
+      "bundleIdentifier": "com.pbordjadze.toy.elkmont",
+      "developerName": "pbordjadze",
+      "subtitle": "The synchronous fireflies in a June wood",
+      "localizedDescription": "Night in the woods at Elkmont in the Great Smoky Mountains, where the fireflies flash together: a burst all through the trees, then dark, again and again. Hold a small light low and the females in the leaf litter answer it. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/elkmont-icon.png",
+      "tintColor": "#A8E05A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T06:41:04Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/elkmont-build-282/elkmont.ipa",
+          "size": 4299976,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.235",
+          "buildVersion": "235",
+          "date": "2026-11-13T13:50:35Z",
+          "localizedDescription": "Merge Elkmont: Photinus carolinus in the Smokies, Terra's fireflies light (painting-company row 217)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/elkmont-build-235/elkmont.ipa",
+          "size": 4286216,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T06:41:04Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/elkmont-build-282/elkmont.ipa",
+      "size": 4299976,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Bats",
+      "bundleIdentifier": "com.pbordjadze.toy.bats",
+      "developerName": "pbordjadze",
+      "subtitle": "Millions of bats at dusk, and you the hawk",
+      "localizedDescription": "A summer dusk above Bracken Cave in the Texas Hill Country, where millions of free-tailed bats climb out of a sinkhole in a turning column and stream off over the hills to feed. You are the hawk: dive into them and watch the swerve ripple on down the stream. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/bats-icon.png",
+      "tintColor": "#E8935A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T04:31:06Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bats-build-282/bats.ipa",
+          "size": 4281237,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.256",
+          "buildVersion": "256",
+          "date": "2026-11-13T22:46:01Z",
+          "localizedDescription": "Merge claude/project-thread-itugwi: Bats opens with \"Hawk to a million bats. Dive in.\" (#25)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bats-build-256/bats.ipa",
+          "size": 4269194,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.232",
+          "buildVersion": "232",
+          "date": "2026-11-13T13:37:17Z",
+          "localizedDescription": "Merge claude/project-thread-ihixks: three new toys, Bats, Huddle and The Wave, with their lights on Terra (#17)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bats-build-232/bats.ipa",
+          "size": 4261509,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T04:31:06Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bats-build-282/bats.ipa",
+      "size": 4281237,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Huddle",
+      "bundleIdentifier": "com.pbordjadze.toy.huddle",
+      "developerName": "pbordjadze",
+      "subtitle": "Emperor penguins keeping warm in the wind",
+      "localizedDescription": "Emperor penguins packed on the sea ice of Atka Bay in a winter wind, seen from above. The ones on the windward edge get cold, walk round, and press in on the lee side, so the huddle turns over and creeps downwind, and now and then a wave of tiny steps runs through it. Drag to turn the wind; touch a penguin to start a wave. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/huddle-icon.png",
+      "tintColor": "#E8B04A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T04:02:59Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/huddle-build-282/huddle.ipa",
+          "size": 4337938,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.232",
+          "buildVersion": "232",
+          "date": "2026-11-13T13:48:09Z",
+          "localizedDescription": "Merge claude/project-thread-ihixks: three new toys, Bats, Huddle and The Wave, with their lights on Terra (#17)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/huddle-build-232/huddle.ipa",
+          "size": 4322722,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T04:02:59Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/huddle-build-282/huddle.ipa",
+      "size": 4337938,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "The Wave",
+      "bundleIdentifier": "com.pbordjadze.toy.wave",
+      "developerName": "pbordjadze",
+      "subtitle": "Start a Mexican wave in a stadium of phone lights",
+      "localizedDescription": "Estadio Azteca in Mexico City at night, 87,000 people, every one a phone held up as a light. Swipe along the stands and the people under your finger stand up; if enough do, a wave runs round the bowl at twenty seats a second. Too few, and it fizzles; two waves that meet wipe each other out. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/wave-icon.png",
+      "tintColor": "#F2C46B",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T05:38:55Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/wave-build-282/wave.ipa",
+          "size": 4353102,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.263",
+          "buildVersion": "263",
+          "date": "2026-11-13T22:45:28Z",
+          "localizedDescription": "The Wave: the crowd tires, so waves die and rarely start on their own (#24)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/wave-build-263/wave.ipa",
+          "size": 4343378,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.232",
+          "buildVersion": "232",
+          "date": "2026-11-13T13:39:20Z",
+          "localizedDescription": "Merge claude/project-thread-ihixks: three new toys, Bats, Huddle and The Wave, with their lights on Terra (#17)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/wave-build-232/wave.ipa",
+          "size": 4335780,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T05:38:55Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/wave-build-282/wave.ipa",
+      "size": 4353102,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Catatumbo",
+      "bundleIdentifier": "com.pbordjadze.toy.catatumbo",
+      "developerName": "pbordjadze",
+      "subtitle": "Lightning over Lake Maracaibo; your finger is the ground",
+      "localizedDescription": "Night over Lake Maracaibo, where the Catatumbo meets it and lightning flickers most nights of the year. Touch the water and a stroke forks down to your finger, grown by the rule real lightning follows; hold and it strikes again down the same channel. Every piece of the channel thunders, the near ones first. Touch the sky for a crawler under the cloud. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/catatumbo-icon.png",
+      "tintColor": "#9B86FF",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.241",
+          "buildVersion": "241",
+          "date": "2026-11-13T16:57:24Z",
+          "localizedDescription": "Merge claude/project-thread-37j3oc: three new toys, Catatumbo, Bubblers and Barchans, with their lights on Terra (#18)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/catatumbo-build-241/catatumbo.ipa",
+          "size": 4299172,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.241",
+      "versionDate": "2026-11-13T16:57:24Z",
+      "versionDescription": "Merge claude/project-thread-37j3oc: three new toys, Catatumbo, Bubblers and Barchans, with their lights on Terra (#18)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/catatumbo-build-241/catatumbo.ipa",
+      "size": 4299172,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Moon Road",
+      "bundleIdentifier": "com.pbordjadze.toy.moonroad",
+      "developerName": "pbordjadze",
+      "subtitle": "The moon paints its road down Lake Superior",
+      "localizedDescription": "Moonrise over Lake Superior, the water a numbered template on dark paper. Only the bits of water tilted just right send the moon's light to your eye, and each one the moon lights, it paints, so the road of light from the moon to you fills in, number by number. Tap for a gust and the road spreads; drag to walk the shore and the road follows you. Shake for a fresh page. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/moonroad-icon.png",
+      "tintColor": "#F6E2AE",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.273",
+          "buildVersion": "273",
+          "date": "2026-11-13T23:46:33Z",
+          "localizedDescription": "Merge claude/project-thread-i8lk1t: Moon Road, Lake Superior at moonrise as a numbered template the moon paints (#27)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/moonroad-build-273/moonroad.ipa",
+          "size": 4290198,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.273",
+      "versionDate": "2026-11-13T23:46:33Z",
+      "versionDescription": "Merge claude/project-thread-i8lk1t: Moon Road, Lake Superior at moonrise as a numbered template the moon paints (#27)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/moonroad-build-273/moonroad.ipa",
+      "size": 4290198,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Bubblers",
+      "bundleIdentifier": "com.pbordjadze.toy.bubblers",
+      "developerName": "pbordjadze",
+      "subtitle": "Sand-bubbler crabs drawing starbursts at low tide",
+      "localizedDescription": "Low tide on a Phuket beach, seen from above. Sand-bubbler crabs feed out from their burrows and leave the sifted sand behind as little balls, laid in spokes, and the beach fills with starbursts nobody drew. Tap for a footstep and they bolt, their neighbours after them; drag to draw in the sand; shake and the tide comes in. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/bubblers-icon.png",
+      "tintColor": "#D8C6A2",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.241",
+          "buildVersion": "241",
+          "date": "2026-11-13T16:54:26Z",
+          "localizedDescription": "Merge claude/project-thread-37j3oc: three new toys, Catatumbo, Bubblers and Barchans, with their lights on Terra (#18)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bubblers-build-241/bubblers.ipa",
+          "size": 4280423,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.241",
+      "versionDate": "2026-11-13T16:54:26Z",
+      "versionDescription": "Merge claude/project-thread-37j3oc: three new toys, Catatumbo, Bubblers and Barchans, with their lights on Terra (#18)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/bubblers-build-241/bubblers.ipa",
+      "size": 4280423,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Barchans",
+      "bundleIdentifier": "com.pbordjadze.toy.barchans",
+      "developerName": "pbordjadze",
+      "subtitle": "Crescent dunes walking the Sahara; drag to turn the wind",
+      "localizedDescription": "Dunes near Tarfaya in the Atlantic Sahara, from above in a low sun. One rule (the wind lifts sand, drops it downwind, and it sticks best on sand) makes crescents that walk, merge and calve. Drag to turn the wind and watch them turn; hold still to pour sand. A big dune's sliding face hums at a hundred hertz. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/barchans-icon.png",
+      "tintColor": "#E9A262",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.282",
+          "buildVersion": "282",
+          "date": "2026-11-14T05:56:18Z",
+          "localizedDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/barchans-build-282/barchans.ipa",
+          "size": 4283894,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.241",
+          "buildVersion": "241",
+          "date": "2026-11-13T17:12:52Z",
+          "localizedDescription": "Merge claude/project-thread-37j3oc: three new toys, Catatumbo, Bubblers and Barchans, with their lights on Terra (#18)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/barchans-build-241/barchans.ipa",
+          "size": 4272862,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.282",
+      "versionDate": "2026-11-14T05:56:18Z",
+      "versionDescription": "Merge: the switches mark, each toy's rules as switches over the live scene (#29)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/barchans-build-282/barchans.ipa",
+      "size": 4283894,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Pando",
+      "bundleIdentifier": "com.pbordjadze.toy.pando",
+      "developerName": "pbordjadze",
+      "subtitle": "One aspen that looks like a forest, from the grove to a leaf's pores",
+      "localizedDescription": "Pando, in Utah, looks like a forest of golden aspens but is one tree: over 40,000 stems from one root. Drag to blow and gusts run over the grove as pale waves, every leaf flipping on its flat stalk. Tap a tree, then a leaf, then closer still, to its pores, which close in your finger's shade. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/pando-icon.png",
+      "tintColor": "#F2B22A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.265",
+          "buildVersion": "265",
+          "date": "2026-11-13T23:02:28Z",
+          "localizedDescription": "Pando: the aspen clone in Utah, from the grove down to one leaf's pores (#28)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/pando-build-265/pando.ipa",
+          "size": 4275651,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.265",
+      "versionDate": "2026-11-13T23:02:28Z",
+      "versionDescription": "Pando: the aspen clone in Utah, from the grove down to one leaf's pores (#28)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/pando-build-265/pando.ipa",
+      "size": 4275651,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Hoh",
+      "bundleIdentifier": "com.pbordjadze.toy.hoh",
+      "developerName": "pbordjadze",
+      "subtitle": "The rainforest below Mount Olympus, where fallen logs grow rows of trees",
+      "localizedDescription": "The Hoh, at the foot of Mount Olympus in Washington. Moss smothers every seedling on the forest floor; only those on a fallen log live, so young trees grow in lines along the logs, and when a log rots away its trees stand in a row on stilts. Drag to run the years; tap a giant to fell it. Working title; a toy in the making.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/hoh-icon.png",
+      "tintColor": "#5E8C3A",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.287",
+          "buildVersion": "287",
+          "date": "2026-11-14T08:33:45Z",
+          "localizedDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/hoh-build-287/hoh.ipa",
+          "size": 4299654,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.287",
+      "versionDate": "2026-11-14T08:33:45Z",
+      "versionDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/hoh-build-287/hoh.ipa",
+      "size": 4299654,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}
