@@ -7,6 +7,7 @@
 //! One device, one hand, one ground: every toy's globe is the kit's, so the dive is one picture becoming
 //! another. Only one toy is open at a time; closing it frees it.
 
+mod clock;
 pub mod doors;
 pub mod rooms;
 mod words;
@@ -42,8 +43,7 @@ pub fn opening_zoom(points: [f64; 2]) -> f64 {
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 /// How close the Earth comes over a scene before it is the glass (a dive's end): as close as it goes, so the
-/// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it, its
-/// rivers coming up round the window (painting-company row 258: at 9 the window outran the ground, "an iris,
+/// window onto the toy grows at about the ground's own pace and the Earth keeps falling in step with it (painting-company row 258: at 9 the window outran the ground, "an iris,
 /// not a descent").
 const SCENE_ZOOM: f64 = 40.0;
 /// Pinched in this close with a scene's light on screen, the light becomes a window onto the toy itself,
@@ -114,6 +114,7 @@ enum State {
 #[derive(Serialize, Deserialize)]
 struct Saved {
     camera: Camera,
+    known: Option<Vec<String>>, // the toys no longer new (`doors/fresh.rs`); None: a save from before
 }
 
 /// Terra's sound: its own bells, and the open toy's sound beside them.
@@ -495,22 +496,6 @@ pub struct Terra {
     held: Vec<PointerEvent>,
 }
 
-/// The month now (0 = January), from the clock (a fixed month without one).
-fn this_month() -> u32 {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    // civil from days (Howard Hinnant's algorithm)
-    let z = (secs / 86_400) as i64 + 719_468;
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (m - 1) as u32
-}
-
 /// Where the Earth comes back to from a toy: the opening's own view, so the lights are where the reader
 /// first saw them, turned toward the toy just left only as far as keeps its light in view (55 degrees
 /// from the middle at most); painting-company row 246: newcomers came home to a turned Earth, the
@@ -622,6 +607,7 @@ impl Terra {
     /// A light was touched: it stirs and rings, its toy is made, and the camera flies to where it opens.
     fn enter(&mut self, ctx: &mut Ctx, i: usize, t: f64) {
         self.life.stir(i, t);
+        self.life.tried(i);
         let pan = ((self.life.spot(&self.globe, i).0[0] / Self::points(ctx)[0]) * 2.0 - 1.0) as f32;
         self.strike(self.life.doors[i].degree, 0.32, pan * 0.6);
         self.strike(self.life.doors[i].degree + 5, 0.12, pan * 0.6);
@@ -648,12 +634,9 @@ impl Terra {
             }
         };
         let at = self.life.doors[i].at;
-        // a globe toy: down close over the light, where the toy will open (the whales' own framing of the
-        // pair, which is already close); a scene of its own: as close over its place as the Earth goes
+        // a globe toy: down close over the light, where the toy will open; a scene of its own: as close
+        // over its place as the Earth goes
         let to = match room.camera() {
-            // the toys whose first sight is a whole sea or the whole Earth (the whales' pair, the bell's
-            // ring round the world): down to that, the toy's own view
-            Some(own) if matches!(self.life.doors[i].id, "whales" | "bell") => own,
             Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             // a toy seen from above: down onto its place at its true scale and turn, where its first frame is
             // what the Earth shows (painting-company row 258)
@@ -747,39 +730,6 @@ impl Terra {
             return;
         }
         self.state = State::Closing { t0: t };
-    }
-
-    /// The touch that opened a light goes on into its toy: the toy is touched where the light was (the
-    /// bell rings from Chile, a whale is followed). The scenes, whose touch is a hold or a drawn line, are left to the reader.
-    fn touch_through(&mut self, t: f64) {
-        let d = &self.life.doors[self.door];
-        if !matches!(d.id, "bell" | "whales") {
-            return;
-        }
-        let Some(r) = self.room.as_mut() else { return };
-        // (Terra's Earth is at the toy's camera now, so it says where the light is for a toy that doesn't)
-        let at = if d.id == "whales" {
-            r.anchors().first().map(|a| a.1)
-        } else {
-            r.project(d.at).or_else(|| self.globe.point(d.at))
-        };
-        if let Some(p) = at {
-            let id = 9_000_000;
-            r.pointer(PointerEvent {
-                id,
-                phase: Phase::Down,
-                x: p[0],
-                y: p[1],
-                t,
-            });
-            r.pointer(PointerEvent {
-                id,
-                phase: Phase::Up,
-                x: p[0],
-                y: p[1],
-                t: t + 0.06,
-            });
-        }
     }
 
     /// Whether this finger ends a pinch that took a globe toy out past its whole Earth (as the kit's
@@ -1409,7 +1359,7 @@ impl Toy for Terra {
             Box::new(MemoryAssets(Default::default())),
         ));
         ctx.assets = Box::new(Shared(assets.clone()));
-        let month = this_month();
+        let month = clock::this_month();
         let mut globe = Globe::new(
             &ctx.gpu,
             assets.as_ref(),
@@ -1418,12 +1368,12 @@ impl Toy for Terra {
             ctx.ppp,
             month,
         )?;
-        // the world's rivers, more of them the closer the Earth comes (painting-company row 258)
-        globe.with_rivers(&ctx.gpu, assets.as_ref())?;
+        // (no rivers: their ink over the whole Earth read as a little creepy, Nov 13; the kit's
+        // `with_rivers` brings them back)
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
         globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
         globe.set_home();
-        let mut life = Life::new(assets.as_ref());
+        let mut life = Life::new();
         let [w, h] = ctx.points();
         life.beckon = life.nearest(&globe, [w / 2.0, h / 2.0]);
         Ok(Terra {
@@ -1645,7 +1595,6 @@ impl Toy for Terra {
                         r.update(t);
                     }
                     self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
-                    self.touch_through(t);
                     self.state = State::Opening { t0: t };
                 }
             }
@@ -1770,8 +1719,8 @@ impl Toy for Terra {
             toy_kit::log(&format!("terra: the ground sheets: {e:#}"));
         }
         let km_pt = 6371.0 / self.globe.disc().r.max(1.0);
-        // the map's rivers give way as a sheet's own picture ripens to its true colour (the sheet's key: a
-        // kilometre a point down to 50 m), so they never stop at its edge while it is still the map's ground
+        // the map's rivers (when on: they are off for now, see `new`) give way as a sheet's own picture ripens to
+        // its true colour (the sheet's key: a kilometre a point down to 50 m), so they never stop at its edge
         let ripe = ((km_pt.ln() - 0.05f64.ln()) / (1.0f64.ln() - 0.05f64.ln())).clamp(0.0, 1.0);
         if let Some(r) = self.globe.rivers.as_mut() {
             r.strength = if self.globe.sheets.is_empty() {
@@ -1901,14 +1850,18 @@ impl Toy for Terra {
                 zoom: camera.zoom.min(2.5),
                 ..camera
             },
+            known: Some(self.life.known()),
         })
         .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
         if let Ok(s) = serde_json::from_str::<Saved>(saved) {
+            let new = self.life.know(s.known.as_deref());
             if matches!(self.state, State::Atlas) {
-                self.globe.camera = s.camera;
+                // turned toward a toy an update brought, so its mark is in view
+                self.globe.camera =
+                    new.map_or(s.camera, |at| Camera::new(at[0], at[1], s.camera.zoom));
             }
         }
     }

@@ -2,7 +2,8 @@
 //! real floor off Nazaré, Portugal, where a submarine canyon runs almost to the beach. Over the canyon
 //! the water is deep and the swell runs on; on the shelf beside it the swell slows; the crests bend round
 //! the canyon's head and meet off Praia do Norte, where they stack into the tallest waves surfed (sea.rs).
-//! A drag turns the swell (sideways) or lengthens it (up and down), and the peak moves with it.
+//! A swipe toward the coast sends a swell in from where the finger came, as long a swell as the swipe is
+//! long; a set of it reaches Praia do Norte a moment later and breaks there.
 
 pub mod sea;
 mod sound;
@@ -21,22 +22,26 @@ const SEA_A: f64 = 110.0;
 pub const PLACE: (f64, f64) = (-9.0850, 39.6040);
 
 /// Seconds of sea a second on the screen.
-const RATE: f64 = 6.0;
+const RATE: f64 = 9.0;
 /// A set: this many waves' periods from one group of big waves to the next.
 const GROUP: f64 = 9.0;
 /// The swell it opens on: a long winter groundswell from the west-north-west, as on Nazaré's big days.
 const PERIOD: f64 = 17.0;
 const FROM_DEG: f64 = 290.0;
-/// The swells a drag can reach: periods (s) and directions (degrees from north).
+/// The swells a swipe can send: periods (s) and directions (degrees from north): the open Atlantic's.
 const PERIODS: (f64, f64) = (8.0, 22.0);
 const FROMS: (f64, f64) = (225.0, 345.0);
 /// The height drawn at full brightness (m).
 const H_FULL: f32 = 24.0;
 /// How much of the floor the screen shows, top to bottom (cells): the canyon's last 15 km and the coast
 /// either side of it, the open sea cut at the left.
-const SHOWN_ROWS: f32 = 500.0;
+const SHOWN_ROWS: f32 = 280.0;
 /// How long after a finger asks for a new swell the sea takes it up (s): longer than a solve takes.
 const SOLVE_S: f64 = 0.35;
+/// A swipe shorter than this (points) is a touch, not a swell sent.
+const SWIPE_MIN: f64 = 24.0;
+/// How long after a swell is sent its set breaks at Praia do Norte (s on the screen).
+const SET_LEAD: f64 = 5.0;
 
 #[derive(Deserialize)]
 struct Bounds {
@@ -75,7 +80,7 @@ impl View {
         let (w, h) = (ctx.width as f32, ctx.height as f32);
         let (fw, fh) = (size[0] as f32, size[1] as f32);
         let k = (w / fw).max(h / fh.min(SHOWN_ROWS));
-        let x = (0.82 * w - focus[0] * k).clamp(w - k * fw, 0.0);
+        let x = (0.70 * w - focus[0] * k).clamp(w - k * fw, 0.0);
         let y = (0.45 * h - focus[1] * k).clamp(h - k * fh, 0.0);
         View { k, off: [x, y] }
     }
@@ -104,8 +109,13 @@ pub struct Nazare {
     /// the spray of the big waves broken there: each its age (s) and how big
     spray: Vec<(f64, f32)>,
     sound: sound::Queue,
-    /// a finger's last place (points)
-    drag: Option<[f64; 2]>,
+    /// a finger's start (points): the swell is sent when it lifts, so a swipe half made never asks for
+    /// the short swell its length so far would give
+    drag: Option<(u64, [f64; 2])>,
+    /// the sets' timing, in sets: shifted so a set sent breaks at the peak SET_LEAD after it is taken up,
+    /// and whether one is waiting for its field
+    sets_off: f64,
+    send: bool,
     t: f64,
     clock: f64,
     seen: Option<(View, f32)>,
@@ -148,16 +158,16 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let w = fract(ph - u.p0.w);
   let q = 0.5 + 0.5 * cos(TAU * w);
   let gph = atan2(b.g - 0.5, b.r - 0.5) / TAU;
-  let sets = 0.15 + 0.85 * pow(0.5 + 0.5 * cos(TAU * (gph - u.p1.z)), 3.0);
+  let sets = 0.06 + 0.94 * pow(0.5 + 0.5 * cos(TAU * (gph - u.p1.z)), 8.0);
   // the waves' height against the open sea's (H_FULL / sea::H0 = 4): what shows is its energy, the square
   let rel = hn * 4.0 * sets;
-  let e = clamp(rel * rel * 0.16, 0.0, 1.6);
+  let e = clamp(rel * rel * 0.30, 0.0, 1.8);
   // each wave's body, then its crest: sharper as the water shoals, lit by the low sun on its back
-  let sharp = 6.0 + 14.0 * (1.0 - deep);
+  let sharp = (2.5 + 10.0 * (1.0 - deep)) * (1.4 - 0.8 * sets);
   let crest = pow(q, sharp) * clear;
   // the wave's body: its back, toward the afterglow, lit; its front in shadow; more so the taller it is
   let slope = sin(TAU * w);
-  let body = 0.85 + clear * (0.30 * slope + 0.12 * q) * min(rel, 3.0);
+  let body = 0.80 + clear * (0.45 * slope + 0.18 * q) * min(rel, 3.0);
   let sun = mix(vec3(0.70, 0.80, 0.82), vec3(1.0, 0.78, 0.52), west * 0.7);
   var col = base * body + sun * crest * e;
   // near breaking where the swell is focused, the face stands up into a wall, thick and bright
@@ -216,6 +226,44 @@ fn hillshade(f: &Floor) -> Vec<u8> {
     out
 }
 
+/// How near each sea cell's wave is to breaking (its height over the McCowan limit there), smoothed over
+/// the sea a little: the floor's cells are 50 m, and a surf zone traced cell by cell is a saw.
+fn nearness(floor: &Floor, f: &Field) -> Vec<f64> {
+    let (w, h) = (floor.w, floor.h);
+    let mut near: Vec<f64> = (0..w * h)
+        .map(|i| {
+            if floor.sea(i) && f.tau[i].is_finite() {
+                f.height[i] as f64 / (sea::BREAK * floor.depth(i)).max(0.01)
+            } else {
+                f64::NAN
+            }
+        })
+        .collect();
+    for _ in 0..2 {
+        let src = near.clone();
+        for y in 0..h {
+            for x in 0..w {
+                let i = y * w + x;
+                if src[i].is_nan() {
+                    continue;
+                }
+                let (mut s, mut n) = (0.0, 0.0);
+                for yy in y.saturating_sub(1)..(y + 2).min(h) {
+                    for xx in x.saturating_sub(1)..(x + 2).min(w) {
+                        let v = src[yy * w + xx];
+                        if !v.is_nan() {
+                            s += v;
+                            n += 1.0;
+                        }
+                    }
+                }
+                near[i] = s / n;
+            }
+        }
+    }
+    near
+}
+
 /// The field into the texture: the left half the phase (cos, sin of 2πτ/T), the height and the
 /// depth or the land's light; the right half the sets' phase and how near the wave is to breaking.
 fn texels(floor: &Floor, shade: &[u8], f: &Field) -> Vec<u8> {
@@ -223,12 +271,14 @@ fn texels(floor: &Floor, shade: &[u8], f: &Field) -> Vec<u8> {
     let tg = f.period * GROUP;
     let mut data = vec![0u8; 2 * w * h * 4];
     let unit = |v: f64| (127.5 + 127.0 * v) as u8;
+    let near = nearness(floor, f);
     for y in 0..h {
         for x in 0..w {
             let i = y * w + x;
             let l = (y * 2 * w + x) * 4;
             let r = l + w * 4;
-            if !floor.sea(i) {
+            // land, and the lagoons no swell reaches, which read as specks of sea inland
+            if !floor.sea(i) || !f.tau[i].is_finite() {
                 data[l + 3] = 128 + shade[i] / 2;
                 // land's focus reads as open water's, so the filter bleeds nothing brighter into the shore
                 data[r + 3] = (255.0 / sea::REFRACT_MAX) as u8;
@@ -244,8 +294,7 @@ fn texels(floor: &Floor, shade: &[u8], f: &Field) -> Vec<u8> {
                 data[l + 1] = unit(a.sin());
                 let hh = f.height[i];
                 data[l + 2] = ((hh / H_FULL).min(1.0) * 255.0) as u8;
-                let near = hh as f64 / (sea::BREAK * floor.depth(i)).max(0.01);
-                data[r + 2] = (near.min(1.0) * 255.0) as u8;
+                data[r + 2] = (near[i].min(1.0) * 255.0) as u8;
                 data[r + 3] = (f.focus[i] / sea::REFRACT_MAX as f32 * 255.0) as u8;
             } else {
                 data[l] = 128;
@@ -324,7 +373,10 @@ impl Nazare {
                 let hh = self.field.height[i];
                 // the wave the canyon bends there, not merely the shallowest water's cap
                 let hh = hh * self.field.focus[i];
+                // where it breaks: spray and the lip belong in the surf, not on open water
+                let breaks = self.field.height[i] as f64 >= 0.85 * sea::BREAK * self.floor.depth(i);
                 if self.floor.sea(i)
+                    && breaks
                     && self.field.tau[i].is_finite()
                     && best.is_none_or(|(_, b)| hh > b)
                 {
@@ -335,43 +387,74 @@ impl Nazare {
         best.map(|(i, _)| i)
     }
 
-    /// The surf's sound: a crash each time a crest reaches the peak, as loud as the wave is tall.
-    fn listen(&mut self, dt: f64) {
+    /// The surf's sound: a crash each time a crest reaches the peak, as loud as the wave is tall. Whether a
+    /// set's big wave broke there this frame (felt as well as heard).
+    fn listen(&mut self, dt: f64) -> bool {
         for s in &mut self.spray {
             s.0 += dt;
         }
         self.spray.retain(|s| s.0 < 6.0);
         let Some(i) = self.peak else {
-            return;
+            return false;
         };
         let f = &self.field;
         let w = (f.tau[i] / f.period - self.t / f.period).rem_euclid(1.0);
         let crest = self.last_w < 0.25 && w > 0.75;
         self.last_w = w;
         let Ok(mut q) = self.sound.lock() else {
-            return;
+            return false;
         };
         q.roar = 0.12;
         if crest {
             let tg = f.period * GROUP;
-            let g = (f.tau_group[i] / tg - self.t / tg).rem_euclid(1.0);
+            let g = (f.tau_group[i] / tg - self.t / tg - self.sets_off).rem_euclid(1.0);
             let c = 0.5 + 0.5 * (std::f64::consts::TAU * g).cos();
-            let sets = 0.15 + 0.85 * c * c * c;
+            let sets = 0.06 + 0.94 * c.powi(8);
             let rel = f.height[i] as f64 / sea::H0;
             let amp = (rel / 2.5 * sets).clamp(0.05, 1.0);
             q.crashes.push(amp);
             if amp > 0.3 {
                 self.spray.push((0.0, amp as f32));
             }
+            return amp > 0.5;
         }
+        false
     }
 
-    /// A finger's drag: sideways turns where the swell comes from, up and down its period.
-    fn turn(&mut self, d: [f64; 2]) {
-        let (period, from) = self.want;
-        let from = (from + d[0] * 0.3).clamp(FROMS.0, FROMS.1);
-        let period = (period - d[1] * 0.04).clamp(PERIODS.0, PERIODS.1);
+    /// A swipe from `a` to `b` (points): the swell comes from where the finger came from (the swipe is its
+    /// travel), kept to the open Atlantic's directions; the longer the swipe, the longer the swell.
+    fn swipe(&mut self, a: [f64; 2], b: [f64; 2], wide: f64) -> bool {
+        let d = [b[0] - a[0], b[1] - a[1]];
+        let len = d[0].hypot(d[1]);
+        if len < SWIPE_MIN {
+            return false;
+        }
+        // travelling (x east, y south) toward the bearing a + 180°: east −sin a, south cos a
+        let from = (-d[0]).atan2(d[1]).to_degrees().rem_euclid(360.0);
+        let mid = 0.5 * (FROMS.0 + FROMS.1);
+        let off = (from - mid + 180.0).rem_euclid(360.0) - 180.0;
+        // a swipe out to sea, or along the coast, sends nothing: no swell comes from the land
+        if off.abs() > 0.5 * (FROMS.1 - FROMS.0) + 40.0 {
+            return false;
+        }
+        let from = (mid + off).clamp(FROMS.0, FROMS.1);
+        let k = ((len - SWIPE_MIN) / (0.6 * wide)).clamp(0.0, 1.0);
+        let period = PERIODS.0 + (PERIODS.1 - PERIODS.0) * k;
         self.want = (period, from);
+        true
+    }
+
+    /// The sets' timing shifted so the next set breaks at the peak SET_LEAD from now.
+    fn send_set(&mut self) {
+        let Some(i) = self.peak else {
+            return;
+        };
+        let f = &self.field;
+        let tg = f.period * GROUP;
+        // on the crest nearest SET_LEAD from now, so the set's top wave is the one that breaks
+        let lead = self.t + SET_LEAD * RATE;
+        let arrive = f.tau[i] + ((lead - f.tau[i]) / f.period).round() * f.period;
+        self.sets_off = (f.tau_group[i] - arrive) / tg;
     }
 
     /// The spray where a set's wave breaks at the peak: soft white thrown up and drifting landward
@@ -385,6 +468,15 @@ impl Nazare {
             let age = age as f32;
             let grow = 1.0 - (-age / 0.6).exp();
             let fade = (-age / 1.6).exp() * grow;
+            // the lip coming down: a white line along the crest as it breaks, spreading into a band of
+            // foam that rolls landward and thins
+            let lip = (-age / 0.9).exp() * (1.0 - (-age / 0.12).exp());
+            let roll = age * 1.6;
+            let a = v.px([c[0] + roll, c[1] + 3.0]);
+            let b = v.px([c[0] + 3.0 + roll, c[1] - 12.0 - 16.0 * amp]);
+            let wide = (6.0 + 30.0 * grow * amp) * ppp;
+            self.painter
+                .glow(a, b, wide * 0.4, wide, [0.92, 0.96, 0.97, lip * amp.sqrt()]);
             for j in 0..14 {
                 let h = ((k * 31 + j * 17) % 97) as f32 / 97.0;
                 // along the beach northward from the peak, thrown up and blown a little landward
@@ -393,7 +485,7 @@ impl Nazare {
                     c[0] - 3.0 + age * 1.2 + h * 3.0 + along * -0.25,
                     c[1] + along,
                 ];
-                let r = (6.0 + 26.0 * grow * amp * (0.5 + 0.5 * h)) * ppp;
+                let r = (8.0 + 40.0 * grow * amp * (0.5 + 0.5 * h)) * ppp;
                 let at = v.px(off);
                 let fall = 1.0 - j as f32 / 16.0;
                 self.painter.glow(
@@ -401,7 +493,7 @@ impl Nazare {
                     at,
                     r * 0.2,
                     r,
-                    [0.90, 0.94, 0.95, 0.3 * fade * amp * fall],
+                    [0.90, 0.94, 0.95, 0.55 * fade * amp * fall],
                 );
             }
         }
@@ -443,8 +535,8 @@ impl Nazare {
         self.painter.glow(
             at,
             at,
-            (1.5 + 3.0 * flash) * ppp,
-            (3.0 + 16.0 * flash) * ppp,
+            (1.2 + 1.5 * flash) * ppp,
+            (3.0 + 4.0 * flash) * ppp,
             [1.0, 0.95, 0.85, 0.35 + 0.65 * flash],
         );
     }
@@ -482,6 +574,8 @@ impl Toy for Nazare {
             spray: Vec::new(),
             sound: sound::Queue::default(),
             drag: None,
+            sets_off: 0.0,
+            send: false,
             t: 0.0,
             clock: 0.0,
             seen: None,
@@ -492,13 +586,18 @@ impl Toy for Nazare {
         Ok(toy)
     }
 
-    fn pointer(&mut self, _ctx: &mut Ctx, e: PointerEvent) {
+    fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
+        let wide = ctx.points()[0];
         match e.phase {
-            Phase::Down => self.drag = Some([e.x, e.y]),
-            Phase::Move => {
-                if let Some(last) = self.drag {
-                    self.turn([e.x - last[0], e.y - last[1]]);
-                    self.drag = Some([e.x, e.y]);
+            // the first finger is the swipe; a second is ignored
+            Phase::Down if self.drag.is_none() => self.drag = Some((e.id, [e.x, e.y])),
+            Phase::Down | Phase::Move => {}
+            Phase::Up => {
+                if let Some((id, a)) = self.drag {
+                    if id == e.id {
+                        self.drag = None;
+                        self.send = self.swipe(a, [e.x, e.y], wide) || self.send;
+                    }
                 }
             }
             _ => self.drag = None,
@@ -510,8 +609,6 @@ impl Toy for Nazare {
         let dt = dt.min(0.1);
         self.clock += dt;
         self.t += dt * RATE;
-        let asked = (self.want.0 - self.field.period).abs() > 0.05
-            || (self.want.1 - self.field.from_deg).abs() > 0.2;
         let due = self
             .pending
             .as_ref()
@@ -522,14 +619,25 @@ impl Toy for Nazare {
                     self.field = field;
                     self.upload(&ctx.gpu, &data);
                     self.peak = self.find_peak();
-                    self.last_w = 0.0;
+                    // no crash for the swell merely changing under the peak
+                    self.last_w = 1.0;
                 }
             }
         }
+        // (after any take-up, so a swell just taken up is not asked for again)
+        let asked = (self.want.0 - self.field.period).abs() > 0.05
+            || (self.want.1 - self.field.from_deg).abs() > 0.2;
         if asked && self.pending.is_none() {
             self.ask();
         }
-        self.listen(dt);
+        // a set sent goes once its swell is the sea's (at once if it already was)
+        if self.send && !asked && self.pending.is_none() && self.drag.is_none() {
+            self.send = false;
+            self.send_set();
+        }
+        if self.listen(dt) {
+            ctx.haptic();
+        }
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
@@ -538,7 +646,7 @@ impl Toy for Nazare {
         let size = [ctx.width, ctx.height];
         let period = self.field.period;
         let phase = (self.t / period).fract() as f32;
-        let sets = (self.t / (period * GROUP)).fract() as f32;
+        let sets = (self.t / (period * GROUP) + self.sets_off).rem_euclid(1.0) as f32;
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         let params = BackdropParams {
             time: self.clock as f32,
@@ -570,12 +678,12 @@ impl Toy for Nazare {
     fn demo(&self, ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         let [w, h] = ctx.points();
         Some(toy_kit::info::Demo::new(
-            "The swell at Nazaré. Drag to turn it.",
+            "The swell at Nazaré. Swipe it toward the coast.",
             vec![toy_kit::info::Stroke::drag(
                 0.6,
-                1.6,
-                [0.25 * w, 0.30 * h],
-                [0.55 * w, 0.30 * h],
+                1.4,
+                [0.10 * w, 0.22 * h],
+                [0.62 * w, 0.36 * h],
             )],
         ))
     }
@@ -584,7 +692,7 @@ impl Toy for Nazare {
         Some(toy_kit::info::Rules::lines(&[
             "A swell slows where the sea is shallow and runs on where it is deep.",
             "Off Nazaré a canyon reaches almost to the beach. The swell bends away from it on both sides, and the two halves meet at Praia do Norte.",
-            "There they stack into the tallest waves ever surfed. Drag sideways to turn the swell, up or down to lengthen it.",
+            "There they stack into the tallest waves ever surfed. Swipe toward the coast to send a swell from that side: the longer the swipe, the longer the swell.",
         ]))
     }
 

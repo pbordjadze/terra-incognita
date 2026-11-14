@@ -575,7 +575,68 @@ def barchans():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans}
+def pando():
+    # one aspen leaf, round with a short tip, gold against the evening blue, on its flat stalk
+    img = Image.new('RGBA', (N, N), (40, 52, 82, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        g = y / N
+        d.line([(0, y), (N, y)], fill=(int(40 + 140 * g), int(52 + 70 * g), int(82 - 20 * g), 255))
+    cx, cy, r = N * 0.5, N * 0.56, N * 0.30
+    pts = []
+    for i in range(240):
+        t = 2 * math.pi * i / 240
+        rr = r * (1 + 0.1 * math.cos(t)) * (1 - 0.06 * math.cos(2 * t))
+        rr *= 1 + 0.3 * math.exp(-(t / 0.16) ** 2) + 0.3 * math.exp(-((t - 2 * math.pi) / 0.16) ** 2)
+        pts.append((cx + rr * math.sin(t), cy + rr * math.cos(t)))
+    d.line([(cx + 30, N * 0.04), (cx, cy - r * 0.86)], fill=(214, 160, 60, 255), width=14)
+    d.polygon(pts, fill=(246, 178, 34, 255))
+    d.line([(cx, cy - r * 0.86), (cx, cy + r * 1.2)], fill=(255, 226, 140, 255), width=8)
+    for k in range(4):
+        y0 = cy - r * 0.7 + k * r * 0.38
+        for sx in (-1, 1):
+            d.line([(cx, y0), (cx + sx * r * (0.55 - 0.08 * k), y0 + r * 0.38)], fill=(255, 214, 120, 255), width=5)
+    return img
+
+
+
+def moonroad():
+    # Paint by Moonlight's plum night over a dark template lake, the low moon, and its road painted
+    # down the water in three paints, one cell still flashing
+    img = Image.new('RGBA', (N, N), (36, 16, 46, 255))
+    d = ImageDraw.Draw(img)
+    hy = 470
+    for y in range(hy):
+        k = y / hy
+        d.line([(0, y), (N, y)], fill=(int(24 + 52 * k), int(11 + 32 * k), int(34 + 52 * k), 255))
+    halo = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    ImageDraw.Draw(halo).ellipse([362, 250, 662, 550], fill=(230, 190, 200, 110))
+    img = Image.alpha_composite(img, halo.filter(ImageFilter.GaussianBlur(70)))
+    d = ImageDraw.Draw(img)
+    d.ellipse([462, 350, 562, 450], fill=(251, 233, 184, 255))
+    d.rectangle([0, hy, N, N], fill=(27, 20, 37, 255))
+    rnd = random.Random(333)
+    paints = [(246, 242, 224), (240, 222, 184), (204, 190, 227)]
+    y = hy + 6.0
+    while y < N:
+        h = 6 + (y - hy) * 0.11
+        x = 0.0
+        while x < N:
+            w = rnd.uniform(70, 120)
+            cx = x + w / 2
+            road = math.exp(-((cx - 512) / (40 + (y - hy) * 0.55)) ** 2)
+            box = [x + 3, y + 2, x + w - 3, y + h - 2]
+            if rnd.random() < road:
+                d.rectangle(box, fill=rnd.choice(paints) + (255,))
+            else:
+                d.rectangle(box, outline=(84, 71, 102, 255), width=3)
+            x += w
+        y += h + 4
+    d.rectangle([486, 610, 560, 640], fill=(255, 250, 232, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

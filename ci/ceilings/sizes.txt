@@ -21,5 +21,5 @@ toys/jam/src/town.rs 872
 toys/meander/src/toy.rs 1001
 toys/murmuration/src/lib.rs 1072
 toys/taste/src/lib.rs 810
-toys/terra/src/lib.rs 2069
+toys/terra/src/lib.rs 2022
 toys/whales/src/lib.rs 1088

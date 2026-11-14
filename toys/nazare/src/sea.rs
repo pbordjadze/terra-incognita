@@ -24,6 +24,9 @@ pub const REFRACT_MAX: f64 = 2.5;
 /// How far apart the rays start, in cells across the swell, and how far each steps.
 const RAY: f64 = 1.0;
 const STEP: f64 = 0.5;
+/// The fast sweep's rounds, and the passes of the crests' smoothing (a 3 × 3 box each).
+const ROUNDS: usize = 4;
+const SMOOTH: usize = 3;
 
 /// The floor: the ground's height a cell (m, negative under the sea), w × h, a cell `cell_m` a side.
 pub struct Floor {
@@ -94,9 +97,13 @@ impl Field {
         let (c0, cg0) = speeds(period, 4000.0);
         seed(floor, d, floor.cell_m / c0, &mut phase);
         seed(floor, d, floor.cell_m / cg0, &mut group);
-        sweep(floor, &slow, &mut phase, 2);
+        sweep(floor, &slow, &mut phase, ROUNDS);
         // the sets' timing needs less care than the crests'
         sweep(floor, &slow_g, &mut group, 1);
+        // the first arrival kinks where a faster path overtakes (the canyon's head waves): a real crest
+        // there is a blend of both arrivals, diffraction rounding the corner over about a wavelength
+        smooth_sea(floor, &mut phase, SMOOTH);
+        smooth_sea(floor, &mut group, SMOOTH);
         // the rays see the floor smoothed over about a wavelength: a swell does not feel a single rock
         let mut smooth = speed.clone();
         blur(&mut smooth, floor.w, floor.h);
@@ -310,6 +317,50 @@ fn trace(floor: &Floor, speed: &[f64], mut p: [f64; 2], mut v: [f64; 2], crowd: 
     }
 }
 
+/// Times smoothed over the sea alone (a box `passes` times, land cells left out of each mean): a ramp is
+/// kept as it is, a kink rounded.
+fn smooth_sea(floor: &Floor, tau: &mut [f64], passes: usize) {
+    let (w, h) = (floor.w, floor.h);
+    let ok = |t: f64| t.is_finite();
+    for _ in 0..passes {
+        let mut tmp = vec![f64::INFINITY; tau.len()];
+        for y in 0..h {
+            for x in 0..w {
+                let i = y * w + x;
+                if !ok(tau[i]) {
+                    continue;
+                }
+                let (mut s, mut n) = (0.0, 0.0);
+                for xx in x.saturating_sub(1)..(x + 2).min(w) {
+                    let t = tau[y * w + xx];
+                    if ok(t) {
+                        s += t;
+                        n += 1.0;
+                    }
+                }
+                tmp[i] = s / n;
+            }
+        }
+        for y in 0..h {
+            for x in 0..w {
+                let i = y * w + x;
+                if !ok(tmp[i]) {
+                    continue;
+                }
+                let (mut s, mut n) = (0.0, 0.0);
+                for yy in y.saturating_sub(1)..(y + 2).min(h) {
+                    let t = tmp[yy * w + x];
+                    if ok(t) {
+                        s += t;
+                        n += 1.0;
+                    }
+                }
+                tau[i] = s / n;
+            }
+        }
+    }
+}
+
 /// A 5 × 5 box blur, edges clamped.
 fn blur(v: &mut [f64], w: usize, h: usize) {
     let r = 2i64;
@@ -439,6 +490,16 @@ mod probe {
                 .map(|&x| (x / 24.0 * 255.0).min(255.0) as u8),
         );
         let path = std::env::var("NAZARE_OUT").unwrap_or("/tmp/nazare-heights.pgm".into());
-        std::fs::write(path, out).unwrap();
+        std::fs::write(&path, out).unwrap();
+        // and the crests: where each one is at one moment
+        let mut out = format!("P5 {w} {h} 255\n").into_bytes();
+        out.extend(f.tau.iter().map(|&t| {
+            if t.is_finite() {
+                (127.5 + 127.0 * (std::f64::consts::TAU * t / f.period).cos()) as u8
+            } else {
+                0
+            }
+        }));
+        std::fs::write(format!("{path}.crests.pgm"), out).unwrap();
     }
 }

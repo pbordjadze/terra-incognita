@@ -28,11 +28,15 @@ What is measured, what is modelled, what is drawn, and from where. The floor is 
 ## Drawn (not measured)
 
 - **The swell**: 6 m in the open sea, opening on 17 s from 290° (a winter groundswell from the
-  west-north-west, as on Nazaré's big days); a drag turns it between 225° and 345° and its period between
-  8 and 22 s. A set every nine waves.
-- **Time**: six seconds of sea a second.
+  west-north-west, as on Nazaré's big days); a swipe toward the coast sends one from where the finger came
+  (between 225° and 345°), its period between 8 and 22 s as the swipe is long. A set every nine waves, two or
+  three big ones in it; a swell sent times its sets so its top wave breaks at Praia do Norte on the crest nearest five seconds later; a swipe out to sea or along the coast sends nothing.
+- **The crests**: the first-arrival times smoothed over a few cells (where a faster path through the canyon
+  overtakes, the real sea holds both arrivals and diffraction rounds the corner).
+- **Time**: nine seconds of sea a second.
 - **The scene**: dusk; crests lit by the afterglow from the west, as bright as the waves' energy; white
   water as white as the swell is focused where it breaks; the land shaded from the west; the town's
   lights and the lighthouse's flash drawn, not placed from data.
 - **The sound and the spray**: a crash each time a crest reaches the tallest wave off Praia do Norte, as loud as it is
-  tall (the sets loudest), over a low roar; a set's big wave there throws spray that drifts over the beach.
+  tall (the sets loudest), over a low roar; a set's big wave there breaks as a white line rolling in, throws spray
+  that drifts over the beach, and taps the hand.

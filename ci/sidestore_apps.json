@@ -7,7 +7,7 @@
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
       "subtitle": "The world, and the toys on it",
-      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys: whales off California, starlings in Somerset, fireflies in the Smokies, a bell struck in Chile, the swell at Nazaré, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys, each where its thing really happens: starlings in Somerset, fireflies in the Smokies, the swell at Nazaré, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
       "icon": "icon.png",
       "iconSource": "ci/sidestore-icon.png",
       "tintColor": "#C9A243",
@@ -234,6 +234,17 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "moonroad-build",
+      "name": "Moon Road",
+      "bundleIdentifier": "com.pbordjadze.toy.moonroad",
+      "subtitle": "The moon paints its road down Lake Superior",
+      "localizedDescription": "Moonrise over Lake Superior, the water a numbered template on dark paper. Only the bits of water tilted just right send the moon's light to your eye, and each one the moon lights, it paints, so the road of light from the moon to you fills in, number by number. Tap for a gust and the road spreads; drag to walk the shore and the road follows you. Shake for a fresh page. Working title; a toy in the making.",
+      "icon": "moonroad-icon.png",
+      "iconSource": "toys/moonroad/icon.png",
+      "tintColor": "#F6E2AE",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "bubblers-build",
       "name": "Bubblers",
       "bundleIdentifier": "com.pbordjadze.toy.bubblers",
@@ -253,6 +264,17 @@
       "icon": "barchans-icon.png",
       "iconSource": "toys/barchans/icon.png",
       "tintColor": "#E9A262",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "pando-build",
+      "name": "Pando",
+      "bundleIdentifier": "com.pbordjadze.toy.pando",
+      "subtitle": "One aspen that looks like a forest, from the grove to a leaf's pores",
+      "localizedDescription": "Pando, in Utah, looks like a forest of golden aspens but is one tree: over 40,000 stems from one root. Drag to blow and gusts run over the grove as pale waves, every leaf flipping on its flat stalk. Tap a tree, then a leaf, then closer still, to its pores, which close in your finger's shade. Working title; a toy in the making.",
+      "icon": "pando-icon.png",
+      "iconSource": "toys/pando/icon.png",
+      "tintColor": "#F2B22A",
       "minOSVersion": "17.0"
     }
   ]

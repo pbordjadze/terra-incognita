@@ -1,0 +1,26 @@
+[package]
+name = "moonroad"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Moon Road (a working title), in homage to Paint by Moonlight: Lake Superior at moonrise as a numbered template the moon paints, one glinting facet at a time."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "moonroad-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

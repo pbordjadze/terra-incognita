@@ -4,7 +4,7 @@ use super::Door;
 use crate::rooms;
 
 /// The scenes (toys without a globe of their own), which open out of their light as a window.
-pub const SCENES: [&str; 12] = [
+pub const SCENES: [&str; 14] = [
     "murmuration",
     "fireflies",
     "swell",
@@ -17,6 +17,8 @@ pub const SCENES: [&str; 12] = [
     "catatumbo",
     "bubblers",
     "barchans",
+    "pando",
+    "moonroad",
 ];
 
 /// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
@@ -26,21 +28,14 @@ pub const SCENES: [&str; 12] = [
 pub fn doors() -> Vec<Door> {
     let mut all = globes();
     all.extend(scenes());
+    all.extend(ground_scenes());
+    all.extend(homages());
     all
 }
 
 /// The toys with a globe of their own.
 fn globes() -> Vec<Door> {
     vec![
-        Door {
-            id: "whales",
-            name: "Whales",
-            at: [-125.0, 30.0],
-            tint: [0.80, 0.60, 0.26],
-            night: true,
-            degree: 0,
-            open: rooms::open::<whales::Whales>,
-        },
         Door {
             id: "fireflies",
             name: "Fireflies",
@@ -49,15 +44,6 @@ fn globes() -> Vec<Door> {
             night: true,
             degree: 6,
             open: rooms::open::<elkmont::Elkmont>,
-        },
-        Door {
-            id: "bell",
-            name: "Bell",
-            at: [-73.05, -38.24],
-            tint: [0.62, 0.42, 0.22],
-            night: false,
-            degree: -2,
-            open: rooms::open::<bell::Bell>,
         },
         Door {
             id: "swell",
@@ -137,6 +123,12 @@ fn scenes() -> Vec<Door> {
             degree: 9,
             open: rooms::open::<frost::Frost>,
         },
+    ]
+}
+
+/// The scenes whose rule runs on the ground (and Pando's grove), split from `scenes` to keep each short.
+fn ground_scenes() -> Vec<Door> {
+    vec![
         Door {
             id: "catatumbo",
             name: "Catatumbo",
@@ -164,5 +156,27 @@ fn scenes() -> Vec<Door> {
             degree: -1,
             open: rooms::open::<barchans::Barchans>,
         },
+        Door {
+            id: "pando",
+            name: "Pando",
+            at: [pando::PLACE.0, pando::PLACE.1],
+            tint: [0.96, 0.70, 0.18],
+            night: false,
+            degree: 4,
+            open: rooms::open::<pando::Pando>,
+        },
     ]
+}
+
+/// The scenes made in homage to the owner's other apps: Moon Road, after Paint by Moonlight.
+fn homages() -> Vec<Door> {
+    vec![Door {
+        id: "moonroad",
+        name: "Moon Road",
+        at: [moonroad::PLACE.0, moonroad::PLACE.1],
+        tint: [0.98, 0.90, 0.68],
+        night: true,
+        degree: 10,
+        open: rooms::open::<moonroad::MoonRoad>,
+    }]
 }

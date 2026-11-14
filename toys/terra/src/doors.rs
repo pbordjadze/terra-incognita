@@ -1,6 +1,6 @@
 //! The lights on Terra's Earth: one for each toy it holds, at the place where the toy is real and where
-//! it opens, each alive with a small likeness of its toy's own rule (the whales' song-rings travel their
-//! real routes, the fireflies' small wood flashes together, the bell's ring crosses the globe). From afar a
+//! it opens, each alive with a small likeness of its toy's own rule (the fireflies' small wood flashes together,
+//! the swell's crests close on Nazaré). From afar a
 //! light glints now and then; touched, it stirs.
 
 use std::sync::Arc;
@@ -9,6 +9,7 @@ use toy_kit::{Assets, Ctx, Globe, LonLat};
 
 use crate::rooms::Room;
 
+mod fresh;
 mod likeness;
 mod places;
 pub use places::{doors, SCENES};
@@ -19,7 +20,7 @@ pub struct Door {
     pub id: &'static str,
     /// Its toy's name (VoiceOver says it).
     pub name: &'static str,
-    /// Where the light is: where the toy opens (the whales' is their middle, as it moves).
+    /// Where the light is: where the toy opens.
     pub at: [f64; 2],
     pub tint: [f32; 3],
     /// A night toy: the Earth falls into night as the camera dives to it.
@@ -35,14 +36,9 @@ const FIREFLY_SPOTS: usize = 18;
 /// The likeness's beat (s): a burst of five flashes half a second apart, then dark.
 const FIREFLY_BEAT: f64 = 6.0;
 
-pub const WHALES: usize = 0;
-
 /// The lights' life: what moves in them, their glints, a touch's stir, a bare tap's ring.
 pub struct Life {
     pub doors: Vec<Door>,
-    whales: Option<[whales::route::Route; 2]>,
-    /// The miniature whales' day (they swim their real routes, a day every four seconds).
-    pub whale_day: f64,
     /// The fireflies: where each is in the light (x, y, a part of its size) and its lag (s).
     flies: Vec<(f64, f64, f64)>,
     seed: u64,
@@ -52,6 +48,16 @@ pub struct Life {
     rings: Vec<(LonLat, f64)>,
     /// The light that beckons until the first touch (Terra sets it at launch).
     pub beckon: Option<usize>,
+    /// Lights whose toys an update brought and that have not been opened yet (`fresh`).
+    new: Vec<bool>,
+    /// Toys known before, which this build's map no longer holds (kept in the saved list).
+    away: Vec<String>,
+}
+
+impl Default for Life {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 fn rand(seed: &mut u64) -> f64 {
@@ -66,31 +72,22 @@ fn smooth(a: f64, b: f64, x: f64) -> f64 {
     t * t * (3.0 - 2.0 * t)
 }
 
-/// The whales' first day in their own toy (whales/src/lib.rs's FIRST_DAY): the light shows them where
-/// the toy will open.
-const WHALE_FIRST_DAY: f64 = 323.0;
-
 impl Life {
-    pub fn new(assets: &dyn Assets) -> Life {
-        let whales = assets
-            .read("routes.json")
-            .ok()
-            .and_then(|j| whales::route::load(&j, ["humpback", "blue"]).ok());
+    pub fn new() -> Life {
         let doors = doors();
         let n = doors.len();
         let mut life = Life {
             doors,
-            whales,
-            whale_day: WHALE_FIRST_DAY,
             flies: Vec::new(),
             seed: 0x9E37_79B9_7F4A_7C15,
             glint_at: (0..n).map(|i| 1.5 + i as f64 * 1.37).collect(),
             stir_at: vec![-100.0; n],
             rings: Vec::new(),
             beckon: None,
+            new: vec![false; n],
+            away: Vec::new(),
         };
         life.scatter_flies();
-        life.place_whales();
         life
     }
 
@@ -152,24 +149,7 @@ impl Life {
         (-(v - 0.3).powi(2) * 6.0).exp()
     }
 
-    fn whale_spots(&self) -> Option<[LonLat; 2]> {
-        let w = self.whales.as_ref()?;
-        Some([w[0].lonlat(self.whale_day), w[1].lonlat(self.whale_day)])
-    }
-
-    fn place_whales(&mut self) {
-        if let Some([a, b]) = self.whale_spots() {
-            let (pa, pb) = (a.to_xyz(), b.to_xyz());
-            let m = [pa[0] + pb[0], pa[1] + pb[1], pa[2] + pb[2]];
-            let ll = LonLat::from_xyz(m);
-            self.doors[WHALES].at = [ll.lon, ll.lat];
-        }
-    }
-
     pub fn update(&mut self, t: f64, _dt: f64) {
-        // the whales swim on (a slow year: back where they started after twenty-four minutes)
-        self.whale_day = WHALE_FIRST_DAY + t * 0.25;
-        self.place_whales();
         self.rings.retain(|r| t - r.1 < 1.6);
         for (i, g) in self.glint_at.iter_mut().enumerate() {
             if t > *g + 1.4 {
@@ -240,33 +220,11 @@ impl Life {
         13.0 * globe.reading().powi(2) * globe.camera.zoom.clamp(1.0, 5.0).sqrt()
     }
 
-    /// Where on screen a light can be touched (points): where it is shown, and the parts of its likeness a
-    /// finger goes for (the whales themselves), moved with it when it
-    /// is eased apart from a crowd. A light is touched wherever it is seen (painting-company row 246: a
-    /// newcomer's tap on a whale's song-rings, 70 points from the light's middle, did nothing).
-    pub fn parts(&self, globe: &Globe, i: usize, shown: ([f64; 2], f64)) -> Vec<[f64; 2]> {
-        let mut out = vec![shown.0];
-        let truth = self.true_spot(globe, i).0;
-        let (ox, oy) = (shown.0[0] - truth[0], shown.0[1] - truth[1]);
-        let mut add = |ll: [f64; 2]| {
-            let (q, f) = globe.project(LonLat::new(ll[0], ll[1]));
-            if f > 0.2 {
-                out.push([q[0] + ox, q[1] + oy]);
-            }
-        };
-        if self.doors[i].id == "whales" {
-            for ll in self.whale_spots().into_iter().flatten() {
-                add([ll.lon, ll.lat]);
-            }
-        }
-        out
-    }
-
-    /// The light under a point, if any: the nearest whose middle or likeness is within reach (a light's
-    /// own size, at least a fingertip's 30 points at the reading scale).
+    /// The light under a point, if any: the nearest whose middle is within reach (a light's own size, at
+    /// least a fingertip's 30 points at the reading scale), counted from where it is shown (eased apart
+    /// from a crowd).
     pub fn hit(&self, globe: &Globe, p: [f64; 2]) -> Option<usize> {
         let reach = (Self::size(globe) * 1.8).max(30.0 * globe.reading());
-        let part_reach = 24.0 * globe.reading();
         let shown = self.shown(globe);
         (0..self.doors.len())
             .filter_map(|i| {
@@ -274,21 +232,8 @@ impl Life {
                 if facing <= 0.35 {
                     return None;
                 }
-                let parts = self.parts(globe, i, shown[i]);
-                // the middle within reach, or a part of the likeness within a fingertip (counted a little
-                // farther, so a middle wins over a neighbour's part)
                 let mid = (s[0] - p[0]).hypot(s[1] - p[1]);
-                let part = parts[1..]
-                    .iter()
-                    .map(|q| (q[0] - p[0]).hypot(q[1] - p[1]))
-                    .fold(f64::INFINITY, f64::min);
-                if mid < reach {
-                    Some((i, mid))
-                } else if part < part_reach {
-                    Some((i, part + reach * 0.5))
-                } else {
-                    None
-                }
+                (mid < reach).then_some((i, mid))
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(i, _)| i)
@@ -382,7 +327,6 @@ impl Life {
                     [tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6, 0.8 * a],
                 );
             }
-            let at = |ll: [f64; 2]| at(ll).map(|(q, f)| ([q[0] + ox, q[1] + oy], f));
             // the beckoning light (until the first touch): a slow ring breathing out of it
             if Some(i) == self.beckon && !reduce_motion {
                 let ph = (t / 2.6).rem_euclid(1.0);
@@ -413,36 +357,6 @@ impl Life {
                 [tint[0], tint[1], tint[2], 0.32 * a * halo],
             );
             match d.id {
-                "whales" => {
-                    if let Some(spots) = self.whale_spots() {
-                        let cols = [[0.86, 0.62, 0.20], [0.20, 0.42, 0.76]];
-                        for (w, ll) in spots.iter().enumerate() {
-                            let Some((wc, _)) = at([ll.lon, ll.lat]) else {
-                                continue;
-                            };
-                            for j in 0..2 {
-                                let ph =
-                                    (tm * 0.42 + j as f64 * 0.5 + w as f64 * 0.27).rem_euclid(1.0);
-                                let rr = r * (0.25 + 3.2 * ph);
-                                let col = cols[w];
-                                p.ring(
-                                    wc,
-                                    (rr * k) as f32,
-                                    1.7 * kf,
-                                    1.0,
-                                    [
-                                        col[0],
-                                        col[1],
-                                        col[2],
-                                        ((1.0 - ph).powf(1.6) * 0.95) as f32 * a,
-                                    ],
-                                );
-                            }
-                            let col = cols[w];
-                            p.disc(wc, 3.0 * kf, 1.0, [col[0], col[1], col[2], 0.95 * a]);
-                        }
-                    }
-                }
                 "murmuration" => {
                     // a window onto the toy's own dusk: the sky's blue over a low warm glow, the reeds' dark
                     // line under it, and a flock in it folding and turning, one dark body
@@ -488,27 +402,13 @@ impl Life {
                     }
                 }
                 "fireflies" => self.paint_flies(p, c, r * k, kf, tm, a, reduce_motion),
-                "bell" | "swell" => {
-                    // rings on the sphere about the place: the bell's one, crossing the whole Earth; the
-                    // swell's crests closing in on Nazaré from all round, as the canyon focuses them there
+                "swell" => {
+                    // the swell's crests closing in on Nazaré from all round, as the canyon focuses them there
                     let centre = LonLat::new(d.at[0], d.at[1]).to_xyz();
-                    let bell = d.id == "bell";
-                    let (period, reach, crests, width) = if bell {
-                        (5.0, 0.55, 2, 3.0)
-                    } else {
-                        (6.0, 0.06, 3, 2.0)
-                    };
-                    for j in 0..crests {
-                        let ph = (tm / period - j as f64 * if bell { 0.5 } else { 1.0 / 3.0 })
-                            .rem_euclid(1.0);
-                        let (theta, al) = if bell {
-                            (
-                                0.02 + reach * ph,
-                                (1.0 - ph).powf(1.2) * smooth(0.0, 0.05, ph),
-                            )
-                        } else {
-                            (0.004 + reach * (1.0 - ph), ph * smooth(1.0, 0.92, ph))
-                        };
+                    for j in 0..3 {
+                        let ph = (tm / 6.0 - j as f64 / 3.0).rem_euclid(1.0);
+                        let theta = 0.004 + 0.06 * (1.0 - ph);
+                        let al = ph * smooth(1.0, 0.92, ph);
                         sphere_ring(
                             p,
                             globe,
@@ -516,7 +416,7 @@ impl Life {
                             theta,
                             k,
                             [ox, oy],
-                            width * kf,
+                            2.0 * kf,
                             [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.8, al as f32 * a],
                         );
                     }
@@ -637,10 +537,10 @@ impl Life {
                 }
                 _ => likeness::paint(p, d.id, c, r, k, tm, a, halo, i, tint),
             }
+            self.paint_new(p, i, c, r, k, t, a * halo, reduce_motion);
             // touched: it stirs (a ring of its colour going out)
-            let st = t - self.stir_at[i];
-            if (0.0..1.0).contains(&st) {
-                let u = st;
+            let u = t - self.stir_at[i];
+            if (0.0..1.0).contains(&u) {
                 p.ring(
                     c,
                     ((r * 0.6 + r * 2.6 * u) * k) as f32,

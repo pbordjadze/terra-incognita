@@ -6,10 +6,10 @@ the owner's to decide):
 
 | toy | directory | bundle id | release tag |
 | --- | --- | --- | --- |
-| Whales: two whales, their songs and their travels in the real oceans | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
+| Whales: two whales, their songs and their travels in the real oceans (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | `murmuration-build-<n>` |
 | Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
-| Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
+| Bell: strike the Earth and it rings in its own measured free oscillations (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
 | Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 | Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
 | Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | `jam-build-<n>` |
@@ -21,13 +21,15 @@ the owner's to decide):
 | Throats: side-blotched lizards on a California hillside play rock–paper–scissors; the colours turn in spirals; a finger pours a colour (row 257) | `throats/` | `com.pbordjadze.toy.throats` | `throats-build-<n>` |
 | Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
 | Elkmont: the synchronous fireflies in the woods at Elkmont, flashing together; a light held low and the females answer (the Fireflies light on Terra's Earth since Nov 13, 2026) | `elkmont/` | `com.pbordjadze.toy.elkmont` | `elkmont-build-<n>` |
-| Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a drag turns it or lengthens it (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | `nazare-build-<n>` |
+| Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a swipe toward the coast sends a swell from that side, and its set breaks there (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | `nazare-build-<n>` |
 | Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | `bats-build-<n>` |
 | Huddle: emperor penguins on Atka Bay's sea ice in a winter wind; the cold edge walks round to the lee and waves of small steps run through; a finger turns the wind | `huddle/` | `com.pbordjadze.toy.huddle` | `huddle-build-<n>` |
 | The Wave: Estadio Azteca at night, 87,000 phone lights; swipe the stands and, if enough stand, a Mexican wave runs round the bowl (an excitable medium) | `wave/` | `com.pbordjadze.toy.wave` | `wave-build-<n>` |
 | Catatumbo: lightning over Lake Maracaibo forks down to your finger by dielectric breakdown; its thunder is the bolt's own (row 327) | `catatumbo/` | `com.pbordjadze.toy.catatumbo` | `catatumbo-build-<n>` |
 | Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | `bubblers-build-<n>` |
 | Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | `barchans-build-<n>` |
+| Pando: the aspen clone in Utah that looks like a forest and is one tree; drag to blow, tap into one stem, one leaf, its pores (row 334) | `pando/` | `com.pbordjadze.toy.pando` | `pando-build-<n>` |
+| Moon Road: Lake Superior at moonrise, the water a numbered template the moon paints wherever a facet tilts its light to you, so the glitter path fills in; a tap gusts, a drag walks the shore and the road follows (row 333) | `moonroad/` | `com.pbordjadze.toy.moonroad` | `moonroad-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
@@ -104,8 +106,9 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). A scene toy (no globe of its own) opens as a window:
   touched, its light shows the toy itself, live, its whole frame scaled into the light (`draw_window`), growing
   with the Earth's zoom as Terra turns the light to the middle and falls toward it; out, it shrinks back
-  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is the held toys' merged
-  (`tools/toys/terra/manifest.py`); CI checks it whenever a toy it holds changes. A toy added to Terra is a
+  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is its own globe's and the held toys',
+  merged (`tools/toys/terra/manifest.py`); CI checks it whenever any toy changes. It holds local toys only for now (a
+  real place and a real phenomenon; Bell and Whales came off its map on Nov 13, 2026). A toy added to Terra is a
   dependency in its `Cargo.toml`, a `Door` and a name in `doors.rs`/`lib.rs`, and its name in the manifest
   tool.
 - `<toy>/`: one crate a toy (`src/lib.rs` the toy, `src/bin/check.rs` its check binary), `toy.json` (its
