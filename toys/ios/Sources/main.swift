@@ -367,7 +367,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             lines.paragraphSpacing = 7
             let noteStyle = NSMutableParagraphStyle()
             noteStyle.paragraphSpacingBefore = 6
-            let s = NSMutableAttributedString(string: parts[0], attributes: [.font: body, .foregroundColor: UIColor(white: 1, alpha: 0.95), .paragraphStyle: lines])
+            let bodyAttributes: [NSAttributedString.Key: Any] = [.font: body, .foregroundColor: UIColor(white: 1, alpha: 0.95), .paragraphStyle: lines]
+            let s = NSMutableAttributedString(string: parts[0], attributes: bodyAttributes)
             if parts.count > 1, !parts[1...].joined().isEmpty {
                 let noteAttributes: [NSAttributedString.Key: Any] = [.font: note, .foregroundColor: UIColor(white: 1, alpha: 0.64), .paragraphStyle: noteStyle]
                 s.append(NSAttributedString(string: "\n" + parts[1...].joined(separator: "\n"), attributes: noteAttributes))
