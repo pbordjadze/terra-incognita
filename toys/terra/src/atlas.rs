@@ -147,8 +147,10 @@ impl Terra {
         let top = card::shape(pts).card[1];
         let (p, _) = self.life.spot(&self.globe, i);
         let want_y = (top * 0.55).max(80.0);
-        // already well placed: leave the Earth be
-        if p[1] > 60.0 && p[1] < top - 40.0 && p[0] > 40.0 && p[0] < pts[0] - 40.0 {
+        // already well placed (in the open, and facing the reader rather than at the Earth's rim): leave it be
+        let d = self.globe.disc();
+        let rim = (p[0] - d.cx).hypot(p[1] - d.cy) / d.r.max(1.0);
+        if p[1] > 60.0 && p[1] < top - 40.0 && p[0] > 40.0 && p[0] < pts[0] - 40.0 && rim < 0.7 {
             return;
         }
         let at = self.life.doors[i].at;

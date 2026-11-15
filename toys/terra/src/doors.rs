@@ -358,7 +358,9 @@ impl Life {
         );
         let n = doors.len();
         for (j, &i) in doors.iter().enumerate() {
-            let ang = -std::f64::consts::FRAC_PI_2 + std::f64::consts::TAU * j as f64 / n as f64;
+            // (in an arc over the top, a crown of its toys, closing to a ring as they grow many)
+            let step = (std::f64::consts::TAU / n as f64).min(0.9);
+            let ang = -std::f64::consts::FRAC_PI_2 + step * (j as f64 - (n - 1) as f64 / 2.0);
             let q = [
                 c[0] + (ang.cos() * r * 1.15 * k) as f32,
                 c[1] + (ang.sin() * r * 1.15 * k) as f32,
