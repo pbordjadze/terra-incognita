@@ -481,8 +481,8 @@ pub struct Terra {
     /// The open toy is a scene of its own (no globe): it opens out of its light through a widening disc
     /// as the Earth keeps falling toward it, rather than crossfading.
     scene: bool,
-    /// A passage played by itself (`TERRA_PASSAGE=<toy id>`, set by the Simulator's check: sim.env):
-    /// into that toy a few seconds after launch, and out again; with the first frame's time.
+    /// A passage played by itself (`TERRA_PASSAGE=<toy id>`, the Simulator's sim.env: in and out again;
+    /// or a web link's `#<toy id>`, `Terra::open_toy`: in and staying), with the first frame's time.
     auto: Option<(usize, f64, u8)>,
     /// The idle turn's pace now, degrees a second (eased toward what the lights in view ask).
     drift: f64,
@@ -1399,7 +1399,7 @@ impl Toy for Terra {
             scene: false,
             auto: std::env::var("TERRA_PASSAGE")
                 .ok()
-                .and_then(|id| life_index(&id))
+                .and_then(|id| rooms::life_index(&id))
                 .map(|i| (i, f64::NAN, 0)),
             drift: 1.6,
             peek: None,
@@ -1488,17 +1488,7 @@ impl Toy for Terra {
 
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.t = t;
-        if let Some((i, t0, step)) = self.auto {
-            let t0 = if t0.is_nan() { t } else { t0 };
-            self.auto = Some((i, t0, step));
-            if step == 0 && t - t0 > 4.0 && matches!(self.state, State::Atlas) {
-                self.enter(ctx, i, t);
-                self.auto = Some((i, t0, 1));
-            } else if step == 1 && t - t0 > 45.0 && matches!(self.state, State::Inside) {
-                self.leave(ctx, t);
-                self.auto = Some((i, t0, 2));
-            }
-        }
+        self.auto_passage(ctx, t);
         let held = self.globe.camera;
         self.globe.update(&ctx.gpu, self.assets.as_ref(), t, dt);
         if !matches!(self.state, State::Atlas) {
@@ -2012,11 +2002,6 @@ fn window_zooms(id: &str) -> (f64, f64) {
         "murmuration" => (40.0, 1500.0),
         _ => (PEEK_ZOOM, SCENE_ZOOM),
     }
-}
-
-/// The light whose toy has this id.
-fn life_index(id: &str) -> Option<usize> {
-    doors::doors().iter().position(|d| d.id == id)
 }
 
 toy_kit::ios_shell!(host Terra);

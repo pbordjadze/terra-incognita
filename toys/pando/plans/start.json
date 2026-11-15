@@ -10,6 +10,7 @@
   { "t": 25.0, "hold": [200, 420], "for": 3.5 },
   { "t": 30.0, "tap": [200, 420] }
  ],
+ "film": { "from": 9.0, "to": 20.0, "every": 0.1, "fingers": true },
  "shots": [
   { "t": 2.0, "name": "grove" },
   { "t": 6.8, "name": "blown" },
