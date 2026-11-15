@@ -22,22 +22,8 @@ impl Terra {
             self.card_finger = Some((e.id, [e.x, e.y], e.t));
             return;
         }
-        if let Some((id, at, t0)) = self.card_finger {
-            if id == e.id {
-                if e.phase == Phase::Move && e.y - at[1] > SWIPE_AWAY {
-                    self.card_finger = None;
-                    self.put_card_away(e.t);
-                } else if e.phase == Phase::Up {
-                    self.card_finger = None;
-                    let still = (e.x - at[0]).hypot(e.y - at[1]) < 12.0;
-                    if still && e.t - t0 < 0.6 && self.card.is_some_and(|c| c.gone.is_none()) {
-                        self.open_card(e.t);
-                    }
-                } else if e.phase == Phase::Cancel {
-                    self.card_finger = None;
-                }
-                return;
-            }
+        if self.card_finger_pointer(e) {
+            return;
         }
         match e.phase {
             Phase::Down => {
@@ -62,6 +48,29 @@ impl Terra {
                 }
             }
         }
+    }
+
+    /// The card's own finger: a swipe down puts the card away, a still tap opens it. Whether it was that finger.
+    fn card_finger_pointer(&mut self, e: PointerEvent) -> bool {
+        let Some((id, at, t0)) = self.card_finger else {
+            return false;
+        };
+        if id != e.id {
+            return false;
+        }
+        if e.phase == Phase::Move && e.y - at[1] > SWIPE_AWAY {
+            self.card_finger = None;
+            self.put_card_away(e.t);
+        } else if e.phase == Phase::Up {
+            self.card_finger = None;
+            let still = (e.x - at[0]).hypot(e.y - at[1]) < 12.0;
+            if still && e.t - t0 < 0.6 && self.card.is_some_and(|c| c.gone.is_none()) {
+                self.open_card(e.t);
+            }
+        } else if e.phase == Phase::Cancel {
+            self.card_finger = None;
+        }
+        true
     }
 
     fn tap(&mut self, ctx: &mut Ctx, at: [f64; 2], t: f64) {
@@ -185,7 +194,17 @@ impl Terra {
             return;
         }
         self.flight = None;
-        self.downs.clear();
+        // the Earth's other fingers are let go, so its hand is not left holding one
+        for (id, (at, _, _)) in std::mem::take(&mut self.downs) {
+            self.globe.pointer(PointerEvent {
+                id,
+                phase: Phase::Cancel,
+                x: at[0],
+                y: at[1],
+                t,
+            });
+        }
+        self.card_finger = None;
         self.strike(self.life.doors[self.door].degree + 2, 0.14, 0.0);
         self.state = State::Opening { t0: t };
     }
@@ -203,7 +222,20 @@ impl Terra {
     pub(crate) fn leave(&mut self, ctx: &mut Ctx, t: f64) {
         self.strike(self.life.doors[self.door].degree - 5, 0.18, 0.0);
         ctx.haptic();
+        // the toy lets go of every finger still on it, and its demo stops (it would play on into the Earth)
+        if let Some(r) = self.room.as_mut() {
+            for (id, at) in self.inside_fingers.drain() {
+                r.pointer(PointerEvent {
+                    id,
+                    phase: Phase::Cancel,
+                    x: at[0],
+                    y: at[1],
+                    t,
+                });
+            }
+        }
         self.inside_fingers.clear();
+        ctx.hide_info();
         self.pinch = None;
         self.earth_finger = None;
         self.card = Some(Up {

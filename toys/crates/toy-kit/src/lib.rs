@@ -155,6 +155,7 @@ pub struct Ctx {
     pub reduce_motion: bool,
     haptic: bool,
     show_info: bool,
+    hide_info: bool,
 }
 
 impl Ctx {
@@ -169,6 +170,7 @@ impl Ctx {
             reduce_motion: false,
             haptic: false,
             show_info: false,
+            hide_info: false,
         }
     }
 
@@ -181,6 +183,17 @@ impl Ctx {
     /// opens for the first time; `Host::first_info`).
     pub fn show_info(&mut self) {
         self.show_info = true;
+    }
+
+    /// Asks the host to close the demo or sheet now (Terra, as the toy it holds goes back into its card: the
+    /// toy's demo must not play on into the Earth).
+    pub fn hide_info(&mut self) {
+        self.hide_info = true;
+    }
+
+    /// Whether the demo's closing was asked for since the last call, forgetting it.
+    pub fn take_hide_info(&mut self) -> bool {
+        std::mem::take(&mut self.hide_info)
     }
 
     /// Whether a haptic tap was asked for since the last call, forgetting it (a host passes on the

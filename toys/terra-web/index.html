@@ -236,7 +236,7 @@ function showCard(text, switches, more) {
   if (text === cardText && switches === cardSwitches && more === cardMore) return;
   const opening = cardText === null, el = $('card');
   if (text === null) {
-    cardText = cardSwitches = null;
+    cardText = cardSwitches = cardMore = null;
     el.classList.remove('on'); setTimeout(() => { if (cardText === null) el.style.display = 'none'; }, 300); return;
   }
   if (text !== cardText || more !== cardMore || (switches === null) !== (cardSwitches === null)) {
@@ -297,7 +297,7 @@ let labelText = null;
 function showLabel(text) {
   if (text === labelText) return;
   const el = $('label'), lines = (text ?? '').split('\n').filter((l, i) => i === 0 || l);
-  const same = labelText !== null && text !== null && labelText.split('\n').slice(1).join('\n') === lines.slice(1).join('\n');
+  const same = labelText !== null && text !== null && labelText.split('\n').filter(l => l).slice(1).join('\n') === lines.slice(1).join('\n');
   labelText = text;
   if (text === null) { el.style.opacity = 0; el.setAttribute('aria-hidden', 'true'); return; }
   const [x, y, w, , a, dark] = lines[0].split('\t').map(Number);

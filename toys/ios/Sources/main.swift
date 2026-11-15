@@ -351,6 +351,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         rulesText = text
         switchesText = text == nil ? nil : switches
         guard let text else {
+            setMore(nil)
             UIView.animate(withDuration: 0.3, animations: { self.rules.alpha = 0 }, completion: { _ in
                 if self.rulesText == nil { self.rules.isHidden = true }
             })
@@ -382,7 +383,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         UIView.animate(withDuration: 0.25) { self.rules.alpha = 1 }
         var first: UIView? = rulesLabel
         if text.isEmpty {
-            first = switchCells.first?.1 ?? moreButtons.first
+            first = (switchCells.first?.1 as UIView?) ?? (moreButtons.first as UIView?)
         }
         UIAccessibility.post(notification: .screenChanged, argument: first)
     }

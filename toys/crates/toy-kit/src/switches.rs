@@ -3,8 +3,9 @@
 //! (`Toy::switches`), and the sheet (info.rs) lays them out under its rules, all on at first; turning one off
 //! shows what that rule was holding together (no heading to match, and the starlings smear into strands), and
 //! turning it back on brings the order back. Closing the sheet leaves them as they are: the reader goes on
-//! playing with the toy so changed, and the mark wears an amber dot while any rule is off. A toy opened afresh
-//! starts with every rule on (Terra turns them back on as a toy goes back into the Earth).
+//! playing with the toy so changed, and the mark wears an amber dot while any rule is off. They last as long as
+//! the toy is held: in Terra, through its card and back in, until the card is put away and the toy let go; a
+//! toy made afresh starts with every rule on.
 //!
 //! The switches are the shell's, native toggles in the system's text (VoiceOver reads them as switches;
 //! `host.switches_text()`, a line a rule: its label, a tab, 1 or 0). A plan opens the sheet as `"tap":

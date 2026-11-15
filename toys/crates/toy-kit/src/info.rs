@@ -369,6 +369,9 @@ impl<T: crate::Toy> crate::Host<T> {
     /// Opens the demo by itself when a first visit calls for it (`First`).
     pub(crate) fn first_info_step(&mut self, t: f64) {
         let asked = self.ctx.take_show_info();
+        if self.ctx.take_hide_info() && self.info.is_open() {
+            self.info.close();
+        }
         let f = &mut self.first_info;
         if !f.on {
             return;
