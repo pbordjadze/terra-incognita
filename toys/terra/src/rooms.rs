@@ -251,6 +251,39 @@ impl crate::Terra {
     }
 }
 
+impl crate::Terra {
+    /// Opens the toy `id` (a light's id, as in doors.rs) a second after the first frame, as a touch on
+    /// its light would, and stays in it: what a web link's `#<toy id>` asks for. False if no light has it.
+    pub fn open_toy(&mut self, id: &str) -> bool {
+        self.auto = life_index(id).map(|i| (i, f64::NAN, 3));
+        self.auto.is_some()
+    }
+
+    /// The passage `auto` asks for, a frame's step of it: into the toy (4 s in for `TERRA_PASSAGE`, 1 s
+    /// for a link's), and for `TERRA_PASSAGE` out again 45 s after the first frame.
+    pub(crate) fn auto_passage(&mut self, ctx: &mut Ctx, t: f64) {
+        let Some((i, t0, step)) = self.auto else {
+            return;
+        };
+        let t0 = if t0.is_nan() { t } else { t0 };
+        self.auto = Some((i, t0, step));
+        let inside = matches!(self.state, crate::State::Inside);
+        let due = step == 0 && t - t0 > 4.0 || step == 3 && t - t0 > 1.0;
+        if due && matches!(self.state, crate::State::Atlas) {
+            self.enter(ctx, i, t);
+            self.auto = Some((i, t0, if step == 3 { 2 } else { 1 }));
+        } else if step == 1 && t - t0 > 45.0 && inside {
+            self.leave(ctx, t);
+            self.auto = Some((i, t0, 2));
+        }
+    }
+}
+
+/// The light whose toy has this id.
+pub(crate) fn life_index(id: &str) -> Option<usize> {
+    crate::doors::doors().iter().position(|d| d.id == id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

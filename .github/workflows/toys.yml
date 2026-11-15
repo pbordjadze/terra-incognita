@@ -110,7 +110,7 @@ jobs:
           for p in ${{ matrix.toy }}/plans/*.json; do
             n=$(basename "$p" .json)
             cargo run -q --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
-            if [ -d "build/out/$n/film" ] && command -v ffmpeg > /dev/null; then bash ../tools/toys/film.sh "build/out/$n" && rm -rf "build/out/$n/film"; fi
+            if [ -d "build/out/$n/film" ] && command -v ffmpeg > /dev/null; then bash ../tools/toys/film.sh "build/out/$n" "$p" && rm -rf "build/out/$n/film"; fi
           done
       - uses: actions/upload-artifact@v7
         if: always()

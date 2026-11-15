@@ -93,6 +93,12 @@ pub async fn start(
 
 #[wasm_bindgen]
 impl Shell {
+    /// Opens the toy `id` a second after the first frame and stays in it (the page's `#<toy id>`);
+    /// false if Terra has no such toy.
+    pub fn open_toy(&mut self, id: &str) -> bool {
+        self.host.toy.open_toy(id)
+    }
+
     pub fn resize(&mut self, width: u32, height: u32, dpr: f64) {
         self.config.width = width.max(1);
         self.config.height = height.max(1);

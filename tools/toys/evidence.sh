@@ -18,7 +18,7 @@ for plan in "$toy"/plans/*.json; do
   cp "$plan" "$out/plans/"
   "target/release/$toy-check" play "$plan" "$out/$name" | tail -1
   if [ -d "$out/$name/film" ]; then
-    bash "$here/tools/toys/film.sh" "$out/$name" >/dev/null
+    bash "$here/tools/toys/film.sh" "$out/$name" "$plan" >/dev/null
   fi
 done
 if [ -n "$log" ]; then
