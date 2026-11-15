@@ -275,6 +275,9 @@ impl crate::Terra {
         } else if step == 1 && t - t0 > 45.0 && inside {
             self.leave(ctx, t);
             self.auto = Some((i, t0, 2));
+        } else if due && step == 3 {
+            // the reader went elsewhere first: a link doesn't take them anywhere later
+            self.auto = Some((i, t0, 2));
         }
     }
 }
