@@ -334,19 +334,27 @@ impl Life {
     /// A gathering: a pale light a little larger than one, with a small dot of each toy's colour round it.
     fn paint_many(&self, p: &mut Painter, doors: &[usize], c: [f32; 2], r: f64, k: f64, a: f32) {
         let kf = k as f32;
+        // the core in its members' colours mixed, so it reads as their light, not an empty pin
+        let n = doors.len().max(1) as f32;
+        let mut m = [0.0f32; 3];
+        for &i in doors {
+            for (c, t) in m.iter_mut().zip(self.doors[i].tint) {
+                *c += t / n;
+            }
+        }
         p.disc(
             c,
             (r * 1.5 * k) as f32,
             (r * 1.2 * k) as f32,
-            [1.0, 0.99, 0.95, 0.55 * a],
+            [m[0], m[1], m[2], 0.4 * a],
         );
-        p.disc(c, (r * 0.7 * k) as f32, 1.0, [0.99, 0.97, 0.92, a]);
+        p.disc(c, (r * 0.7 * k) as f32, 1.0, [m[0], m[1], m[2], a]);
         p.ring(
             c,
             (r * 0.7 * k) as f32,
             1.2 * kf,
             0.8,
-            [0.45, 0.42, 0.38, 0.7 * a],
+            [1.0, 1.0, 1.0, 0.9 * a],
         );
         let n = doors.len();
         for (j, &i) in doors.iter().enumerate() {
@@ -367,25 +375,16 @@ impl Life {
         }
     }
 
-    /// From afar, now and then, a glint: the eye is drawn before it knows to what.
+    /// From afar, now and then, a glint: a soft swell of light round it, so the eye is drawn before it knows
+    /// to what (no cross: still, a cross read as a sight).
     fn paint_glint(p: &mut Painter, c: [f32; 2], r: f64, k: f64, g: f32) {
         let kf = k as f32;
-        let long = (r * 1.25 * k) as f32;
-        let w = [1.0, 0.97, 0.88, 0.95 * g];
-        p.glow(
-            [c[0] - long, c[1]],
-            [c[0] + long, c[1]],
-            0.8 * kf,
-            1.6 * kf,
-            w,
+        p.disc(
+            c,
+            (r * 2.2 * k) as f32,
+            (r * 1.8 * k) as f32,
+            [1.0, 0.97, 0.88, 0.45 * g],
         );
-        p.glow(
-            [c[0], c[1] - long],
-            [c[0], c[1] + long],
-            0.8 * kf,
-            1.6 * kf,
-            w,
-        );
-        p.glow(c, c, 3.0 * kf, 4.0 * kf, [1.0, 0.95, 0.8, 0.8 * g]);
+        p.glow(c, c, 3.0 * kf, 4.0 * kf, [1.0, 0.95, 0.8, 0.7 * g]);
     }
 }

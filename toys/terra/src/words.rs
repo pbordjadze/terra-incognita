@@ -12,9 +12,7 @@ pub fn earth_demo(at: [f64; 2]) -> Demo {
 
 pub fn earth_rules() -> Rules {
     Rules::lines(&[
-        "Every light is a toy, set where the thing it shows happens for real.",
-        "Touch a light and its card comes up with the toy playing in it. Touch the card to go in; swipe it down to put it away.",
-        "A light ringed with small dots is several toys close together: touch it to come nearer.",
-        "Inside, the Earth mark at the bottom left brings the toy back into its card.",
+        "Every light is a toy, set where it happens for real. Touch one for its card; touch the card to go in.",
+        "A light ringed with dots is several toys: touch it to come nearer.",
     ])
 }
