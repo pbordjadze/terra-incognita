@@ -411,7 +411,7 @@ impl Toy for Fireflies {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
             "Some fireflies flash in unison, like those in the Smoky Mountains. No one leads, yet slowly they fall into step, in waves.",
-            "Here every city light is a firefly, and green is a flash. The three dots show the rule each follows: switch it off to see what it does.",
+            "Here every city light is a firefly, and green is a flash. Below is the rule each follows: switch it off to see what it does.",
             "Tap to knock a crowd out of step, and watch it fall back in.",
         ]))
     }

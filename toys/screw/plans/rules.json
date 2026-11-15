@@ -1,5 +1,5 @@
 {
- "_": "The rules and where they came from (toy-kit info.rs): each tapped open, a tap closes it.",
+ "_": "The one mark's sheet and where the toy comes from (toy-kit info.rs): the sheet tapped open, a tap closes it; opened again, its \"Where this comes from\" shows the origins, and a tap closes them.",
  "size": [
   1179,
   2556
@@ -20,8 +20,12 @@
    "inert": true
   },
   {
+   "t": 4.8,
+   "tap": "rules"
+  },
+  {
    "t": 5.0,
-   "tap": "origins"
+   "show": "origins"
   },
   {
    "t": 8.0,

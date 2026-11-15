@@ -93,12 +93,12 @@ pub struct Hill {
     pending: Vec<Flip>,
     pub rng: Rng,
     counts: [Vec<u16>; 3],
-    /// The two rules, each on or off (the switches mark; `RULES`): a lizard loses its rock to the colour
+    /// The two rules, each on or off (the sheet's switches; `RULES`): a lizard loses its rock to the colour
     /// that beats its own; only when `THRESHOLD` of its neighbours wear it (off: one is enough).
     pub on: [bool; 2],
 }
 
-/// The rules as the switches mark names them, in `Hill::on`'s order.
+/// The rules as the sheet's switches names them, in `Hill::on`'s order.
 pub const RULES: [&str; 2] = ["Lose to what beats you", "Only when outnumbered"];
 
 impl Hill {

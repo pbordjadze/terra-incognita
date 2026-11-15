@@ -2,8 +2,9 @@
 
 **Terra Incognita is the toy that holds the other toys: `toys/terra/`** (Rust on the toy kit, built and
 released by `.github/workflows/toys.yml` as `terra-build-<n>` under Terra's own bundle id; painting-company
-row 217). It opens on the whole Earth with a living light for each toy (`doors.rs`); a touch dives into
-the toy itself, linked into Terra's one library (`rooms.rs`); the Earth mark or a pinch out comes back.
+row 217). It opens on the whole Earth with a light for each toy (`doors.rs`); a touch raises the toy's
+card, live (`card.rs`), and a touch on the card opens the toy, linked into Terra's one library (`rooms.rs`);
+the Earth mark or a pinch out puts it back in its card.
 Beside it are the other toys (`toys/`) and Adrift (`adrift/`), each its own app in the same SideStore
 source. This file is the map and the rules.
 

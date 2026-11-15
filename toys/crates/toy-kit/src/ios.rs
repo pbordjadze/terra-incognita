@@ -101,14 +101,19 @@ macro_rules! ios_shell {
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_info_open(s: *mut S, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.open_mark(t) }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_demo_open(s: *mut S, t: f64) {
                 if let Some(s) = s.as_mut() { s.host.open_info(t) }
             }
             #[no_mangle]
-            pub unsafe extern "C" fn toy_rules_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
-                match s.as_ref().and_then(|s| s.host.rules_spot()) {
-                    Some(p) => { *x = p[0]; *y = p[1]; true }
-                    None => false,
-                }
+            pub unsafe extern "C" fn toy_sheet_more(s: *mut S) -> *const c_char {
+                s.as_ref().and_then(|s| s.host.sheet_more()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_label(s: *mut S) -> *const c_char {
+                s.as_mut().and_then(|s| s.host.label_text()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_rules_text(s: *mut S) -> *const c_char {
@@ -119,13 +124,6 @@ macro_rules! ios_shell {
                 if let Some(s) = s.as_mut() { s.host.open_rules() }
             }
             #[no_mangle]
-            pub unsafe extern "C" fn toy_origins_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
-                match s.as_ref().and_then(|s| s.host.origins_spot()) {
-                    Some(p) => { *x = p[0]; *y = p[1]; true }
-                    None => false,
-                }
-            }
-            #[no_mangle]
             pub unsafe extern "C" fn toy_origins_text(s: *mut S) -> *const c_char {
                 s.as_ref().and_then(|s| s.host.info.origins()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
             }
@@ -134,19 +132,8 @@ macro_rules! ios_shell {
                 if let Some(s) = s.as_mut() { s.host.open_origins() }
             }
             #[no_mangle]
-            pub unsafe extern "C" fn toy_switches_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
-                match s.as_ref().and_then(|s| s.host.switches_spot()) {
-                    Some(p) => { *x = p[0]; *y = p[1]; true }
-                    None => false,
-                }
-            }
-            #[no_mangle]
             pub unsafe extern "C" fn toy_switches_text(s: *mut S) -> *const c_char {
                 s.as_ref().and_then(|s| s.host.switches_text()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
-            }
-            #[no_mangle]
-            pub unsafe extern "C" fn toy_switches_open(s: *mut S) {
-                if let Some(s) = s.as_mut() { s.host.open_switches() }
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_switch_set(s: *mut S, i: u32, on: bool) {

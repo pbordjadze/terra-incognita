@@ -9,7 +9,7 @@
 
 pub const V0: f32 = 10.0;
 const NEIGHBOURS: usize = 7;
-/// The rules as the switches mark names them, in `Flock::on`'s order.
+/// The rules as the sheet's switches names them, in `Flock::on`'s order.
 pub const RULES: [&str; 3] = ["Don't collide", "Match heading", "Keep close"];
 const SEP_R: f32 = 1.0;
 const W_SEP: f32 = 22.0;
@@ -122,7 +122,7 @@ pub struct Flock {
     /// How far you lean (0..1): the birds round you feel the lean that much.
     pub lean_field: f32,
     pub roost: V3,
-    /// The three rules, each on or off (the switches mark; `RULES`): don't collide, match heading,
+    /// The three rules, each on or off (the sheet's switches; `RULES`): don't collide, match heading,
     /// keep close.
     pub on: [bool; 3],
     centre_now: V3,

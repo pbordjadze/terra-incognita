@@ -1,6 +1,6 @@
 {
- "_": "Pando (painting-company row 334), its light over the aspen clone by Fish Lake, Utah: a window onto gold crowns, a gust turning them pale as it crosses. Touched, the window shows the toy itself and grows as the Earth turns to it and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
- "seconds": 13,
+ "_": "Pando (painting-company row 334), its light over the aspen clone by Fish Lake, Utah, gathered with Throats' at the whole Earth: the gathering touched, the Earth comes nearer until they part, then Pando's light. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
+ "seconds": 14.6,
  "fps": 20,
  "events": [
   {
@@ -8,7 +8,15 @@
    "tap": "pando"
   },
   {
-   "t": 8.0,
+   "t": 2.6,
+   "tap": "pando"
+  },
+  {
+   "t": 4.2,
+   "tap": "card"
+  },
+  {
+   "t": 9.6,
    "tap": "earth"
   }
  ],
@@ -18,29 +26,37 @@
    "name": "the-light"
   },
   {
-   "t": 2.2,
-   "name": "window"
+   "t": 2.4,
+   "name": "gathering-parted"
   },
   {
-   "t": 3.0,
-   "name": "growing"
+   "t": 3.8,
+   "name": "light-touched"
   },
   {
-   "t": 6.5,
+   "t": 3.8,
+   "name": "card"
+  },
+  {
+   "t": 4.6,
+   "name": "opening"
+  },
+  {
+   "t": 8.1,
    "name": "inside"
   },
   {
-   "t": 9.0,
-   "name": "going-back"
+   "t": 10.6,
+   "name": "back-to-card"
   },
   {
-   "t": 12.8,
+   "t": 14.4,
    "name": "back"
   }
  ],
  "film": {
   "from": 0.5,
-  "to": 13,
+  "to": 14.6,
   "every": 0.1
  }
 }

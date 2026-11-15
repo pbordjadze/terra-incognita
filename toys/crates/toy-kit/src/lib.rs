@@ -241,32 +241,32 @@ pub trait Toy: 'static {
     fn project(&self, _lonlat: [f64; 2]) -> Option<[f64; 2]> {
         None
     }
-    /// What the info mark shows (`info`): the app's one gesture as a ghost finger on the live scene,
-    /// and at most one line. None (the default) shows no mark. Asked when the mark is tapped, so the
-    /// strokes may aim at where things are now (a city, a whale).
+    /// The demo (`info`): the app's one gesture as a ghost finger on the live scene, and at most one line,
+    /// played on a first visit and by the sheet's "Show me". Asked as it plays, so the strokes may aim at
+    /// where things are now (a city, a whale).
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         None
     }
-    /// What the rules mark shows (`info`): the rules the real thing follows, two to four short lines,
-    /// the note empty. None (the default) shows no rules mark.
+    /// What the sheet shows first (`info`): the rules the real thing follows, two to four short lines,
+    /// the note empty. None (the default): the sheet holds only the switches and buttons, if any.
     fn rules(&self) -> Option<info::Rules> {
         None
     }
-    /// What the origins mark shows (`info`): where the rules came from (the real science and
-    /// history behind them). None (the default) shows no origins mark.
+    /// What the sheet's "Where this comes from" shows (`info`): where the rules came from (the real
+    /// science and history behind them). None (the default) shows no such button.
     fn origins(&self) -> Option<info::Rules> {
         None
     }
     /// The rules the toy's crowd follows, as switches (`switches`): a short label each and whether it is
-    /// on now. Empty (the default) shows no switches mark. Asked every frame while the panel shows.
+    /// on now, laid out under the rules on the sheet. Empty (the default): none. Asked every frame.
     fn switches(&self) -> Vec<switches::Switch> {
         Vec::new()
     }
-    /// The reader turned rule `i` (of `switches()`) on or off. The kit turns every rule back on as the
-    /// panel closes, so the toy needs no reset of its own; it need not save them.
+    /// The reader turned rule `i` (of `switches()`) on or off. It stays so after the sheet closes, until
+    /// the reader turns it back (the mark wears an amber dot meanwhile); a toy need not save them: opened
+    /// afresh, every rule is on.
     fn set_switch(&mut self, _ctx: &mut Ctx, _i: usize, _on: bool) {}
-    /// Whether the shell hangs the rules' and origins' card from the top of the screen, not over the
-    /// marks at the foot (false, the default), so it keeps clear of what matters in the scene. Asked
+    /// Whether the shell hangs the sheet from the top of the screen, not over the mark at the foot (false, the default), so it keeps clear of what matters in the scene. Asked
     /// as a card opens, so it may look at where things are now.
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
         false
@@ -304,6 +304,12 @@ pub trait Toy: 'static {
     /// One quiet line the shell sets at the top in the system's text (VoiceOver reads it): Screw's
     /// song's name. None (the default): nothing.
     fn title(&self) -> Option<String> {
+        None
+    }
+    /// Words the toy places itself (Terra's postcard: a toy's name, its place and one line), which the
+    /// shell sets in the system's text in the box the toy gives, over its frame. None (the default): none.
+    /// Asked every frame.
+    fn label(&self, _ctx: &Ctx) -> Option<Label> {
         None
     }
     /// A toy whose picture is the ground seen from straight above, at a true scale, says where it lies
@@ -422,6 +428,38 @@ impl AudioFile {
     }
 }
 
+/// Words a toy places (`Toy::label`): a box in points (left, top, width, height), how shown it is (0..1),
+/// and its lines: the first a heading, the second quieter, the rest plain; dark ink (on a light ground)
+/// or light.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Label {
+    pub at: [f64; 4],
+    pub alpha: f64,
+    pub dark: bool,
+    pub lines: Vec<String>,
+}
+
+impl Label {
+    /// As the shell takes it: the box, the alpha and the ink (1 dark) on a first line, tab-separated, then
+    /// a line each.
+    pub fn text(&self) -> String {
+        let mut t = format!(
+            "{:.1}\t{:.1}\t{:.1}\t{:.1}\t{:.3}\t{}\n",
+            self.at[0],
+            self.at[1],
+            self.at[2],
+            self.at[3],
+            self.alpha.clamp(0.0, 1.0),
+            self.dark as u8
+        );
+        for l in &self.lines {
+            t.push_str(&l.replace(['\n', '\0'], " "));
+            t.push('\n');
+        }
+        t
+    }
+}
+
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
 pub trait Synth: Send {
     fn render(&mut self, out: &mut [f32], channels: usize, rate: f64);
@@ -440,12 +478,16 @@ pub struct Host<T: Toy> {
     marks: info::Marks,
     /// The info demo's opening on a first visit (`info::First`).
     pub first_info: info::First,
-    /// The switches mark and its panel (`switches`).
+    /// The switches' lines while the sheet shows them (`switches`).
     switches: switches::Panel,
+    /// The sheet's buttons (`sheet_more`).
+    more: std::ffi::CString,
     /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
     buttons: std::ffi::CString,
     /// The toy's title as the shell reads it (`title_text`).
     title: std::ffi::CString,
+    /// The toy's label as the shell reads it (`label_text`).
+    label: std::ffi::CString,
 }
 
 impl<T: Toy> Host<T> {
@@ -453,12 +495,7 @@ impl<T: Toy> Host<T> {
         step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
-        let marks = info::Marks {
-            demo: toy.demo(&ctx).is_some(),
-            rules: toy.rules().is_some(),
-            origins: toy.origins().is_some(),
-        };
-        Ok(Host {
+        let mut host = Host {
             ctx,
             toy,
             synth,
@@ -466,10 +503,14 @@ impl<T: Toy> Host<T> {
             info: Default::default(),
             first_info: Default::default(),
             switches: Default::default(),
-            marks,
+            marks: Default::default(),
+            more: Default::default(),
             buttons: Default::default(),
             title: Default::default(),
-        })
+            label: Default::default(),
+        };
+        host.marks_step();
+        Ok(host)
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -484,9 +525,6 @@ impl<T: Toy> Host<T> {
         // of six newcomers tapped Terra's Earth mark with the rules up, and it only closed them). A toy
         // without buttons keeps the rule that a closing tap is nobody's.
         self.first_info.finger(&e);
-        if self.switches_pointer(&e) {
-            return;
-        }
         if e.phase == Phase::Down && self.info.is_open() {
             let pts = self.toy.buttons(&self.ctx);
             if pts
@@ -501,9 +539,7 @@ impl<T: Toy> Host<T> {
         match self.info.route(&e, self.ctx.points(), self.marks) {
             info::Route::Toy => self.toy.pointer(&mut self.ctx, e),
             info::Route::Taken => {}
-            info::Route::Open => self.open_info(e.t),
-            info::Route::Rules => self.open_rules(),
-            info::Route::Origins => self.open_origins(),
+            info::Route::Open => self.open_mark(e.t),
         }
     }
 
@@ -548,20 +584,20 @@ impl<T: Toy> Host<T> {
         Some(&self.title)
     }
 
-    /// The toy's named places, and the info mark's as `"info"`.
+    /// The toy's label (`Toy::label`, `Label::text`), valid until the next call.
+    pub fn label_text(&mut self) -> Option<&std::ffi::CStr> {
+        let l = self.toy.label(&self.ctx)?;
+        self.label = std::ffi::CString::new(l.text()).unwrap_or_default();
+        Some(&self.label)
+    }
+
+    /// The toy's named places, and the mark's as `"info"` (and `"rules"`, `"switches"`: one place now).
     pub fn anchors(&self) -> Vec<(String, [f64; 2])> {
         let mut a = self.toy.anchors();
         if let Some(s) = self.info_spot() {
-            a.push(("info".into(), s));
-        }
-        if let Some(s) = self.rules_spot() {
-            a.push(("rules".into(), s));
-        }
-        if let Some(s) = self.origins_spot() {
-            a.push(("origins".into(), s));
-        }
-        if let Some(s) = self.switches_spot() {
-            a.push(("switches".into(), s));
+            for name in ["info", "rules", "switches"] {
+                a.push((name.into(), s));
+            }
         }
         a
     }
@@ -573,8 +609,8 @@ impl<T: Toy> Host<T> {
             None => 0.0,
         };
         self.last_t = Some(t);
-        // the origins mark may come and go with what a host holds (Terra: a held toy's, while it is open)
-        self.marks.origins = self.toy.origins().is_some();
+        // what the mark holds may come and go with what a host holds (Terra: a held toy's, while it is open)
+        self.marks_step();
         // the demo's ghost finger: real touches, before the toy's step
         for g in self.info.advance(t, self.ctx.reduce_motion) {
             self.toy.pointer(&mut self.ctx, g);
@@ -594,7 +630,6 @@ impl<T: Toy> Host<T> {
             self.marks,
             self.ctx.reduce_motion,
         );
-        self.draw_switches_mark(target);
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).
@@ -659,11 +694,14 @@ pub(crate) fn shell_json<T: Toy>(
     let title = host.toy.title();
     let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
     let switches = host.switches_text();
+    let more = host.sheet_more();
+    let label = host.toy.label(&host.ctx).map(|l| l.text());
     if line.is_none()
         && rules.is_none()
         && origins.is_none()
         && switches.is_none()
         && title.is_none()
+        && label.is_none()
     {
         return Ok(());
     }
@@ -671,7 +709,7 @@ pub(crate) fn shell_json<T: Toy>(
         serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()))
     };
     let j = serde_json::json!({ "size": size, "ppp": ppp, "line": s(line), "rules": s(rules),
-        "origins": s(origins), "switches": s(switches), "top": host.card_at_top(), "title": title });
+        "origins": s(origins), "switches": s(switches), "more": s(more), "label": label, "top": host.card_at_top(), "title": title });
     std::fs::write(path, j.to_string())?;
     Ok(())
 }

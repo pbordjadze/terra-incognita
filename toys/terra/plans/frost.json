@@ -1,5 +1,5 @@
 {
- "_": "Frost, held with one line: its light over Oymyakon (a breathing light of ice blue), the Earth turned to Siberia, touched; the cabin window comes up through the Earth; a warm finger melts the frost; the Earth mark back; a shake inside sweeps the window clear (Terra passes it to the toy); the Earth mark back.",
+ "_": "Frost, held with one line: its light over Oymyakon, the Earth turned to Siberia, touched, and its card opened; a warm finger melts the frost; a shake sweeps the window clear (Terra passes it to the toy); the Earth mark back to the card.",
  "seconds": 18,
  "fps": 20,
  "events": [
@@ -50,6 +50,10 @@
    "tap": "frost"
   },
   {
+   "t": 6.6,
+   "tap": "card"
+  },
+  {
    "t": 9.0,
    "drag": [
     [
@@ -80,6 +84,10 @@
   {
    "t": 6.0,
    "name": "diving"
+  },
+  {
+   "t": 6.2,
+   "name": "card"
   },
   {
    "t": 8.8,

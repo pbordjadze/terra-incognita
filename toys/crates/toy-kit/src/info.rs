@@ -1,22 +1,22 @@
-//! The info mark (docs/kit.md › First after the reset, 2): a tiny mark in a corner; a tap on it shows
-//! for a few seconds what the app is, a ghost finger doing the app's one gesture over the live scene
-//! (real touches: the scene answers as it would a finger) and at most one line; a tap anywhere closes
-//! it. Each toy supplies its own [`Demo`] (`Toy::demo`; None, the default, shows no mark). The kit
-//! draws the mark and the ghost; the line is the shell's, in the system's text (VoiceOver reads it, it
-//! follows the reader's text size; `host.info.line()`). Under Reduce Motion the ghost rests where the
-//! gesture starts, still, with the line, and no touch is played. A plan taps it as `"tap": "info"`.
+//! The mark (painting-company row 355, Nov 15 2026: five marks became one): a tiny mark in the bottom right
+//! corner, three dots. A tap on it opens the toy's sheet, and a tap anywhere else closes it; nothing
+//! closes it on a timer. The sheet is the shell's, in the system's text over the live scene:
 //!
-//! Beside it, the rules mark (a "?"): a tap shows the toy's [`Rules`] (`Toy::rules`): the few rules
-//! the real thing follows and how a finger joins in, in two to four short lines. The shell sets
-//! them in the system's text over the live scene (`host.info.rules()`); a tap anywhere closes them,
-//! and nothing closes them on a timer (they are read at the reader's pace, or not at all). A plan
-//! taps it as `"tap": "rules"`. painting-company row 214.
+//! - the toy's [`Rules`] (`Toy::rules`): the few rules the real thing follows and how a finger joins in,
+//!   in two to four short lines (`host.info.rules()`);
+//! - under them the rules as switches (`Toy::switches`, switches.rs), which stay as the reader left them
+//!   when the sheet closes; the mark wears a small amber dot while any is off;
+//! - and its buttons (`host.sheet_more()`): "Show me", the demo again (`Toy::demo`: a ghost finger doing
+//!   the toy's one gesture over the live scene, real touches the scene answers, and at most one line),
+//!   and "Where this comes from" (`Toy::origins`, a [`Rules`] too, the science and history behind the
+//!   rules), which takes the sheet's place.
 //!
-//! Beside that, the origins mark (an asterisk, a footnote's mark): a tap shows where the rules came
-//! from (`Toy::origins`, a [`Rules`] too: its lines the science and history behind them), so the "?"
-//! can be the rules alone. Same card, same closing tap. A
-//! toy may hang the card from the top instead of over the marks (`Toy::card_at_top`), to keep it off
-//! what matters in its scene. A plan taps it as `"tap": "origins"`. painting-company row 219.
+//! A toy with a demo alone has no sheet: its mark plays the demo. The demo also opens by itself on a first
+//! visit (`First`). Under Reduce Motion the ghost rests where the gesture starts, still, with the line, and
+//! no touch is played. A toy may hang the sheet from the top instead (`Toy::card_at_top`), to keep it off
+//! what matters in its scene. A plan taps the mark as `"tap": "info"` (or `"rules"`, or `"switches"`: one
+//! place now), and presses a sheet's button as `"show": "demo"` or `"show": "origins"` (check.rs).
+//! painting-company rows 214, 219, 335 and 351.
 
 use crate::paint::Painter;
 use crate::{Gpu, Phase, PointerEvent};
@@ -175,6 +175,8 @@ pub struct Info {
     open: Option<(Demo, f64)>,
     /// Fingers the mark (or the closing tap) took: never the toy's.
     taken: Vec<u64>,
+    /// The finger whose touch closed what showed (lifted on the mark, it is not a tap to open it again).
+    closer: Option<u64>,
     /// The ghost's fingers down now (stroke index).
     ghosts: Vec<usize>,
     /// Strokes already played (each once).
@@ -195,18 +197,29 @@ pub struct Marks {
     pub demo: bool,
     pub rules: bool,
     pub origins: bool,
+    /// The toy has rules to switch (`Toy::switches`).
+    pub switches: bool,
+    /// One of them is off now: the mark wears its amber dot.
+    pub off: bool,
+}
+
+impl Marks {
+    /// Whether the toy has a mark at all.
+    pub fn any(&self) -> bool {
+        self.demo || self.rules || self.origins || self.switches
+    }
+    /// Whether the mark opens a sheet (else it plays the demo).
+    pub fn sheet(&self) -> bool {
+        self.rules || self.origins || self.switches
+    }
 }
 
 /// What the host should do with a finger.
 pub enum Route {
     Toy,
     Taken,
-    /// The mark was tapped: open the demo.
+    /// The mark was tapped: open the sheet (or the demo, for a toy with no sheet).
     Open,
-    /// The rules mark was tapped: show the rules.
-    Rules,
-    /// The origins mark was tapped: show where the rules came from.
-    Origins,
 }
 
 impl Info {
@@ -214,17 +227,8 @@ impl Info {
     pub fn spot(points: [f64; 2]) -> [f64; 2] {
         [points[0] - 26.0, points[1] - 34.0]
     }
-    /// Where the rules mark is: beside the info mark, toward the middle.
-    pub fn rules_spot(points: [f64; 2]) -> [f64; 2] {
-        [points[0] - 26.0 - Self::GAP, points[1] - 34.0]
-    }
-    /// Where the origins mark is: beside the rules mark, further toward the middle.
-    pub fn origins_spot(points: [f64; 2]) -> [f64; 2] {
-        [points[0] - 26.0 - 2.0 * Self::GAP, points[1] - 34.0]
-    }
-    /// A fingertip's reach for either, points (half the gap between them: no tap is both's).
+    /// A fingertip's reach for the mark, points.
     pub const REACH: f64 = 22.0;
-    const GAP: f64 = 44.0;
 
     /// The demo, the rules or the origins showing.
     pub fn is_open(&self) -> bool {
@@ -234,6 +238,11 @@ impl Info {
     /// Where the rules came from, while that shows (for the shell's text; `Rules::text`).
     pub fn origins(&self) -> Option<&std::ffi::CStr> {
         self.origins.as_deref()
+    }
+
+    /// The sheet showing: its rules page or its origins page.
+    pub fn sheet_open(&self) -> bool {
+        self.rules.is_some() || self.origins.is_some()
     }
 
     /// Shows the origins (closing the demo or the rules), or hides them.
@@ -268,23 +277,21 @@ impl Info {
         self.line.as_deref()
     }
 
-    /// Routes a real finger: a mark's, the closing tap's, or the toy's. `m` says which marks the toy has.
+    /// Routes a real finger: the mark's, the closing tap's, or the toy's. `m` says what the toy has.
     pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], m: Marks) -> Route {
-        let near = |s: [f64; 2], k: f64| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH * k;
+        let near = |s: [f64; 2]| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH;
         if self.taken.contains(&e.id) {
             if matches!(e.phase, Phase::Up | Phase::Cancel) {
                 self.taken.retain(|&i| i != e.id);
-                if e.phase == Phase::Up && !self.is_open() {
-                    // (lifted within reach of where it went down: the marks are 44 points apart)
-                    if m.demo && near(Self::spot(points), 1.0) {
-                        return Route::Open;
-                    }
-                    if m.rules && near(Self::rules_spot(points), 1.0) {
-                        return Route::Rules;
-                    }
-                    if m.origins && near(Self::origins_spot(points), 1.0) {
-                        return Route::Origins;
-                    }
+                let closed = self.closer.take_if(|&mut c| c == e.id).is_some();
+                // (lifted within reach of the mark, with nothing showing: a tap on it)
+                if e.phase == Phase::Up
+                    && !closed
+                    && !self.is_open()
+                    && m.any()
+                    && near(Self::spot(points))
+                {
+                    return Route::Open;
                 }
             }
             return Route::Taken;
@@ -296,12 +303,10 @@ impl Info {
             // a tap anywhere closes it, and is not the toy's
             self.close();
             self.taken.push(e.id);
+            self.closer = Some(e.id);
             return Route::Taken;
         }
-        if (m.demo && near(Self::spot(points), 1.0))
-            || (m.rules && near(Self::rules_spot(points), 1.0))
-            || (m.origins && near(Self::origins_spot(points), 1.0))
-        {
+        if m.any() && near(Self::spot(points)) {
             self.taken.push(e.id);
             return Route::Taken;
         }
@@ -389,8 +394,8 @@ impl<T: crate::Toy> crate::Host<T> {
         }
     }
 
-    /// Shows where the rules came from (a tap on the origins mark, or VoiceOver's activation of it),
-    /// or, if that shows, hides it.
+    /// Shows where the rules came from in the sheet's place (its button, or VoiceOver's), or, if that
+    /// shows, closes it.
     pub fn open_origins(&mut self) {
         let r = if self.info.origins().is_some() {
             None
@@ -400,46 +405,77 @@ impl<T: crate::Toy> crate::Host<T> {
         self.info.show_origins(r);
     }
 
-    /// The origins mark's place in points, if the toy has one.
-    pub fn origins_spot(&self) -> Option<[f64; 2]> {
-        self.marks
-            .origins
-            .then(|| Info::origins_spot(self.ctx.points()))
-    }
-
-    /// Whether the shell hangs the card from the top (`Toy::card_at_top`).
+    /// Whether the shell hangs the sheet from the top (`Toy::card_at_top`).
     pub fn card_at_top(&self) -> bool {
         self.toy.card_at_top(&self.ctx)
     }
 
-    /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
-    /// hides them.
+    /// Opens the sheet on its rules page, or, if it shows, closes it.
     pub fn open_rules(&mut self) {
-        let r = if self.info.rules().is_some() {
-            None
+        if self.info.sheet_open() {
+            self.info.close();
+            return;
+        }
+        // (a toy with switches and no rules of its own: the sheet is its switches alone)
+        let r = self.toy.rules().unwrap_or_else(|| Rules::lines(&[]));
+        self.info.show_rules(Some(r));
+    }
+
+    /// The mark's tap (or VoiceOver's activation of it): the sheet, opened or closed; for a toy with a demo
+    /// alone, the demo.
+    pub fn open_mark(&mut self, t: f64) {
+        if self.info.open.is_some() {
+            self.info.close();
+        } else if self.marks.sheet() {
+            self.open_rules();
         } else {
-            self.toy.rules()
-        };
-        self.info.show_rules(r);
+            self.open_info(t);
+        }
     }
 
-    /// The rules mark's place in points, if the toy has one.
-    pub fn rules_spot(&self) -> Option<[f64; 2]> {
-        self.marks
-            .rules
-            .then(|| Info::rules_spot(self.ctx.points()))
-    }
-
-    /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
+    /// Plays the demo (its own opening on a first visit, the sheet's "Show me"), closing the sheet.
     pub fn open_info(&mut self, t: f64) {
+        if self.info.open.is_some() {
+            return;
+        }
         if let Some(d) = self.toy.demo(&self.ctx) {
+            // (the sheet closes; no ghost is down to lift)
+            self.info.close();
+            self.info.close_pending = false;
             self.info.open(d, t);
         }
     }
 
-    /// The info mark's place in points, if the toy has one.
+    /// The mark's place in points, if the toy has one.
     pub fn info_spot(&self) -> Option<[f64; 2]> {
-        self.marks.demo.then(|| Info::spot(self.ctx.points()))
+        self.marks.any().then(|| Info::spot(self.ctx.points()))
+    }
+
+    /// The sheet's buttons while its rules page shows, a line each: `demo` ("Show me") and `origins`
+    /// ("Where this comes from"), for the toy that has them.
+    pub fn sheet_more(&self) -> Option<&std::ffi::CStr> {
+        self.info.rules().is_some().then_some(self.more.as_c_str())
+    }
+
+    /// Each frame: which of the mark's things the toy has now (a host's change with what it holds).
+    pub(crate) fn marks_step(&mut self) {
+        let sw = self.toy.switches();
+        self.marks = Marks {
+            demo: self.toy.demo(&self.ctx).is_some(),
+            rules: self.toy.rules().is_some(),
+            origins: self.toy.origins().is_some(),
+            switches: !sw.is_empty(),
+            off: sw.iter().any(|s| !s.on),
+        };
+        let more = match (self.marks.demo, self.marks.origins) {
+            (true, true) => "demo\norigins\n",
+            (true, false) => "demo\n",
+            (false, true) => "origins\n",
+            (false, false) => "",
+        };
+        if self.more.as_bytes() != more.as_bytes() {
+            self.more = std::ffi::CString::new(more).unwrap_or_default();
+        }
     }
 }
 
@@ -542,74 +578,31 @@ impl Info {
         m: Marks,
         reduce_motion: bool,
     ) {
-        if !m.demo && !m.rules && !m.origins {
+        if !m.any() {
             return;
         }
+        let lit = if self.is_open() { 0.85 } else { 0.5 };
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
         let k = ppp as f32;
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
-        // a soft dark ground so each reads on any scene, then a small ring and its letter
-        let ground = |painter: &mut Painter, c: [f32; 2], lit: f32| {
-            painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
-            painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        };
-        if m.demo {
-            let s = Self::spot(points);
-            let c = [s[0] as f32 * k, s[1] as f32 * k];
-            let lit = if self.open.is_some() { 0.85 } else { 0.5 };
-            ground(painter, c, lit);
-            painter.disc([c[0], c[1] - 3.1 * k], 0.95 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-            painter.line(
-                [c[0], c[1] - 0.6 * k],
-                [c[0], c[1] + 3.4 * k],
-                0.62 * k,
+        // a soft dark ground so it reads on any scene, a small ring, and three dots (more, as iOS has it)
+        let s = Self::spot(points);
+        let c = [s[0] as f32 * k, s[1] as f32 * k];
+        painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
+        painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        for i in -1..=1 {
+            painter.disc(
+                [c[0] + 2.9 * k * i as f32, c[1]],
+                0.95 * k,
                 0.7,
                 [1.0, 1.0, 1.0, lit],
             );
         }
-        if m.rules {
-            let s = Self::rules_spot(points);
-            let c = [s[0] as f32 * k, s[1] as f32 * k];
-            let lit = if self.rules.is_some() { 0.85 } else { 0.5 };
-            ground(painter, c, lit);
-            // a "?": an arc over the top, a short stem down from its right, a dot
-            let (r, o) = (2.3f32, [c[0], c[1] - 1.7 * k]);
-            let arc: Vec<[f32; 2]> = (0..=10)
-                .map(|i| {
-                    let a = std::f32::consts::PI * (1.0 + 1.4 * i as f32 / 10.0);
-                    [o[0] + a.cos() * r * k, o[1] + a.sin() * r * k]
-                })
-                .collect();
-            for w in arc.windows(2) {
-                painter.line(w[0], w[1], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-            }
-            let end = arc[arc.len() - 1];
-            painter.line(
-                end,
-                [c[0], c[1] + 1.4 * k],
-                0.62 * k,
-                0.7,
-                [1.0, 1.0, 1.0, lit],
-            );
-            painter.disc([c[0], c[1] + 3.6 * k], 0.85 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        }
-        if m.origins {
-            let s = Self::origins_spot(points);
-            let c = [s[0] as f32 * k, s[1] as f32 * k];
-            let lit = if self.origins.is_some() { 0.85 } else { 0.5 };
-            ground(painter, c, lit);
-            // an asterisk, a footnote's mark: six spokes from a small open middle
-            for i in 0..6 {
-                let a = std::f32::consts::PI * (0.5 + i as f32 / 3.0);
-                let (dx, dy) = (a.cos() * k, a.sin() * k);
-                painter.line(
-                    [c[0] + dx * 0.9, c[1] - dy * 0.9],
-                    [c[0] + dx * 3.5, c[1] - dy * 3.5],
-                    0.62 * k,
-                    0.7,
-                    [1.0, 1.0, 1.0, lit],
-                );
-            }
+        if m.off {
+            // a rule is off: a small amber dot on the mark's shoulder, so the toy is never mistaken for the real thing
+            let d = [c[0] + 5.6 * k, c[1] - 5.6 * k];
+            painter.disc(d, 3.3 * k, 0.8, [0.0, 0.0, 0.0, 0.5]);
+            painter.disc(d, 2.5 * k, 0.7, [0.96, 0.67, 0.24, 1.0]);
         }
         if let Some((demo, at)) = &self.open {
             let el = self.now - at;
@@ -655,19 +648,7 @@ impl Info {
 mod tests {
     use super::*;
 
-    fn tap(info: &mut Info, id: u64, at: [f64; 2], demo: bool, rules: bool) -> Route {
-        tap3(
-            info,
-            id,
-            at,
-            Marks {
-                demo,
-                rules,
-                origins: false,
-            },
-        )
-    }
-    fn tap3(info: &mut Info, id: u64, at: [f64; 2], m: Marks) -> Route {
+    fn tap(info: &mut Info, id: u64, at: [f64; 2], m: Marks) -> Route {
         let pts = [390.0, 844.0];
         let down = PointerEvent {
             id,
@@ -691,68 +672,62 @@ mod tests {
     }
 
     #[test]
-    fn the_origins_mark_opens_and_takes_the_rules_place() {
+    fn one_mark_opens_and_any_tap_closes() {
         let pts = [390.0, 844.0];
         let all = Marks {
             demo: true,
             rules: true,
             origins: true,
+            switches: true,
+            off: false,
         };
         let mut info = Info::default();
         assert!(matches!(
-            tap3(&mut info, 1, Info::origins_spot(pts), all),
-            Route::Origins
-        ));
-        // without it its place is the toy's
-        assert!(matches!(
-            tap3(
-                &mut info,
-                2,
-                Info::origins_spot(pts),
-                Marks {
-                    origins: false,
-                    ..all
-                }
-            ),
-            Route::Toy
-        ));
-        info.show_rules(Some(Rules::new(&["a"], "")));
-        assert_eq!(info.rules().unwrap().to_str().unwrap(), "a");
-        info.show_origins(Some(Rules::new(&["b"], "c")));
-        assert!(info.rules().is_none());
-        assert_eq!(info.origins().unwrap().to_str().unwrap(), "b\n\nc");
-        assert!(matches!(
-            tap3(&mut info, 3, [100.0, 100.0], all),
-            Route::Taken
-        ));
-        assert!(info.origins().is_none() && !info.is_open());
-    }
-
-    #[test]
-    fn the_rules_mark_opens_and_any_tap_closes() {
-        let pts = [390.0, 844.0];
-        let mut info = Info::default();
-        assert!(matches!(
-            tap(&mut info, 1, Info::rules_spot(pts), true, true),
-            Route::Rules
-        ));
-        assert!(matches!(
-            tap(&mut info, 2, Info::spot(pts), true, true),
+            tap(&mut info, 1, Info::spot(pts), all),
             Route::Open
         ));
-        // without a rules mark its place is the toy's
+        // where the other marks were is the toy's now
         assert!(matches!(
-            tap(&mut info, 3, Info::rules_spot(pts), true, false),
+            tap(&mut info, 2, [pts[0] - 26.0 - 44.0, pts[1] - 34.0], all),
+            Route::Toy
+        ));
+        // a toy with no mark: its place is the toy's
+        assert!(matches!(
+            tap(&mut info, 3, Info::spot(pts), Marks::default()),
             Route::Toy
         ));
         info.show_rules(Some(Rules::new(&["a", "b"], "c")));
         assert_eq!(info.rules().unwrap().to_str().unwrap(), "a\nb\n\nc");
-        assert!(info.is_open());
-        // a tap anywhere closes them and is not the toy's
+        assert!(info.is_open() && info.sheet_open());
+        // the origins take the rules' place
+        info.show_origins(Some(Rules::new(&["d"], "")));
+        assert!(info.rules().is_none() && info.origins().is_some());
+        // a tap anywhere closes it and is not the toy's
         assert!(matches!(
-            tap(&mut info, 4, [100.0, 100.0], true, true),
+            tap(&mut info, 4, [100.0, 100.0], all),
             Route::Taken
         ));
-        assert!(info.rules().is_none() && !info.is_open());
+        assert!(!info.is_open() && !info.sheet_open());
+        // a tap on the mark while the sheet shows only closes it
+        info.show_rules(Some(Rules::new(&["a"], "")));
+        assert!(matches!(
+            tap(&mut info, 5, Info::spot(pts), all),
+            Route::Taken
+        ));
+        assert!(!info.is_open());
+    }
+
+    #[test]
+    fn a_demo_alone_has_no_sheet() {
+        let m = Marks {
+            demo: true,
+            ..Marks::default()
+        };
+        assert!(m.any() && !m.sheet());
+        let s = Marks {
+            switches: true,
+            ..Marks::default()
+        };
+        assert!(s.any() && s.sheet());
     }
 }

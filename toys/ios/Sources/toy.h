@@ -19,29 +19,32 @@ ToySynth *toy_synth(ToyShell *shell);
 void toy_audio(ToySynth *synth, float *out, uint32_t frames, uint32_t channels, double rate);
 void toy_synth_free(ToySynth *synth);
 void toy_free(ToyShell *shell);
-// The info mark (toy-kit's info.rs): its place in points (false: the toy has none), its line while its
-// demo shows (NULL otherwise; valid until the next frame), and opening it (VoiceOver's activation).
+// The mark (toy-kit's info.rs): its place in points (false: the toy has none); the demo's line while it
+// plays (NULL otherwise; valid until the next frame); the mark's tap (VoiceOver's activation): the sheet
+// opened or closed, or for a toy with a demo alone the demo; and the demo itself (the sheet's "Show me").
 bool toy_info_spot(ToyShell *shell, double *x, double *y);
 const char *toy_info_line(ToyShell *shell);
 void toy_info_open(ToyShell *shell, double t);
-// The rules mark beside it (info.rs's Rules): its place in points (false: none), the rules while they
-// show (lines, then a blank line and the note on what is measured and what is drawn; NULL otherwise;
-// valid until the next frame), and showing or hiding them (VoiceOver's activation, the panel's tap).
-bool toy_rules_spot(ToyShell *shell, double *x, double *y);
+void toy_demo_open(ToyShell *shell, double t);
+// The sheet: its rules while its rules page shows (lines, then a blank line and a dimmer note; NULL otherwise;
+// valid until the next frame), and opening or closing it; the origins in its place (Toy::origins), and
+// showing or hiding them (its "Where this comes from"); its buttons while the rules show (a line each:
+// "demo", "origins"; NULL otherwise).
 const char *toy_rules_text(ToyShell *shell);
 void toy_rules_open(ToyShell *shell);
-// The origins mark beside that (info.rs; Toy::origins): where the rules came from, in the same card.
-bool toy_origins_spot(ToyShell *shell, double *x, double *y);
 const char *toy_origins_text(ToyShell *shell);
 void toy_origins_open(ToyShell *shell);
-// The switches mark left of those (toy-kit's switches.rs; Toy::switches): its place in points (false: none),
-// the panel's rules while it shows (a line each: label, a tab, 1 on or 0 off; NULL while shut; valid until
-// the next frame), opening or closing the panel (closing turns every rule back on), and turning rule i.
-bool toy_switches_spot(ToyShell *shell, double *x, double *y);
+const char *toy_sheet_more(ToyShell *shell);
+// The rules as switches under them (toy-kit's switches.rs; Toy::switches): a line each, label, a tab, 1 on or
+// 0 off, while the sheet's rules show (NULL otherwise; valid until the next frame); turning rule i, which
+// stays so when the sheet closes.
 const char *toy_switches_text(ToyShell *shell);
-void toy_switches_open(ToyShell *shell);
 void toy_switch_set(ToyShell *shell, uint32_t i, bool on);
-// Whether the card (the rules or the origins) hangs from the top, asked as it opens (Toy::card_at_top).
+// Words the toy places itself (Toy::label: Terra's postcard): a first line of its box in points (x, y, w, h),
+// alpha and ink (1 dark), tab-separated; then a heading, a quieter line and plain lines (NULL: none; valid
+// until the next call).
+const char *toy_label(ToyShell *shell);
+// Whether the sheet hangs from the top, asked as it opens (Toy::card_at_top).
 bool toy_card_at_top(ToyShell *shell);
 // The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in
 // points (empty: none; valid until the next call), and pressing one by its line's index.

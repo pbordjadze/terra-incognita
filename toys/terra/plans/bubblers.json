@@ -1,5 +1,5 @@
 {
- "_": "Bubblers (painting-company row 327), its light over Phuket's west coast: a window onto the sand at low tide, the crabs' balls laid out from their burrows in spokes. Turned to from the opening Earth, then touched, the window shows the toy itself and grows as the Earth turns to it and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
+ "_": "Bubblers (painting-company row 327), its light over Phuket's west coast, the crabs' balls in spokes on the low-tide sand. The Earth turned to it from the opening, then: Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
  "seconds": 17,
  "fps": 20,
  "events": [
@@ -78,6 +78,10 @@
    "tap": "bubblers"
   },
   {
+   "t": 6.6,
+   "tap": "card"
+  },
+  {
    "t": 12.0,
    "tap": "earth"
   }
@@ -89,11 +93,15 @@
   },
   {
    "t": 6.2,
-   "name": "window"
+   "name": "light-touched"
+  },
+  {
+   "t": 6.2,
+   "name": "card"
   },
   {
    "t": 7.0,
-   "name": "growing"
+   "name": "opening"
   },
   {
    "t": 10.5,
@@ -101,7 +109,7 @@
   },
   {
    "t": 13.0,
-   "name": "going-back"
+   "name": "back-to-card"
   },
   {
    "t": 16.8,

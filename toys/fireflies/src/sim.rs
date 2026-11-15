@@ -94,12 +94,12 @@ pub struct Swarm {
     pub t: f64,
     pulses: BinaryHeap<Pulse>,
     rng: u64,
-    /// The rule, on or off (the switches mark; `RULES`): a flash seen hurries a firefly on. (Its blind
+    /// The rule, on or off (the sheet's switches; `RULES`): a flash seen hurries a firefly on. (Its blind
     /// spell after its own flash matters as much in theory, but switched off it changes nothing you see.)
     pub on: [bool; 1],
 }
 
-/// The rules as the switches mark names them, in `Swarm::on`'s order.
+/// The rules as the sheet's switches names them, in `Swarm::on`'s order.
 pub const RULES: [&str; 1] = ["Hurry when one flashes"];
 
 /// A small deterministic random source (xorshift).

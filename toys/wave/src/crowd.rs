@@ -92,12 +92,12 @@ pub struct Crowd {
     rng: Rng,
     /// people standing now
     pub active: usize,
-    /// The three rules, each on or off (the switches mark; `RULES`): stand when enough round you
+    /// The three rules, each on or off (the sheet's switches; `RULES`): stand when enough round you
     /// stand, sit back down, wait a moment before standing again.
     pub on: [bool; 3],
 }
 
-/// The rules as the switches mark names them, in `Crowd::on`'s order.
+/// The rules as the sheet's switches names them, in `Crowd::on`'s order.
 pub const RULES: [&str; 3] = ["Stand with them", "Sit back down", "Wait a moment"];
 
 impl Crowd {

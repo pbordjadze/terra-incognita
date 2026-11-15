@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The info mark's line, the rules and their origins, the switches panel (switches.rs), the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
-so a check's frame lacks them; the check writes what was showing beside each shot as
-`<shot>.shell.json` (size, ppp, line, rules, origins, top: the card hung from the top). This draws them as the shell lays them out, into
+The demo's line, the sheet (the rules, their switches and buttons, or the origins in their place; toy-kit's
+info.rs, switches.rs), the toy's title line and its label (Terra's postcard) are set by the iOS shell in the
+system's text, so a check's frame lacks them; the check writes what was showing beside each shot as
+`<shot>.shell.json` (size, ppp, line, rules, origins, switches, more, label, top: the sheet hung from the top). This draws them as the shell lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
 
     python3 tools/kit/shell_text.py <check out dir> [...]     # every shot with a .shell.json under it
@@ -19,6 +20,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 FONT = '/usr/share/fonts/opentype/inter/Inter-Regular.otf'
+BOLD = '/usr/share/fonts/opentype/inter/Inter-SemiBold.otf'
 SAFE_BOTTOM, SAFE_TOP = 34.0, 47.0
 
 
@@ -37,35 +39,104 @@ def wrap(draw, text, font, width):
     return out
 
 
-def rules(img, text, k, top=False):
-    W, H = img.size[0] / k, img.size[1] / k
-    w = min(W - 32, 480)
-    pad = (14, 16)
+# The sheet (main.swift's layoutRules): the rules, then the switches a row each, then the buttons.
+PAD = (14, 16)
+SWITCH_ROW, SW, SH = 38, 51, 31
+MORE_ROW = 34
+LINK = (125, 190, 255)
+MORE = {'demo': 'Show me', 'origins': 'Where this comes from'}
+
+
+def sheet_rows(d, text, w, k):
+    """The sheet's text as rows: (text, font, alpha, space before in points, line height); the rules in callout,
+    a dimmer footnote after a blank line."""
     body = ImageFont.truetype(FONT, round(16 * k))
     note = ImageFont.truetype(FONT, round(13 * k))
-    d = ImageDraw.Draw(img)
-    parts = text.split('\n\n')
-    rows = []  # (text, font, alpha, space before in points, line height)
-    for i, p in enumerate(parts[0].split('\n')):
-        for j, l in enumerate(wrap(d, p, body, (w - 2 * pad[1]) * k)):
+    parts = text.split('\n\n') if text else ['']
+    rows = []
+    for i, p in enumerate(parts[0].split('\n') if parts[0] else []):
+        for j, l in enumerate(wrap(d, p, body, (w - 2 * PAD[1]) * k)):
             rows.append((l, body, 0.95, 7 if i and not j else 0, 21))
     if len(parts) > 1:
-        for i, l in enumerate(wrap(d, '\n'.join(parts[1:]), note, (w - 2 * pad[1]) * k)):
+        for i, l in enumerate(wrap(d, '\n'.join(parts[1:]), note, (w - 2 * PAD[1]) * k)):
             rows.append((l, note, 0.64, 13 if not i else 0, 18))
+    return rows
+
+
+def sheet_switch(d, x0, w, y, label, on, k):
+    """One switch's row from `y`: its label left (dimmer when off), an iOS switch right (green when on)."""
+    body = ImageFont.truetype(FONT, round(16 * k))
+    mid = y + SWITCH_ROW / 2
+    d.text(((x0 + PAD[1]) * k, (mid - 10) * k), label, font=body, fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
+    sx, sy = x0 + w - PAD[1] - SW, mid - SH / 2
+    track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
+    d.rounded_rectangle([sx * k, sy * k, (sx + SW) * k, (sy + SH) * k], radius=SH / 2 * k, fill=track)
+    kx, r = sx + (SW - SH / 2 if on else SH / 2), SH / 2 - 2
+    d.ellipse([(kx - r) * k, (mid - r) * k, (kx + r) * k, (mid + r) * k], fill=(255, 255, 255, 255))
+
+
+def sheet_links(d, x0, w, y, links, k):
+    """Under a hairline from `y`, the buttons in the link colour."""
+    body = ImageFont.truetype(FONT, round(16 * k))
+    d.line([((x0 + PAD[1]) * k, y * k), ((x0 + w - PAD[1]) * k, y * k)], fill=(255, 255, 255, 40), width=max(1, round(k / 2)))
+    y += 6
+    x = x0 + PAD[1]
+    for t in links:
+        d.text((x * k, (y + MORE_ROW / 2 - 10) * k), t, font=body, fill=LINK + (255,))
+        x += d.textlength(t, font=body) / k + 24
+
+
+def sheet(img, text, k, top=False, switch_text=None, more=None):
+    """The sheet: at most 480 points wide, centred, its foot 60 points above the screen's (or hung from the top);
+    the rules, a row a switch, and under a hairline the buttons."""
+    W, H = img.size[0] / k, img.size[1] / k
+    w = min(W - 32, 480)
+    rows = sheet_rows(ImageDraw.Draw(img), text, w, k)
+    sws = [r.split('\t') for r in (switch_text or '').split('\n') if r.count('\t') == 1]
+    links = [MORE[m] for m in (more or '').split('\n') if m in MORE]
     th = sum(r[3] + r[4] for r in rows)
+    sw_h = (6 if rows else 0) + SWITCH_ROW * len(sws)
+    more_h = (12 + MORE_ROW) if links else 0
     foot = H - 60
-    h = min(th + 2 * pad[0], foot - SAFE_TOP - 8)
+    h = min(th + sw_h + more_h + 2 * PAD[0], foot - SAFE_TOP - 8)
     x0, y0 = (W - w) / 2, (SAFE_TOP + 8 if top else foot - h)
-    box = tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h))
-    glass(img, box, k, 16)
+    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 16)
     d = ImageDraw.Draw(img, 'RGBA')
-    y = y0 + pad[0]
+    y = y0 + PAD[0]
     for t, f, a, before, lh in rows:
         y += before
-        if y + lh > y0 + h:
-            break
-        d.text(((x0 + pad[1]) * k, (y + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, round(255 * a)))
+        d.text(((x0 + PAD[1]) * k, (y + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, round(255 * a)))
         y += lh
+    y += 6 if rows and sws else 0
+    for label, on in sws:
+        sheet_switch(d, x0, w, y, label, on == '1', k)
+        y += SWITCH_ROW
+    if links:
+        sheet_links(d, x0, w, y + 6, links, k)
+
+
+def label(img, text, k):
+    """A toy's own words (Toy::label): in its box, a heading (title 3, semibold), a quieter line (subheadline),
+    the rest plain (subheadline); dark ink or light, at the label's alpha."""
+    head, *lines = text.rstrip('\n').split('\n')
+    x, y, w, _h, a, dark = head.split('\t')
+    x, y, w, a = float(x), float(y), float(w), float(a)
+    ink = (28, 28, 30) if dark == '1' else (255, 255, 255)
+    fonts = [ImageFont.truetype(BOLD, round(20 * k)), ImageFont.truetype(FONT, round(15 * k)), ImageFont.truetype(FONT, round(15 * k))]
+    alphas = [1.0, 0.6, 0.85]
+    heights = [26, 20, 20]
+    if a <= 0.0:
+        return
+    # (on a clear layer composited after: Pillow draws text whose fill has alpha 0 as if opaque)
+    layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for i, t in enumerate(lines):
+        j = min(i, 2)
+        for row in wrap(d, t, fonts[j], w * k)[:2]:
+            d.text((x * k, (y + heights[j] * 0.1) * k), row, font=fonts[j], fill=ink + (round(255 * a * alphas[j]),))
+            y += heights[j]
+        y += 2 if i == 0 else 0
+    img.paste(layer, (0, 0), layer)
 
 
 def glass(img, box, k, radius, tint=0.75):
@@ -101,35 +172,6 @@ def caption(img, text, k):
         d.text(((W * k - tw) / 2, (y0 + pad[0] + i * lh + lh * 0.12) * k), t, font=f, fill=(255, 255, 255, 242))
 
 
-def switches(img, text, k):
-    """The switches panel (main.swift's layoutSwitches): small, in the bottom right corner, its foot 60 points
-    above the screen's, on a lighter glass; a row a rule, its label (footnote, right-aligned, dimmer when off)
-    beside an iOS switch at three quarters size (38 by 23 points; green when on)."""
-    W, H = img.size[0] / k, img.size[1] / k
-    rows = [r.split('\t') for r in text.split('\n') if r.count('\t') == 1]
-    pad, gap, row, sw, sh = 10, 8, 30, 38.25, 23.25
-    f = ImageFont.truetype(FONT, round(13 * k))
-    d = ImageDraw.Draw(img, 'RGBA')
-    most = min(W - 32, 320) - 2 * pad - gap - sw
-    label_w = min(max((d.textlength(lb, font=f) / k for lb, _ in rows), default=0), most)
-    w = pad + label_w + gap + sw + pad
-    h = pad + row * len(rows) + pad - 6
-    x0, y0 = W - 16 - w, H - 60 - h
-    glass(img, tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h)), k, 14, 0.4)
-    d = ImageDraw.Draw(img, 'RGBA')
-    for i, (label, on) in enumerate(rows):
-        on = on == '1'
-        mid = y0 + pad - 3 + row * (i + 0.5)
-        tw = d.textlength(label, font=f)
-        d.text(((x0 + pad + label_w) * k - tw, (mid - 8) * k), label, font=f,
-               fill=(255, 255, 255, round(255 * (0.95 if on else 0.55))))
-        sx, sy = x0 + w - pad - sw, mid - sh / 2
-        track = (52, 199, 89, 255) if on else (120, 120, 128, 110)
-        d.rounded_rectangle([sx * k, sy * k, (sx + sw) * k, (sy + sh) * k], radius=sh / 2 * k, fill=track)
-        kx, r = sx + (sw - sh / 2 if on else sh / 2), sh / 2 - 1.5
-        d.ellipse([(kx - r) * k, (mid - r) * k, (kx + r) * k, (mid + r) * k], fill=(255, 255, 255, 255))
-
-
 def title(img, text, k):
     """The toy's quiet title line (Toy::title): footnote, white at 0.55, centred at the top."""
     W = img.size[0] / k
@@ -148,10 +190,11 @@ def main():
             s = json.loads(j.read_text())
             shot = j.with_name(j.name[: -len('.shell.json')] + '.png')
             img = Image.open(shot).convert('RGB')
-            if s.get('rules') or s.get('origins'):
-                rules(img, s.get('rules') or s['origins'], s['ppp'], s.get('top', False))
-            if s.get('switches'):
-                switches(img, s['switches'], s['ppp'])
+            if s.get('label'):
+                label(img, s['label'], s['ppp'])
+            if s.get('rules') is not None or s.get('origins'):
+                sheet(img, s.get('rules') or s.get('origins') or '', s['ppp'], s.get('top', False),
+                      s.get('switches') if s.get('rules') is not None else None, s.get('more'))
             if s.get('title'):
                 title(img, s['title'], s['ppp'])
             if s.get('line'):

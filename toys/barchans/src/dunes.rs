@@ -55,12 +55,12 @@ pub struct Dunes {
     pub shadow: Vec<f32>,
     since_shade: usize,
     stack: Vec<(i32, i32)>,
-    /// The three rules, each on or off (the switches mark; `RULES`): a grain landing rolls to the lower
+    /// The three rules, each on or off (the sheet's switches; `RULES`): a grain landing rolls to the lower
     /// side across the wind, the lee behind a crest is out of the wind, a slope past repose slides.
     pub on: [bool; 3],
 }
 
-/// The rules as the switches mark names them, in `Dunes::on`'s order.
+/// The rules as the sheet's switches names them, in `Dunes::on`'s order.
 pub const RULES: [&str; 3] = [
     "Roll to the low side",
     "Shelter behind crests",

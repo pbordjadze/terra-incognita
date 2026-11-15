@@ -1,11 +1,15 @@
 {
- "_": "The Wave, its light over Estadio Azteca, Mexico City, at night: a window onto the stadium's oval of phone lights with the wave going round. Touched, the window grows into the toy; the Earth mark, and it shrinks back into its light.",
+ "_": "The Wave, its light over Estadio Azteca, Mexico City, the stadium's phone lights with the wave going round. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
  "seconds": 13,
  "fps": 20,
  "events": [
   {
    "t": 1.0,
    "tap": "wave"
+  },
+  {
+   "t": 2.6,
+   "tap": "card"
   },
   {
    "t": 8.0,
@@ -19,11 +23,15 @@
   },
   {
    "t": 2.2,
-   "name": "window"
+   "name": "light-touched"
+  },
+  {
+   "t": 2.2,
+   "name": "card"
   },
   {
    "t": 3.0,
-   "name": "growing"
+   "name": "opening"
   },
   {
    "t": 6.5,
@@ -31,7 +39,7 @@
   },
   {
    "t": 9.0,
-   "name": "going-back"
+   "name": "back-to-card"
   },
   {
    "t": 12.8,

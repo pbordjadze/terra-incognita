@@ -38,7 +38,7 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | Sound: a `Synth` on the audio thread | `lib.rs` | ✓ | |
 | The device's C ABI, `ios_shell!` | `shell.rs`, `ios.rs` | ✓ | |
 | A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptic` | `lib.rs` | ✓ | Terra, Nov 4 |
-| The switches mark: a toy's rules as switches over the live scene (`Toy::switches`, `set_switch`; `toy_switches_*`) | `switches.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and seven more, Nov 13 |
+| The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; `toy_switches_text`, `toy_switch_set`) | `switches.rs`, `info.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and ten more, Nov 13; one sheet Nov 15 |
 | VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
 | **Launch safety**: the iPhone's GPU limits requested on Linux (`KIT_IPHONE_LIMITS=1`), so a pipeline the phone refuses fails the check; GPU memory counted as it is allocated; a budget in `toy.json` | `gpu/`, `budget.rs` | + | the two launch crashes |
@@ -218,6 +218,12 @@ by standing on the kit:
   or two later; Bubblers has none: its bolting shows only after the reader's touch, its feeding only
   over half a minute); `tools/toys/switch_ab.py` plays a toy with each rule on and off, side by
   side.
+- **One mark, one sheet** (Nov 15, painting-company row 355): the info mark, the "?", the asterisk and
+  the switches became one mark of three dots. A toy with rules opens one sheet from it (rules, then each
+  switch on its line, then "Show me" and "Where this comes from"); a toy without plays its demo. The
+  switches stay set when the sheet closes, while the toy is held; an amber dot on the mark says a rule is
+  off. The three entries above are its history. Proof: `plans/rules.json`, `plans/switches.json`, Terra's
+  `plans/rules.json` on the Earth.
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.

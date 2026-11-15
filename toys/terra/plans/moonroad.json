@@ -1,11 +1,15 @@
 {
- "_": "Moon Road (painting-company row 333), its light on Lake Superior at Marquette: a window onto the plum night over a cream lake, the moon painting its road. Touched, the window shows the toy itself and grows as the Earth turns to it and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
+ "_": "Moon Road (painting-company row 333), its light on Lake Superior at Marquette, the moon painting its road on the night lake. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
  "seconds": 13,
  "fps": 20,
  "events": [
   {
    "t": 1.0,
    "tap": "moonroad"
+  },
+  {
+   "t": 2.6,
+   "tap": "card"
   },
   {
    "t": 8.0,
@@ -19,11 +23,15 @@
   },
   {
    "t": 2.2,
-   "name": "window"
+   "name": "light-touched"
+  },
+  {
+   "t": 2.2,
+   "name": "card"
   },
   {
    "t": 3.0,
-   "name": "growing"
+   "name": "opening"
   },
   {
    "t": 6.5,
@@ -31,7 +39,7 @@
   },
   {
    "t": 9.0,
-   "name": "going-back"
+   "name": "back-to-card"
   },
   {
    "t": 12.8,
