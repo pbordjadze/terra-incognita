@@ -23,29 +23,28 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     let captionGlass = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
     var captionText: String?
     lazy var infoElement = InfoElement(accessibilityContainer: self)
-    lazy var rulesElement = RulesElement(accessibilityContainer: self)
-    lazy var originsElement = OriginsElement(accessibilityContainer: self)
     /// The toy's own buttons (toy_buttons: Terra's lights), kept by label so VoiceOver's focus stays put.
     var buttonElements: [String: ButtonElement] = [:]
-    /// The rules (the rules mark's; toy-kit's info.rs › Rules) in the system's text: the toy's few
-    /// rules (and, if it gives one, a dimmer note), on a dark glass over the live
-    /// scene, above the marks. A tap anywhere closes it; it scrolls if the reader's text size needs.
-    /// The origins mark's text (where the rules came from) takes the same card; a toy may hang the card
-    /// from the top instead (`toy_card_at_top`, asked as it opens).
+    /// The sheet (toy-kit's info.rs: the one mark's), in the system's text on a dark glass over the live
+    /// scene, above the mark: the toy's few rules (and, if it gives one, a dimmer note); under them the rules
+    /// as switches, a row each (switches.rs: they stay as the reader leaves them); under a hairline, its
+    /// buttons ("Show me", "Where this comes from", which takes the sheet's place). A tap off the sheet closes
+    /// it (the kit's), a tap on it does nothing but its controls; it scrolls if the reader's text size needs.
+    /// A toy may hang it from the top instead (`toy_card_at_top`, asked as it opens).
     /// tools/kit/shell_text.py draws the same for the Linux check's screenshots: change both together.
-    let rules = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+    let rules = PanelGlass(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
     let rulesScroll = UIScrollView()
     let rulesLabel = UILabel()
     var rulesText: String?
     var cardTop = false
-    /// The switches mark's panel (toy-kit's switches.rs): the rules the toy's crowd follows, each a label
-    /// beside a small native switch, on a lighter glass in the corner above the marks. It stays while the reader
-    /// plays (the scene keeps its touches; the glass swallows its own), until the mark is tapped again.
-    /// tools/kit/shell_text.py draws the same for the Linux check's screenshots: change both together.
-    let switches = PanelGlass(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
     var switchCells: [(UILabel, UISwitch)] = []
     var switchesText: String?
-    lazy var switchesElement = SwitchesElement(accessibilityContainer: self)
+    let hairline = UIView()
+    var moreButtons: [UIButton] = []
+    var moreText: String?
+    /// Words the toy places itself (toy_label: Terra's postcard), in the system's text in the toy's box.
+    let label = UILabel()
+    var labelText: String?
     /// (TOY_OPEN=rules, origins, switches or info, or several with commas, set by tools/toys/sim_launch.sh: opens
     /// each once, the first TOY_OPEN_AFTER seconds in, the next TOY_OPEN_EVERY seconds after)
     var openAt: [(String, Double)] = []
@@ -96,16 +95,14 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         rulesLabel.numberOfLines = 0
         rulesLabel.isAccessibilityElement = true
         rulesScroll.addSubview(rulesLabel)
+        hairline.backgroundColor = UIColor(white: 1, alpha: 0.16)
+        rulesScroll.addSubview(hairline)
         rules.contentView.addSubview(rulesScroll)
-        rules.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(closeRules)))
         addSubview(rules)
-        switches.layer.cornerRadius = 14
-        switches.layer.cornerCurve = .continuous
-        switches.clipsToBounds = true
-        switches.contentView.backgroundColor = UIColor(white: 0.06, alpha: 0.3)
-        switches.alpha = 0
-        switches.isHidden = true
-        addSubview(switches)
+        label.numberOfLines = 0
+        label.isUserInteractionEnabled = false
+        label.alpha = 0
+        addSubview(label)
         let env = ProcessInfo.processInfo.environment
         if let what = env["TOY_OPEN"] {
             let first = CACurrentMediaTime() + (Double(env["TOY_OPEN_AFTER"] ?? "") ?? 8), every = Double(env["TOY_OPEN_EVERY"] ?? "") ?? 6
@@ -224,7 +221,6 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             toy_resize(shell, w, h, Double(metal.contentsScale))
         }
         if rulesText != nil { layoutRules() }
-        if switchesText != nil { layoutSwitches() }
         layoutTitle()
     }
 
@@ -237,64 +233,81 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         if let o = openAt.first, CACurrentMediaTime() >= o.1 {
             openAt.removeFirst()
             switch o.0 {
-            case "rules": toy_rules_open(shell)
+            case "rules", "switches": toy_rules_open(shell)
             case "origins": toy_origins_open(shell)
-            case "switches": toy_switches_open(shell)
-            default: toy_info_open(shell, CACurrentMediaTime())
+            default: toy_demo_open(shell, CACurrentMediaTime())
             }
         }
         showCaption(toy_info_line(shell).map { String(cString: $0) })
-        showRules((toy_rules_text(shell) ?? toy_origins_text(shell)).map { String(cString: $0) })
-        showSwitches(toy_switches_text(shell).map { String(cString: $0) })
+        let switches = toy_switches_text(shell).map { String(cString: $0) }
+        let more = toy_sheet_more(shell).map { String(cString: $0) }
+        showRules((toy_rules_text(shell) ?? toy_origins_text(shell)).map { String(cString: $0) }, switches, more)
+        showLabel(toy_label(shell).map { String(cString: $0) })
     }
 
-    /// Shows the switches panel (lines of label, a tab, 1 or 0), updates it, or hides it (nil).
-    func showSwitches(_ text: String?) {
-        guard text != switchesText else { return }
-        let opening = switchesText == nil
-        switchesText = text
-        guard let text else {
-            UIView.animate(withDuration: 0.3, animations: { self.switches.alpha = 0 }, completion: { _ in
-                if self.switchesText == nil { self.switches.isHidden = true }
-            })
-            UIAccessibility.post(notification: .layoutChanged, argument: nil)
+    /// The toy's own words (lines: its box, alpha and ink, tab-separated; then a heading, a quieter line,
+    /// plain lines), or none.
+    func showLabel(_ text: String?) {
+        guard text != labelText else { return }
+        let sameWords = text?.split(separator: "\n").dropFirst() == labelText?.split(separator: "\n").dropFirst()
+        labelText = text
+        guard let text, let head = text.split(separator: "\n").first else {
+            label.alpha = 0
+            label.isAccessibilityElement = false
             return
         }
-        let rows = text.split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false) }.filter { $0.count == 2 }
-        if rows.count != switchCells.count { makeSwitchCells(rows.count) }
+        let f = head.split(separator: "\t").compactMap { Double($0) }
+        guard f.count == 6 else { return }
+        if !sameWords {
+            let ink = f[5] == 1 ? UIColor(white: 0.11, alpha: 1) : UIColor.white
+            let fonts = [UIFont.preferredFont(forTextStyle: .title3).withWeight(.semibold),
+                         UIFont.preferredFont(forTextStyle: .subheadline), UIFont.preferredFont(forTextStyle: .subheadline)]
+            let alphas: [CGFloat] = [1, 0.6, 0.85]
+            let s = NSMutableAttributedString()
+            for (i, line) in text.split(separator: "\n").dropFirst().enumerated() {
+                let j = min(i, 2)
+                let p = NSMutableParagraphStyle()
+                p.paragraphSpacingBefore = i == 1 ? 2 : 0
+                s.append(NSAttributedString(string: (i > 0 ? "\n" : "") + line,
+                                            attributes: [.font: fonts[j], .foregroundColor: ink.withAlphaComponent(alphas[j]), .paragraphStyle: p]))
+            }
+            label.attributedText = s
+            label.accessibilityLabel = text.split(separator: "\n").dropFirst().joined(separator: ". ")
+        }
+        label.isAccessibilityElement = f[4] > 0.5
+        label.frame = CGRect(x: f[0], y: f[1], width: f[2], height: f[3])
+        label.sizeToFit()
+        label.frame.size.width = f[2]
+        label.alpha = f[4]
+    }
+
+    /// The switches (lines of label, a tab, 1 or 0) under the rules, made or updated.
+    func setSwitches(_ text: String?, animated: Bool) {
+        let rows = (text ?? "").split(separator: "\n").map { $0.split(separator: "\t", omittingEmptySubsequences: false) }.filter { $0.count == 2 }
+        if rows.count != switchCells.count {
+            for (label, toggle) in switchCells { label.removeFromSuperview(); toggle.removeFromSuperview() }
+            switchCells = (0..<rows.count).map { i in
+                let label = UILabel()
+                label.font = UIFont.preferredFont(forTextStyle: .callout)
+                label.adjustsFontForContentSizeCategory = true
+                label.numberOfLines = 1
+                label.textColor = .white
+                label.isAccessibilityElement = false
+                let toggle = UISwitch()
+                toggle.tag = i
+                toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
+                rulesScroll.addSubview(label)
+                rulesScroll.addSubview(toggle)
+                return (label, toggle)
+            }
+        }
         for (i, row) in rows.enumerated() {
             let (label, toggle) = switchCells[i]
             let on = row[1] == "1"
             label.text = String(row[0])
             label.alpha = on ? 0.95 : 0.55
             toggle.accessibilityLabel = label.text
-            if toggle.isOn != on { toggle.setOn(on, animated: !opening) }
-        }
-        layoutSwitches()
-        guard opening else { return }
-        switches.isHidden = false
-        UIView.animate(withDuration: 0.25) { self.switches.alpha = 1 }
-        UIAccessibility.post(notification: .screenChanged, argument: switchCells.first?.1)
-    }
-
-    func makeSwitchCells(_ n: Int) {
-        for (label, toggle) in switchCells { label.removeFromSuperview(); toggle.removeFromSuperview() }
-        switchCells = (0..<n).map { i in
-            let label = UILabel()
-            label.font = UIFont.preferredFont(forTextStyle: .footnote)
-            label.adjustsFontForContentSizeCategory = true
-            label.numberOfLines = 1
-            label.textAlignment = .right
-            label.textColor = .white
-            label.isAccessibilityElement = false
-            let toggle = UISwitch()
-            // small, so the scene stays the subject: three quarters size, the system's green when on
-            toggle.transform = CGAffineTransform(scaleX: 0.75, y: 0.75)
-            toggle.tag = i
-            toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
-            switches.contentView.addSubview(label)
-            switches.contentView.addSubview(toggle)
-            return (label, toggle)
+            if toggle.isOn != on { toggle.setOn(on, animated: animated) }
         }
     }
 
@@ -303,73 +316,124 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         toy_switch_set(shell, UInt32(toggle.tag), toggle.isOn)
     }
 
-    /// The panel's place: small, in the bottom right corner over the marks (the switches mark opened it),
-    /// its foot 60 points above the screen's; a row a rule, its label right-aligned beside a switch at
-    /// three quarters size. tools/kit/shell_text.py draws the same on the shots.
-    func layoutSwitches() {
-        let pad: CGFloat = 10, gap: CGFloat = 8
-        // a row grows with the reader's text size
-        let row = max(30, ceil(switchCells.first?.0.font.lineHeight ?? 0) + 12)
-        let toggleSize = switchCells.first?.1.frame.size ?? CGSize(width: 38, height: 23)
-        let most = min(bounds.width - 32, 320) - 2 * pad - gap - toggleSize.width
-        let labelW = min(switchCells.map { ceil($0.0.intrinsicContentSize.width) }.max() ?? 0, most)
-        let w = pad + labelW + gap + toggleSize.width + pad
-        let h = pad + row * CGFloat(switchCells.count) + pad - 6
-        switches.frame = CGRect(x: bounds.width - 16 - w, y: bounds.height - 60 - h, width: w, height: h)
-        for (i, (label, toggle)) in switchCells.enumerated() {
-            let mid = pad - 3 + row * (CGFloat(i) + 0.5)
-            label.frame = CGRect(x: pad, y: mid - row / 2, width: labelW, height: row)
-            toggle.center = CGPoint(x: w - pad - toggle.frame.width / 2, y: mid)
+    /// The sheet's buttons ("demo", "origins", a line each), made or updated.
+    func setMore(_ text: String?) {
+        guard text != moreText else { return }
+        moreText = text
+        for b in moreButtons { b.removeFromSuperview() }
+        let titles = ["demo": "Show me", "origins": "Where this comes from"]
+        moreButtons = (text ?? "").split(separator: "\n").compactMap { what in
+            guard let title = titles[String(what)] else { return nil }
+            let b = UIButton(type: .system)
+            b.setTitle(title, for: .normal)
+            b.titleLabel?.font = UIFont.preferredFont(forTextStyle: .callout)
+            b.titleLabel?.adjustsFontForContentSizeCategory = true
+            b.tintColor = UIColor(red: 0.49, green: 0.75, blue: 1.0, alpha: 1)
+            b.accessibilityIdentifier = String(what)
+            b.addTarget(self, action: #selector(morePressed(_:)), for: .touchUpInside)
+            rulesScroll.addSubview(b)
+            return b
         }
+        hairline.isHidden = moreButtons.isEmpty
     }
 
-    @objc func closeRules() {
-        guard let shell, rulesText != nil else { return }
-        if toy_origins_text(shell) != nil { toy_origins_open(shell) } else { toy_rules_open(shell) }
+    @objc func morePressed(_ b: UIButton) {
+        guard let shell else { return }
+        if b.accessibilityIdentifier == "demo" { toy_demo_open(shell, CACurrentMediaTime()) } else { toy_origins_open(shell) }
     }
 
-    func showRules(_ text: String?) {
-        guard text != rulesText else { return }
+    /// The sheet: the rules (or the origins in their place), the switches and the buttons; nil hides it.
+    func showRules(_ text: String?, _ switches: String?, _ more: String?) {
+        let opening = rulesText == nil
+        let changed = text != rulesText || switches != switchesText || more != moreText
+        guard changed else { return }
+        let textChanged = text != rulesText
         rulesText = text
+        switchesText = text == nil ? nil : switches
         guard let text else {
+            setMore(nil)
             UIView.animate(withDuration: 0.3, animations: { self.rules.alpha = 0 }, completion: { _ in
                 if self.rulesText == nil { self.rules.isHidden = true }
             })
             UIAccessibility.post(notification: .layoutChanged, argument: nil)
             return
         }
-        let parts = text.components(separatedBy: "\n\n")
-        let body = UIFont.preferredFont(forTextStyle: .callout), note = UIFont.preferredFont(forTextStyle: .footnote)
-        let lines = NSMutableParagraphStyle()
-        lines.paragraphSpacing = 7
-        let noteStyle = NSMutableParagraphStyle()
-        noteStyle.paragraphSpacingBefore = 6
-        let s = NSMutableAttributedString(string: parts[0], attributes: [.font: body, .foregroundColor: UIColor(white: 1, alpha: 0.95), .paragraphStyle: lines])
-        if parts.count > 1, !parts[1...].joined().isEmpty {
-            let noteAttributes: [NSAttributedString.Key: Any] = [.font: note, .foregroundColor: UIColor(white: 1, alpha: 0.64), .paragraphStyle: noteStyle]
-            s.append(NSAttributedString(string: "\n" + parts[1...].joined(separator: "\n"), attributes: noteAttributes))
+        setSwitches(switchesText, animated: !opening)
+        setMore(more)
+        if textChanged {
+            let parts = text.components(separatedBy: "\n\n")
+            let body = UIFont.preferredFont(forTextStyle: .callout), note = UIFont.preferredFont(forTextStyle: .footnote)
+            let lines = NSMutableParagraphStyle()
+            lines.paragraphSpacing = 7
+            let noteStyle = NSMutableParagraphStyle()
+            noteStyle.paragraphSpacingBefore = 6
+            let bodyAttributes: [NSAttributedString.Key: Any] = [.font: body, .foregroundColor: UIColor(white: 1, alpha: 0.95), .paragraphStyle: lines]
+            let s = NSMutableAttributedString(string: parts[0], attributes: bodyAttributes)
+            if parts.count > 1, !parts[1...].joined().isEmpty {
+                let noteAttributes: [NSAttributedString.Key: Any] = [.font: note, .foregroundColor: UIColor(white: 1, alpha: 0.64), .paragraphStyle: noteStyle]
+                s.append(NSAttributedString(string: "\n" + parts[1...].joined(separator: "\n"), attributes: noteAttributes))
+            }
+            rulesLabel.attributedText = s
+            rulesLabel.accessibilityLabel = parts.joined(separator: ". ")
+            rulesLabel.isHidden = text.isEmpty
         }
-        rulesLabel.attributedText = s
-        rulesLabel.accessibilityLabel = parts.joined(separator: ". ")
-        if let shell { cardTop = toy_card_at_top(shell) }
+        if opening, let shell { cardTop = toy_card_at_top(shell) }
         layoutRules()
+        guard opening else { return }
         rules.isHidden = false
         UIView.animate(withDuration: 0.25) { self.rules.alpha = 1 }
-        UIAccessibility.post(notification: .screenChanged, argument: rulesLabel)
+        var first: UIView? = rulesLabel
+        if text.isEmpty {
+            first = (switchCells.first?.1 as UIView?) ?? (moreButtons.first as UIView?)
+        }
+        UIAccessibility.post(notification: .screenChanged, argument: first)
     }
 
-    /// The panel's place: at most 480 points wide, centred, its foot 60 points above the screen's
-    /// (clear of the marks), as tall as its text up to the safe area's top; or, for a toy that asks,
-    /// hung 8 points below the safe area's top.
+    /// The sheet's place: at most 480 points wide, centred, its foot 60 points above the screen's (clear of
+    /// the mark), as tall as it needs up to the safe area's top; or, for a toy that asks, hung 8 points below
+    /// the safe area's top. Inside: the text, then a row a switch (its label left, the switch right), then a
+    /// hairline and the buttons in a row.
     func layoutRules() {
         let w = min(bounds.width - 32, 480), pad = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
-        let text = rulesLabel.sizeThatFits(CGSize(width: w - pad.left - pad.right, height: .greatestFiniteMagnitude))
+        let inner = w - pad.left - pad.right
+        let text = rulesLabel.isHidden ? .zero : rulesLabel.sizeThatFits(CGSize(width: inner, height: .greatestFiniteMagnitude))
+        rulesLabel.frame = CGRect(origin: .zero, size: CGSize(width: inner, height: text.height))
+        var y = text.height
+        if !switchCells.isEmpty {
+            y += text.height > 0 ? 6 : 0
+            let row = max(38, ceil(switchCells[0].0.font.lineHeight) + 16)
+            for (label, toggle) in switchCells {
+                toggle.center = CGPoint(x: inner - toggle.frame.width / 2, y: y + row / 2)
+                label.frame = CGRect(x: 0, y: y, width: inner - toggle.frame.width - 8, height: row)
+                y += row
+            }
+        }
+        if !moreButtons.isEmpty {
+            y += 6
+            hairline.frame = CGRect(x: 0, y: y, width: inner, height: 1 / max(contentScaleFactor, 1))
+            y += 6
+            var x: CGFloat = 0, rowH: CGFloat = 34
+            for b in moreButtons {
+                let size = b.sizeThatFits(CGSize(width: inner, height: 60))
+                if x > 0 && x + size.width > inner { x = 0; y += rowH }
+                rowH = max(34, size.height)
+                b.frame = CGRect(x: x, y: y, width: size.width, height: rowH)
+                x += size.width + 24
+            }
+            y += rowH
+        }
         let foot = bounds.height - 60
-        let h = min(text.height + pad.top + pad.bottom, foot - safeAreaInsets.top - 8)
+        let h = min(y + pad.top + pad.bottom, foot - safeAreaInsets.top - 8)
         rules.frame = CGRect(x: (bounds.width - w) / 2, y: cardTop ? safeAreaInsets.top + 8 : foot - h, width: w, height: h)
         rulesScroll.frame = rules.contentView.bounds.inset(by: pad)
-        rulesLabel.frame = CGRect(origin: .zero, size: CGSize(width: w - pad.left - pad.right, height: text.height))
-        rulesScroll.contentSize = rulesLabel.frame.size
+        rulesScroll.contentSize = CGSize(width: inner, height: y)
+    }
+
+    /// VoiceOver's two-finger scrub closes the sheet.
+    override func accessibilityPerformEscape() -> Bool {
+        guard let shell, rulesText != nil else { return false }
+        if toy_origins_text(shell) != nil { toy_origins_open(shell) } else { toy_rules_open(shell) }
+        return true
     }
 
     func showTitle(_ text: String?) {
@@ -476,17 +540,20 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         }
     }
 
-    /// The marks, for VoiceOver, in their order on screen: "Switch the rules" (the panel's switches while it
-    /// shows), "Where the rules come from", "How it works"
-    /// (the rules), "About this app" (its demo); and the card's text while it shows.
+    /// For VoiceOver: the sheet while it shows (its text, switches and buttons), the title, the toy's label and
+    /// buttons, and the mark ("About this toy": it opens the sheet).
     override var accessibilityElements: [Any]? {
         get {
             var x = 0.0, y = 0.0
             var out: [Any] = []
             guard let shell else { return [] }
-            if rulesText != nil { out.append(rulesLabel) }
-            if switchesText != nil { out.append(contentsOf: switchCells.map { $0.1 }) }
+            if rulesText != nil {
+                if !rulesLabel.isHidden { out.append(rulesLabel) }
+                out.append(contentsOf: switchCells.map { $0.1 })
+                out.append(contentsOf: moreButtons)
+            }
             if titleText != nil { title.isAccessibilityElement = true; out.append(title) }
+            if label.isAccessibilityElement { out.append(label) }
             if let text = toy_buttons(shell).map({ String(cString: $0) }), !text.isEmpty {
                 for (i, line) in text.split(separator: "\n").enumerated() {
                     let f = line.split(separator: "\t")
@@ -499,18 +566,6 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
                     e.accessibilityFrameInContainerSpace = CGRect(x: bx - 22, y: by - 22, width: 44, height: 44)
                     out.append(e)
                 }
-            }
-            if toy_switches_spot(shell, &x, &y) {
-                switchesElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
-                out.append(switchesElement)
-            }
-            if toy_origins_spot(shell, &x, &y) {
-                originsElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
-                out.append(originsElement)
-            }
-            if toy_rules_spot(shell, &x, &y) {
-                rulesElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
-                out.append(rulesElement)
             }
             if toy_info_spot(shell, &x, &y) {
                 infoElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
@@ -546,7 +601,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
 final class InfoElement: UIAccessibilityElement {
     override init(accessibilityContainer container: Any) {
         super.init(accessibilityContainer: container)
-        accessibilityLabel = "About this app"
+        accessibilityLabel = "About this toy"
         accessibilityTraits = .button
     }
     override func accessibilityActivate() -> Bool {
@@ -571,51 +626,12 @@ final class ButtonElement: UIAccessibilityElement {
     }
 }
 
-final class RulesElement: UIAccessibilityElement {
-    override init(accessibilityContainer container: Any) {
-        super.init(accessibilityContainer: container)
-        accessibilityLabel = "How it works"
-        accessibilityTraits = .button
-    }
-    override func accessibilityActivate() -> Bool {
-        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
-        toy_rules_open(shell)
-        return true
-    }
-}
-
-final class SwitchesElement: UIAccessibilityElement {
-    override init(accessibilityContainer container: Any) {
-        super.init(accessibilityContainer: container)
-        accessibilityLabel = "Switch the rules"
-        accessibilityTraits = .button
-    }
-    override func accessibilityActivate() -> Bool {
-        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
-        toy_switches_open(shell)
-        return true
-    }
-}
-
-/// The switches' glass: it keeps the touches that land on it (between its switches) from the scene below.
+/// The sheet's glass: it keeps the touches that land on it (between its switches) from the scene below.
 final class PanelGlass: UIVisualEffectView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {}
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {}
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {}
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {}
-}
-
-final class OriginsElement: UIAccessibilityElement {
-    override init(accessibilityContainer container: Any) {
-        super.init(accessibilityContainer: container)
-        accessibilityLabel = "Where the rules come from"
-        accessibilityTraits = .button
-    }
-    override func accessibilityActivate() -> Bool {
-        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
-        toy_origins_open(shell)
-        return true
-    }
 }
 
 final class ToyController: UIViewController {
@@ -645,5 +661,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         w.rootViewController = ToyController()
         w.makeKeyAndVisible()
         window = w
+    }
+}
+
+extension UIFont {
+    /// The same text style at another weight (title 3, semibold: a postcard's heading).
+    func withWeight(_ weight: UIFont.Weight) -> UIFont {
+        let d = fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: weight]])
+        return UIFont(descriptor: d, size: 0)
     }
 }

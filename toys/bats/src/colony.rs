@@ -107,12 +107,12 @@ pub struct Colony {
     pub swerved: u32,
     /// where the hawks are now: every bat keeps clear of them
     pub hawks: Vec<[f32; 3]>,
-    /// The two rules, each on or off (the switches mark; `RULES`): a bat near a hawk jinks away from
+    /// The two rules, each on or off (the sheet's switches; `RULES`): a bat near a hawk jinks away from
     /// it; a bat copies a neighbour's jink a moment later.
     pub on: [bool; 2],
 }
 
-/// The rules as the switches mark names them, in `Colony::on`'s order.
+/// The rules as the sheet's switches names them, in `Colony::on`'s order.
 pub const RULES: [&str; 2] = ["Dodge the hawk", "Copy a neighbour"];
 
 const CELL: f32 = 4.0;

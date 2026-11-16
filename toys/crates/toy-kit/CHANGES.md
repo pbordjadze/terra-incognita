@@ -7,6 +7,14 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **One mark, one sheet** (painting-company row 355): the info, rules, origins and switches marks are one
+  mark (three dots) that opens a sheet: the rules, the rules as switches under them, and the buttons "Show
+  me" (the demo) and "Where this comes from" (the origins). Switches stay as the reader leaves them when the
+  sheet closes, and the mark wears an amber dot while one is off. `Toy::label` places words over the frame
+  (Terra's postcard). The C ABI drops `toy_rules_spot`, `toy_origins_spot`, `toy_switches_spot` and
+  `toy_switches_open`, changes `toy_info_open` to the mark's tap, and adds `toy_demo_open`,
+  `toy_sheet_more` and `toy_label`; a shell must follow (toys/ios, toys/terra-web). Plans: `"tap": "rules"`
+  and `"switches"` are the mark's place, and `"show": "demo"` / `"origins"` presses a button.
 - **Terra on the web** (toys/terra-web): `wall_clock()`, seconds since 1970 (a browser's WebAssembly has
   no clock of its own; the web shell sets it with `set_wall_clock`), for any toy that reads the date;
   `set_log_sink` sends the log's lines (and the launch's steps) to the browser's console. New; nothing

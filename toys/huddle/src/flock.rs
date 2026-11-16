@@ -82,13 +82,13 @@ pub struct Huddle {
     /// penguins that stepped, joined, or set off this step (for the sound)
     pub stepped: u32,
     pub joined: Vec<[f32; 2]>,
-    /// The rule, on or off (the switches mark; `RULES`): a cold penguin on the windward edge walks
+    /// The rule, on or off (the sheet's switches; `RULES`): a cold penguin on the windward edge walks
     /// round to the lee. (Stepping after a neighbour shows only when the reader starts a wave, so it
     /// isn't a switch.)
     pub on: [bool; 1],
 }
 
-/// The rules as the switches mark names them, in `Huddle::on`'s order.
+/// The rules as the sheet's switches names them, in `Huddle::on`'s order.
 pub const RULES: [&str; 1] = ["Walk out of the wind"];
 
 fn sub(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {

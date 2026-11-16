@@ -31,7 +31,7 @@ const INTERFLASH_SPREAD: f64 = 0.03;
 /// Flashes in a burst (inclusive).
 const BURST_MIN: u32 = 4;
 const BURST_MAX: u32 = 8;
-/// The rules as the switches mark names them, in `Swarm::on`'s order.
+/// The rules as the sheet's switches names them, in `Swarm::on`'s order.
 pub const RULES: [&str; 1] = ["Rest till dark"];
 /// After a burst, the rest in which nothing sets him off (s, mean and spread), measured from the
 /// burst's last flash.
@@ -151,7 +151,7 @@ pub struct Swarm {
     bursting: bool,
     /// Males out now (grows to MALES over EMERGE_S).
     pub out: usize,
-    /// The rule, on or off (the switches mark; `RULES`): rest until the woods go dark. (The burst and
+    /// The rule, on or off (the sheet's switches; `RULES`): rest until the woods go dark. (The burst and
     /// starting on a flash seen show only a burst or two later, so they aren't switches.)
     pub on: [bool; 1],
     /// The light of the whole swarm this step (the sum of the flashes' light, for the woods' glow).

@@ -1,5 +1,5 @@
 {
- "_": "The info mark: its ghost hand starts the record, pushes it down to a screw and chops it twice.",
+ "_": "The demo: its ghost hand starts the record, pushes it down to a screw and chops it twice.",
  "size": [
   1179,
   2556
@@ -10,7 +10,7 @@
  "events": [
   {
    "t": 1.0,
-   "tap": "info"
+   "show": "demo"
   }
  ],
  "shots": [

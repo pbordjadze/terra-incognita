@@ -668,7 +668,7 @@ impl Toy for Murmuration {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
                 "At dusk, thousands of starlings swirl together before they roost: today's dusk at Ham Wall, in Somerset.",
-                "Each bird heeds only its seven nearest neighbours, and no one leads. The three dots show its rules: switch one off to see what it does.",
+                "Each bird heeds only its seven nearest neighbours, and no one leads. Its rules are below: switch one off to see what it does.",
                 "Hold to join them; drag to steer.",
         ]))
     }

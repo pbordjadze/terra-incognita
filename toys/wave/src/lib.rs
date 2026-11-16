@@ -413,7 +413,7 @@ impl Toy for Wave {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "A Mexican wave in Estadio Azteca. It takes a few dozen at once to start one, and after a lap or two people tire of it and it dies.",
-            "Each person follows three rules. The three dots show them: switch one off to see what it does.",
+            "Each person follows the three rules below: switch one off to see what it does.",
             "Swipe along the stands to start one.",
         ]))
     }

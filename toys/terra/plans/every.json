@@ -1,5 +1,5 @@
 {
- "_": "Every globe toy's light entered in turn and left again (Fireflies; Swell's passage is nazare.json), the Earth turned by hand to it: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays). (The scenes' passages have their own plans: murmuration.json, scenes.json, nazare.json; Battle Ink retired, painting-company row 245.)",
+ "_": "Every globe toy's light entered in turn and left again (Fireflies; Nazaré's is nazare.json), the Earth turned by hand to it: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
  "seconds": 43.5,
  "fps": 10,
  "events": [
@@ -36,11 +36,19 @@
    "tap": "fireflies"
   },
   {
+   "t": 35.6,
+   "tap": "card"
+  },
+  {
    "t": 40.0,
    "tap": "earth"
   }
  ],
  "shots": [
+  {
+   "t": 35.2,
+   "name": "card"
+  },
   {
    "t": 38.5,
    "name": "fireflies"

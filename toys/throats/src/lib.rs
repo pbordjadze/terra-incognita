@@ -444,7 +444,7 @@ impl Toy for Throats {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "On California hillsides, male side-blotched lizards have orange, blue or yellow throats. Each dot is one lizard guarding its patch.",
-            "Orange beats blue, blue beats yellow, yellow beats orange, like rock, paper, scissors. Nothing wins for long: the colours chase each other in spirals. The three dots show the rules: switch one off to see what it does.",
+            "Orange beats blue, blue beats yellow, yellow beats orange, like rock, paper, scissors. Nothing wins for long: the colours chase each other in spirals. The rules are below: switch one off to see what it does.",
             "Each stroke you draw pours in the next colour.",
         ]))
     }

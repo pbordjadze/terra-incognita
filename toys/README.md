@@ -67,20 +67,21 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   - The globe's hand is Adrift's gestures (drag over the poles, two-finger twist and anchored pinch,
     fling, Home by over-pinch or three fingers up): a globe toy calls `globe.set_home()` once its
     opening camera is set, and lets its own camera wait while `globe.hand.busy()`.
-  - `info`: the info mark. A toy's `demo()` gives its one gesture (strokes, played as real touches
-    under a ghost fingertip) and one short line (under ten words: what it is and the gesture); the kit
-    draws the mark bottom right, the shell the line on a small dark glass. The demo opens by itself a
+  - `info`: the one mark (painting-company row 355, Nov 15 2026: five marks became one), three dots
+    bottom right, an amber dot beside them while any rule is switched off. A toy's `demo()` gives its one
+    gesture (strokes, played as real touches under a ghost fingertip) and one short line (under ten words:
+    what it is and the gesture); the shell sets the line on a small dark glass. The demo opens by itself a
     second into a toy's first visit (`info::First`; in Terra, each toy's first opening since launch).
-    Beside it a "?": a toy's `rules()` gives, in two to four short lines (about fifty words), the rules
-    the real thing follows (the starlings' seven nearest, a wave faster in deeper water) and how a
-    finger joins in; no "Real: … Drawn: …" line (Paul, Nov 13: a confusing paradigm; the sources stay
-    in SOURCES.md), so the note is empty. The shell sets them on a dark glass, closed by a tap anywhere.
-    A toy may split that in two (Shortcut, Screw): `rules()` the rules alone, and `origins()`, an
-    asterisk beside the "?", where they came from; `card_at_top()` hangs the card from the top when the
-    scene is low. Plain words, no title, nothing to do: a person can glance and go. Before the text
-    ships, a reader who knows nothing of the toy is shown its shots and text and says what it is.
-    `plans/rules.json` photographs it; `python3 tools/kit/shell_text.py <out>` draws the shell's text
-    on the check's shots (the Simulator's `rules.png` is the real one).
+    A toy with `rules()` makes the mark open one sheet instead (the shell's, light on the live scene): in two
+    to four short lines (about fifty words), the rules the real thing follows (the starlings' seven
+    nearest, a wave faster in deeper water) and how a finger joins in; under them each rule of
+    `switches()` as a line with its switch; then "Show me" (the demo again) and, for a toy with
+    `origins()`, "Where this comes from". Switches stay as the reader left them when the sheet closes, for
+    as long as the toy is held (in Terra, until its card is put away). Plain words, no title: a person can
+    glance and go. Before the text ships, a reader who knows nothing of the toy is shown its shots and
+    text and says what it is. `plans/rules.json` photographs it, `plans/info.json` plays the demo
+    (`"show": "demo"`); `python3 tools/kit/shell_text.py <out>` draws the shell's text on the check's
+    shots (the Simulator's `rules.png` is the real one).
   - `field` (field.rs): a grid of four numbers a cell the toy writes on the CPU, uploaded as half floats and
     drawn by a full-screen fragment of its own (the backdrop's, with `fld(cell)` to sample it):
     Bubblers' sand, Barchans' heights.
@@ -103,15 +104,16 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     (heard with the silent switch on).
   - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
     mark); the shell reads them through `toy_buttons`. None by default.
-- `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a light for each toy it
-  holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). A scene toy (no globe of its own) opens as a window:
-  touched, its light shows the toy itself, live, its whole frame scaled into the light (`draw_window`), growing
-  with the Earth's zoom as Terra turns the light to the middle and falls toward it; out, it shrinks back
-  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is its own globe's and the held toys',
-  merged (`tools/toys/terra/manifest.py`); CI checks it whenever any toy changes. It holds local toys only for now (a
-  real place and a real phenomenon; Bell and Whales came off its map on Nov 13, 2026). A toy added to Terra is a
-  dependency in its `Cargo.toml`, a `Door` and a name in `doors.rs`/`lib.rs`, and its name in the manifest
-  tool.
+- `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a plain light in each toy's
+  colour where it happens (`doors.rs`; lights that would touch gather into one ringed with their colours, and a
+  touch comes nearer until they part). A touch on a light raises its card (`card.rs`, drawn by `veil.rs`): the
+  toy itself, live, with its name, place and one line; a touch on the card grows it to the glass, and the toy
+  runs inside Terra (`rooms.rs`); the Earth mark (or a pinch out of a globe toy) shrinks it back into its card,
+  and a swipe down or a touch on the Earth puts the card away (painting-company row 355). Its data is its own
+  globe's and the held toys', merged (`tools/toys/terra/manifest.py`); CI checks it whenever any toy changes. It
+  holds local toys only for now (a real place and a real phenomenon; Bell and Whales came off its map on Nov 13,
+  2026). A toy added to Terra is a dependency in its `Cargo.toml`, a `Door` (a place, a colour, a line) in
+  `doors/places.rs`, and its name in the manifest tool.
 - `<toy>/`: one crate a toy (`src/lib.rs` the toy, `src/bin/check.rs` its check binary), `toy.json` (its
   app name and bundle id), `manifest.json` (the data it loads, by name, from where in this repository;
   its own built data under `<toy>/data/`, never hand-edited, built by a tool in `tools/toys/<toy>/`),

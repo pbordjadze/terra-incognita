@@ -1,6 +1,6 @@
 //! Terra on the web: the iPhone's library (`toys/terra`) on a canvas through WebGPU, with the iPhone
 //! shell's calls (`toys/ios/Sources/toy.h`) exported to JavaScript one for one, so `web/index.html` does
-//! what `main.swift` does (the info line, the rules card, the switches panel, the title, the sound) in
+//! what `main.swift` does (the demo's line, the sheet, the postcard's words, the title, the sound) in
 //! HTML. The data comes in from the page, fetched beside it (`tools/toys/web_build.sh`); the library
 //! fetches nothing.
 #![cfg(target_arch = "wasm32")]
@@ -180,12 +180,14 @@ impl Shell {
         text(self.host.info.line())
     }
 
+    /// The mark's tap: the sheet opened or closed (or the demo, for a toy with a demo alone).
     pub fn info_open(&mut self, t: f64) {
-        self.host.open_info(t);
+        self.host.open_mark(t);
     }
 
-    pub fn rules_spot(&self) -> Option<Vec<f64>> {
-        spot(self.host.rules_spot())
+    /// The sheet's "Show me".
+    pub fn demo_open(&mut self, t: f64) {
+        self.host.open_info(t);
     }
 
     pub fn rules_text(&self) -> Option<String> {
@@ -196,10 +198,6 @@ impl Shell {
         self.host.open_rules();
     }
 
-    pub fn origins_spot(&self) -> Option<Vec<f64>> {
-        spot(self.host.origins_spot())
-    }
-
     pub fn origins_text(&self) -> Option<String> {
         text(self.host.info.origins())
     }
@@ -208,20 +206,22 @@ impl Shell {
         self.host.open_origins();
     }
 
-    pub fn switches_spot(&self) -> Option<Vec<f64>> {
-        spot(self.host.switches_spot())
+    /// The sheet's buttons, a line each ("demo", "origins"), while its rules show.
+    pub fn sheet_more(&self) -> Option<String> {
+        text(self.host.sheet_more())
     }
 
     pub fn switches_text(&self) -> Option<String> {
         text(self.host.switches_text())
     }
 
-    pub fn switches_open(&mut self) {
-        self.host.open_switches();
-    }
-
     pub fn switch_set(&mut self, i: u32, on: bool) {
         self.host.set_switch(i as usize, on);
+    }
+
+    /// Words Terra places (its postcard): the box, alpha and ink on a first line, then the lines.
+    pub fn label(&mut self) -> Option<String> {
+        text(self.host.label_text())
     }
 
     pub fn card_at_top(&self) -> bool {

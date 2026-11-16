@@ -279,7 +279,7 @@ impl Toy for Barchans {
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "South of Tarfaya, in Morocco, crescent dunes walk across the bare desert floor, small ones faster than big.",
-            "The wind lifts sand wherever it reaches and drops it a little downwind. The three dots show the other rules: switch one off to see what it does.",
+            "The wind lifts sand wherever it reaches and drops it a little downwind. The other rules are below: switch one off to see what it does.",
             "Drag to turn the wind; hold still to pour sand.",
         ]))
     }

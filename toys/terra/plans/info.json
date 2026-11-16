@@ -1,4 +1,47 @@
-{ "_": "The info mark (toy-kit info.rs): tapped, its ghost finger touches the light nearest the middle and in it goes, as a finger would; inside, the info mark is the toy's own.",
-  "size": [1170, 2532], "ppp": 3, "seconds": 9, "fps": 20,
-  "events": [ { "t": 1.0, "tap": "info" }, { "t": 7.0, "tap": [195, 300], "inert": true } ],
-  "shots": [{ "t": 0.9, "name": "mark" }, { "t": 1.6, "name": "ghost" }, { "t": 2.6, "name": "answer" }, { "t": 5.5, "name": "inside" }, { "t": 8.5, "name": "closed" }] }
+{
+ "_": "The demo on the Earth (toy-kit info.rs): its ghost finger touches the light nearest the middle and the light's card comes up, as a finger would; a touch on the bare sea puts it away.",
+ "size": [
+  1170,
+  2532
+ ],
+ "ppp": 3,
+ "seconds": 9,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "show": "demo"
+  },
+  {
+   "t": 7.0,
+   "tap": {
+    "lonlat": [
+     -40.0,
+     30.0
+    ]
+   }
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "mark"
+  },
+  {
+   "t": 1.6,
+   "name": "ghost"
+  },
+  {
+   "t": 2.6,
+   "name": "answer"
+  },
+  {
+   "t": 5.5,
+   "name": "card-up"
+  },
+  {
+   "t": 8.5,
+   "name": "closed"
+  }
+ ]
+}
