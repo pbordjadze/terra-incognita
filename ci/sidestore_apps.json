@@ -1,5 +1,5 @@
 {
-  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out). The toys Terra holds (toys/terra/Cargo.toml) are not listed: they ship inside Terra only (since Nov 16, 2026).",
   "apps": [
     {
       "tag": "terra-build",
@@ -33,17 +33,6 @@
       "icon": "whales-icon.png",
       "iconSource": "toys/whales/icon.png",
       "tintColor": "#4A7FA8",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "murmuration-build",
-      "name": "Murmuration",
-      "bundleIdentifier": "com.pbordjadze.toy.murmuration",
-      "subtitle": "A flock, and you one of them",
-      "localizedDescription": "Hundreds of birds on simple rules over the real sky; lean and the flock bends around you. Working title; a toy in the making.",
-      "icon": "murmuration-icon.png",
-      "iconSource": "toys/murmuration/icon.png",
-      "tintColor": "#C98A6A",
       "minOSVersion": "17.0"
     },
     {
@@ -102,17 +91,6 @@
       "minOSVersion": "17.0"
     },
     {
-      "tag": "meander-build",
-      "name": "Meander",
-      "bundleIdentifier": "com.pbordjadze.toy.meander",
-      "subtitle": "Draw a river and watch it wander",
-      "localizedDescription": "The Rio Beni's real floodplain in Bolivia. Draw a river with your finger: its bends grow and drift, and when a loop's neck closes the river cuts through and leaves an oxbow lake, the same shape as the real ones beneath. Working title; a toy in the making.",
-      "icon": "meander-icon.png",
-      "iconSource": "toys/meander/icon.png",
-      "tintColor": "#C2A178",
-      "minOSVersion": "17.0"
-    },
-    {
       "tag": "taste-build",
       "name": "Taste",
       "bundleIdentifier": "com.pbordjadze.toy.taste",
@@ -121,17 +99,6 @@
       "icon": "taste-icon.png",
       "iconSource": "toys/taste/icon.png",
       "tintColor": "#A054F5",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "frost-build",
-      "name": "Frost",
-      "bundleIdentifier": "com.pbordjadze.toy.frost",
-      "subtitle": "Your finger is warm",
-      "localizedDescription": "A cabin window at Oymyakon, about −50 °C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: what you wipe stays clear, the frost creeping back only slowly from its edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
-      "icon": "frost-icon.png",
-      "iconSource": "toys/frost/icon.png",
-      "tintColor": "#5F7FA8",
       "minOSVersion": "17.0"
     },
     {
@@ -154,138 +121,6 @@
       "icon": "screw-icon.png",
       "iconSource": "toys/screw/icon.png",
       "tintColor": "#8E4FB0",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "throats-build",
-      "name": "Throats",
-      "bundleIdentifier": "com.pbordjadze.toy.throats",
-      "subtitle": "Rock, paper, scissors on a hillside of lizards",
-      "localizedDescription": "A sunny California slope seen from above, every rock held by a side-blotched lizard with an orange, blue or yellow throat. Orange takes blue's rock, blue takes yellow's, yellow takes orange's, and the colours chase each other round in spirals. Draw to pour in a colour; it breaks into new arms. Pinch out for the whole hill. Working title; a toy in the making.",
-      "icon": "throats-icon.png",
-      "iconSource": "toys/throats/icon.png",
-      "tintColor": "#F07A1A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "nazare-build",
-      "name": "Nazaré",
-      "bundleIdentifier": "com.pbordjadze.toy.nazare",
-      "subtitle": "The canyon that makes the biggest waves",
-      "localizedDescription": "The Atlantic swell over the real sea floor off Nazaré, Portugal, where a canyon reaches almost to the beach. Watch it bend round the canyon and stack up at Praia do Norte. Drag to turn the swell or lengthen it. Working title; a toy in the making.",
-      "icon": "nazare-icon.png",
-      "iconSource": "toys/nazare/icon.png",
-      "tintColor": "#4F8FB8",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "elkmont-build",
-      "name": "Elkmont",
-      "bundleIdentifier": "com.pbordjadze.toy.elkmont",
-      "subtitle": "The synchronous fireflies in a June wood",
-      "localizedDescription": "Night in the woods at Elkmont in the Great Smoky Mountains, where the fireflies flash together: a burst all through the trees, then dark, again and again. Hold a small light low and the females in the leaf litter answer it. Working title; a toy in the making.",
-      "icon": "elkmont-icon.png",
-      "iconSource": "toys/elkmont/icon.png",
-      "tintColor": "#A8E05A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "bats-build",
-      "name": "Bats",
-      "bundleIdentifier": "com.pbordjadze.toy.bats",
-      "subtitle": "Millions of bats at dusk, and you the hawk",
-      "localizedDescription": "A summer dusk above Bracken Cave in the Texas Hill Country, where millions of free-tailed bats climb out of a sinkhole in a turning column and stream off over the hills to feed. You are the hawk: dive into them and watch the swerve ripple on down the stream. Working title; a toy in the making.",
-      "icon": "bats-icon.png",
-      "iconSource": "toys/bats/icon.png",
-      "tintColor": "#E8935A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "huddle-build",
-      "name": "Huddle",
-      "bundleIdentifier": "com.pbordjadze.toy.huddle",
-      "subtitle": "Emperor penguins keeping warm in the wind",
-      "localizedDescription": "Emperor penguins packed on the sea ice of Atka Bay in a winter wind, seen from above. The ones on the windward edge get cold, walk round, and press in on the lee side, so the huddle turns over and creeps downwind, and now and then a wave of tiny steps runs through it. Drag to turn the wind; touch a penguin to start a wave. Working title; a toy in the making.",
-      "icon": "huddle-icon.png",
-      "iconSource": "toys/huddle/icon.png",
-      "tintColor": "#E8B04A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "wave-build",
-      "name": "The Wave",
-      "bundleIdentifier": "com.pbordjadze.toy.wave",
-      "subtitle": "Start a Mexican wave in a stadium of phone lights",
-      "localizedDescription": "Estadio Azteca in Mexico City at night, 87,000 people, every one a phone held up as a light. Swipe along the stands and the people under your finger stand up; if enough do, a wave runs round the bowl at twenty seats a second. Too few, and it fizzles; two waves that meet wipe each other out. Working title; a toy in the making.",
-      "icon": "wave-icon.png",
-      "iconSource": "toys/wave/icon.png",
-      "tintColor": "#F2C46B",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "catatumbo-build",
-      "name": "Catatumbo",
-      "bundleIdentifier": "com.pbordjadze.toy.catatumbo",
-      "subtitle": "Lightning over Lake Maracaibo; your finger is the ground",
-      "localizedDescription": "Night over Lake Maracaibo, where the Catatumbo meets it and lightning flickers most nights of the year. Touch the water and a stroke forks down to your finger, grown by the rule real lightning follows; hold and it strikes again down the same channel. Every piece of the channel thunders, the near ones first. Touch the sky for a crawler under the cloud. Working title; a toy in the making.",
-      "icon": "catatumbo-icon.png",
-      "iconSource": "toys/catatumbo/icon.png",
-      "tintColor": "#9B86FF",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "moonroad-build",
-      "name": "Moon Road",
-      "bundleIdentifier": "com.pbordjadze.toy.moonroad",
-      "subtitle": "The moon paints its road down Lake Superior",
-      "localizedDescription": "Moonrise over Lake Superior, the water a numbered template on dark paper. Only the bits of water tilted just right send the moon's light to your eye, and each one the moon lights, it paints, so the road of light from the moon to you fills in, number by number. Tap for a gust and the road spreads; drag to walk the shore and the road follows you. Shake for a fresh page. Working title; a toy in the making.",
-      "icon": "moonroad-icon.png",
-      "iconSource": "toys/moonroad/icon.png",
-      "tintColor": "#F6E2AE",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "bubblers-build",
-      "name": "Bubblers",
-      "bundleIdentifier": "com.pbordjadze.toy.bubblers",
-      "subtitle": "Sand-bubbler crabs drawing starbursts at low tide",
-      "localizedDescription": "Low tide on a Phuket beach, seen from above. Sand-bubbler crabs feed out from their burrows and leave the sifted sand behind as little balls, laid in spokes, and the beach fills with starbursts nobody drew. Tap for a footstep and they bolt, their neighbours after them; drag to draw in the sand; shake and the tide comes in. Working title; a toy in the making.",
-      "icon": "bubblers-icon.png",
-      "iconSource": "toys/bubblers/icon.png",
-      "tintColor": "#D8C6A2",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "barchans-build",
-      "name": "Barchans",
-      "bundleIdentifier": "com.pbordjadze.toy.barchans",
-      "subtitle": "Crescent dunes walking the Sahara; drag to turn the wind",
-      "localizedDescription": "Dunes near Tarfaya in the Atlantic Sahara, from above in a low sun. One rule (the wind lifts sand, drops it downwind, and it sticks best on sand) makes crescents that walk, merge and calve. Drag to turn the wind and watch them turn; hold still to pour sand. A big dune's sliding face hums at a hundred hertz. Working title; a toy in the making.",
-      "icon": "barchans-icon.png",
-      "iconSource": "toys/barchans/icon.png",
-      "tintColor": "#E9A262",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "pando-build",
-      "name": "Pando",
-      "bundleIdentifier": "com.pbordjadze.toy.pando",
-      "subtitle": "One aspen that looks like a forest, from the grove to a leaf's pores",
-      "localizedDescription": "Pando, in Utah, looks like a forest of golden aspens but is one tree: over 40,000 stems from one root. Drag to blow and gusts run over the grove as pale waves, every leaf flipping on its flat stalk. Tap a tree, then a leaf, then closer still, to its pores, which close in your finger's shade. Working title; a toy in the making.",
-      "icon": "pando-icon.png",
-      "iconSource": "toys/pando/icon.png",
-      "tintColor": "#F2B22A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "hoh-build",
-      "name": "Hoh",
-      "bundleIdentifier": "com.pbordjadze.toy.hoh",
-      "subtitle": "The rainforest below Mount Olympus, where fallen logs grow rows of trees",
-      "localizedDescription": "The Hoh, at the foot of Mount Olympus in Washington. Moss smothers every seedling on the forest floor; only those on a fallen log live, so young trees grow in lines along the logs, and when a log rots away its trees stand in a row on stilts. Drag to run the years; tap a giant to fell it. Working title; a toy in the making.",
-      "icon": "hoh-icon.png",
-      "iconSource": "toys/hoh/icon.png",
-      "tintColor": "#5E8C3A",
       "minOSVersion": "17.0"
     }
   ]
