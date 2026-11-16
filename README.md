@@ -2,8 +2,8 @@
 
 The whole Earth as satellites saw it this month, and on it a living light for each of the toys: touch
 one and fall into it. Terra and the toys it holds are written in Rust on wgpu (`toys/`; Terra itself is
-`toys/terra/`), beside Adrift, glass floats on the real sea (`adrift/`). Each is its own app in the same
-SideStore source. Nothing is a web view, nothing is fetched at run time; no accounts, no analytics.
+`toys/terra/`), beside Adrift, glass floats on the real sea (`adrift/`). The toys Terra holds ship only inside
+it; Terra, Adrift and the few toys it doesn't hold are each their own app in the same SideStore source. Nothing is a web view, nothing is fetched at run time; no accounts, no analytics.
 
 - `toys/`: the toy kit (`toys/crates/toy-kit`), every toy and Terra; how they fit: `toys/README.md`.
 - `adrift/`: Adrift; `adrift/README.md`.
