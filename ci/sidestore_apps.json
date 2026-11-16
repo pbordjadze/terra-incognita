@@ -1,5 +1,5 @@
 {
-  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out). The toys Terra holds (toys/terra/Cargo.toml) are not listed: they ship inside Terra only (since Nov 16, 2026).",
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out). No other toy is listed: the toys Terra holds ship inside it, and the rest have no app (since Nov 16, 2026).",
   "apps": [
     {
       "tag": "terra-build",
@@ -22,105 +22,6 @@
       "icon": "adrift-icon.png",
       "iconSource": "adrift/ios/icon/icon.png",
       "tintColor": "#E0A040",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "whales-build",
-      "name": "Whales",
-      "bundleIdentifier": "com.pbordjadze.toy.whales",
-      "subtitle": "Two whales, their songs and their travels",
-      "localizedDescription": "Pick two whales and hear them sing as they travel the real oceans. Working title; a toy in the making.",
-      "icon": "whales-icon.png",
-      "iconSource": "toys/whales/icon.png",
-      "tintColor": "#4A7FA8",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "fireflies-build",
-      "name": "Fireflies",
-      "bundleIdentifier": "com.pbordjadze.toy.fireflies",
-      "subtitle": "Every night city a firefly",
-      "localizedDescription": "Each city of the night Earth blinks its own rhythm; nudge one and continents fall into step. Working title; a toy in the making.",
-      "icon": "fireflies-icon.png",
-      "iconSource": "toys/fireflies/icon.png",
-      "tintColor": "#F2D16B",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "bell-build",
-      "name": "Bell",
-      "bundleIdentifier": "com.pbordjadze.toy.bell",
-      "subtitle": "Strike the Earth and hear it ring",
-      "localizedDescription": "Tap the Earth and it rings in its own measured free oscillations, the chord heard from the place facing you. Working title; a toy in the making.",
-      "icon": "bell-icon.png",
-      "iconSource": "toys/bell/icon.png",
-      "tintColor": "#B8C8D8",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "swell-build",
-      "name": "Swell",
-      "bundleIdentifier": "com.pbordjadze.toy.swell",
-      "subtitle": "Waves on the real sea floor",
-      "localizedDescription": "Touch the sea and a wave crosses the ocean at the speed its real depth gives it; the coasts chime where it arrives. Working title; a toy in the making.",
-      "icon": "swell-icon.png",
-      "iconSource": "toys/swell/icon.png",
-      "tintColor": "#6FA8D0",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "carol-build",
-      "name": "Carol",
-      "bundleIdentifier": "com.pbordjadze.toy.carol",
-      "subtitle": "Tap a piece, then where it goes",
-      "localizedDescription": "A wooden chess set that knows its lines: tap a piece, then where it goes. The right move slides home with a note and the other side answers; a wrong one bumps back. Twenty-four drills, openings and puzzles, the missed ones coming back first. A toy; offline.",
-      "icon": "carol-icon.png",
-      "iconSource": "toys/carol/icon.png",
-      "tintColor": "#B5824F",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "jam-build",
-      "name": "Shortcut",
-      "bundleIdentifier": "com.pbordjadze.toy.jam",
-      "subtitle": "Build a road, and watch traffic get worse",
-      "localizedDescription": "A small town at night round a lake, its cars each taking the way that looks quickest. Draw a road from one road to another, slash one closed, and see what the drivers do: the obvious bridge can make everyone's trip slower (Braess's paradox), and nothing tells you so but the colour of the cars. Working title; a toy in the making.",
-      "icon": "jam-icon.png",
-      "iconSource": "toys/jam/icon.png",
-      "tintColor": "#D8321E",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "taste-build",
-      "name": "Taste",
-      "bundleIdentifier": "com.pbordjadze.toy.taste",
-      "subtitle": "A creature that becomes what you like",
-      "localizedDescription": "A small creature keeps changing its shape and colour. Rest a finger on it while you like what it is: it keeps trying on a slightly different self, and keeps the new one as often as you held it. It lingers where you linger, still wanders off, and every so often pulls back to show the path it took. Working title; a toy in the making.",
-      "icon": "taste-icon.png",
-      "iconSource": "toys/taste/icon.png",
-      "tintColor": "#A054F5",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "walk-build",
-      "name": "Night Walk",
-      "bundleIdentifier": "com.pbordjadze.toy.walk",
-      "subtitle": "A walker's footprints map a land no one can see",
-      "localizedDescription": "A walker crosses a land in the dark. Each step it picks a spot at random within its stride: higher ground it always takes, lower only sometimes. Where its footprints pile up, a map rises; at dawn the real land comes up under it. Touch to set how far it steps. Working title; a toy in the making.",
-      "icon": "walk-icon.png",
-      "iconSource": "toys/walk/icon.png",
-      "tintColor": "#E8B86A",
-      "minOSVersion": "17.0"
-    },
-    {
-      "tag": "screw-build",
-      "name": "Screw",
-      "bundleIdentifier": "com.pbordjadze.toy.screw",
-      "subtitle": "Chop and screw a song of your own",
-      "localizedDescription": "A record turning on a dark page. Open a song of yours from Files; tap and it plays. Push it down and it slows, the voice dropping with it, as Houston's DJ Screw rode a turntable's pitch. Tap and it says the last beat again, in time; flick it back two bars. Your song stays on your phone. Working title; a toy in the making.",
-      "icon": "screw-icon.png",
-      "iconSource": "toys/screw/icon.png",
-      "tintColor": "#8E4FB0",
       "minOSVersion": "17.0"
     }
   ]

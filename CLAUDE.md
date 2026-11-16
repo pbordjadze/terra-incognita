@@ -5,8 +5,9 @@ released by `.github/workflows/toys.yml` as `terra-build-<n>` under Terra's own 
 row 217). It opens on the whole Earth with a light for each toy (`doors.rs`); a touch raises the toy's
 card, live (`card.rs`), and a touch on the card opens the toy, linked into Terra's one library (`rooms.rs`);
 the Earth mark or a pinch out puts it back in its card.
-The toys it links ship only inside it: CI builds Terra's IPA, never theirs (`tools/toys/ci_plan.py`). Beside it
-are the few toys it doesn't hold and Adrift (`adrift/`), each its own app in the same SideStore source. This file is the map and the rules.
+It is the only toy app: the toys it links ship only inside it, and CI builds Terra's IPA, never a toy's
+(`tools/toys/ci_plan.py`); a toy it doesn't hold isn't on the phone. Beside it is Adrift (`adrift/`), in the same
+SideStore source. This file is the map and the rules.
 
 The Xcode-built Terra that came first (`App/`: a Metal globe with clouds and a moving sea, the quiet
 globe's rules, a workbench of prototypes and runtime-3 packs, the playground and its previews, the
@@ -43,7 +44,7 @@ before design work. Keep design discussions and plans in that private repository
   data and studies), `tools/globe/` and `tools/ocean/` (the data above). Every one is listed in
   `docs/tools.md` or `docs/kit.md`: read them before building one.
 - **CI** (`.github/workflows/`): `toys.yml` (the toys and Terra: Linux checks of every plan, then on
-  `main` or with `[toys-ipa <toy>]` an IPA on macOS, released as `<toy>-build-<n>`), `adrift.yml`
+  `main` or with `[toys-ipa terra]` Terra's IPA on macOS, released as `terra-build-<n>`), `adrift.yml`
   (Adrift, the same shape, `[adrift-ipa]`), and `lint.yml` (Linux, first in both; `ci/lint.sh`). Each
   regenerates the SideStore source on the `sidestore` branch after a release (`ci/sidestore_publish.sh`,
   `ci/sidestore_apps.json`); CI owns that branch. Every macOS job builds with the one Xcode `ci/xcode.sh`

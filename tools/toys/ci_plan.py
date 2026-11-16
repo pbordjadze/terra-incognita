@@ -10,8 +10,9 @@ and which are built as IPAs on the shared macOS runners. Prints `check=<json lis
 - built: on main, every toy whose own directory changed (one IPA a toy a merge: a round's merge is one
   build), plus any named; on a branch only the toys named by `[toys-ipa <toy> ...]` (or `all`) in the
   commit's first line. A run started by hand checks its `toy` (or all) and builds it when `ipa`.
-  A toy Terra holds (a path dependency of toys/terra/Cargo.toml) has no app of its own: wherever it would be
-  built, Terra is built instead, so the shared macOS runners make one IPA, not one a toy.
+  Terra is the only toy app: a toy it holds (a path dependency of toys/terra/Cargo.toml) is built as Terra,
+  and a toy it doesn't hold is never built for the phone (checked on Linux only), so the shared macOS
+  runners make one IPA, not one a toy.
 - web: a change to toys/terra-web checks Terra (on main its check is followed by the web build).
 - kit: whether toy-kit changed (or a run started by hand): its library forms are built (no globe; web).
 """
@@ -59,8 +60,8 @@ else:
     build = sorted(set((own if ref == 'main' else []) + named))
     check = sorted(set(check + build))
     kit = any(f.startswith('toys/crates/toy-kit/') for f in files)
-# a held toy is built as Terra
-build = sorted({'terra' if t in HELD else t for t in build})
+# Terra is the only toy app: a held toy is built as Terra, any other toy not at all
+build = ['terra'] if any(t == 'terra' or t in HELD for t in build) else []
 check = sorted(set(check + build))
 print(f'check={json.dumps(check)}')
 print(f'ipa={json.dumps(build)}')
