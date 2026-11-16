@@ -421,7 +421,7 @@ impl Toy for Terra {
             reduce_motion: ctx.reduce_motion,
             auto: std::env::var("TERRA_PASSAGE")
                 .ok()
-                .and_then(|id| life_index(&id))
+                .and_then(|id| rooms::life_index(&id))
                 .map(|i| (i, f64::NAN, 0)),
             drift: 1.6,
         })
@@ -707,22 +707,40 @@ impl Terra {
         };
         let t0 = if t0.is_nan() { t } else { t0 };
         self.auto = Some((i, t0, step));
-        if step == 0 && t - t0 > 4.0 && matches!(self.state, State::Atlas) {
-            self.raise_card(ctx, i, t);
-            self.auto = Some((i, t0, 1));
-        } else if step == 1 && t - t0 > 6.0 && matches!(self.state, State::Atlas) {
-            self.open_card(t);
-            self.auto = Some((i, t0, 2));
-        } else if step == 2 && t - t0 > 45.0 && matches!(self.state, State::Inside) {
-            self.leave(ctx, t);
-            self.auto = Some((i, t0, 3));
-        }
+        let atlas = matches!(self.state, State::Atlas);
+        // (`TERRA_PASSAGE`: steps 0 to 2, the card at 4 s, in at 6 s, out at 45 s; a web link's: 10 and 11,
+        // the card at 1 s and in at 1.6 s, staying; a reader who went elsewhere first is not taken anywhere)
+        let next = match step {
+            0 if t - t0 > 4.0 && atlas => {
+                self.raise_card(ctx, i, t);
+                1
+            }
+            1 if t - t0 > 6.0 && atlas => {
+                self.open_card(t);
+                2
+            }
+            2 if t - t0 > 45.0 && matches!(self.state, State::Inside) => {
+                self.leave(ctx, t);
+                3
+            }
+            10 if t - t0 > 1.0 => {
+                if atlas && self.card.is_none() {
+                    self.raise_card(ctx, i, t);
+                    11
+                } else {
+                    3
+                }
+            }
+            11 if t - t0 > 1.6 => {
+                if atlas && self.door == i {
+                    self.open_card(t);
+                }
+                3
+            }
+            _ => step,
+        };
+        self.auto = Some((i, t0, next));
     }
-}
-
-/// The light whose toy has this id.
-fn life_index(id: &str) -> Option<usize> {
-    doors::doors().iter().position(|d| d.id == id)
 }
 
 toy_kit::ios_shell!(host Terra);

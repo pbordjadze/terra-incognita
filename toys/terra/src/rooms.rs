@@ -233,6 +233,20 @@ impl crate::Terra {
     }
 }
 
+impl crate::Terra {
+    /// Opens the toy `id` (a light's id, as in doors.rs) a second after the first frame, as a touch on
+    /// its light would, and stays in it: what a web link's `#<toy id>` asks for. False if no light has it.
+    pub fn open_toy(&mut self, id: &str) -> bool {
+        self.auto = life_index(id).map(|i| (i, f64::NAN, 10));
+        self.auto.is_some()
+    }
+}
+
+/// The light whose toy has this id.
+pub(crate) fn life_index(id: &str) -> Option<usize> {
+    crate::doors::doors().iter().position(|d| d.id == id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

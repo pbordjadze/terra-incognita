@@ -116,6 +116,10 @@ async function main() {
   const dark = matchMedia('(prefers-color-scheme: dark)'), still = matchMedia('(prefers-reduced-motion: reduce)');
   shell = await start(canvas, w, h, dpr, names, files, Date.now() / 1000, dark.matches, still.matches);
   try { const s = localStorage.getItem(KEY); if (s) shell.restore(s); } catch (e) { /* no storage: start fresh */ }
+  // a link's #<toy id> (e.g. #bats) opens that toy a second in, as a touch on its light would
+  let link = location.hash.slice(1);
+  try { link = decodeURIComponent(link); } catch (_) { /* a malformed escape: the hash as it is */ }
+  if (link && !shell.open_toy(link)) console.log(`no toy "${link}" in Terra`);
   dark.addEventListener('change', e => shell.set_night(e.matches));
   still.addEventListener('change', e => shell.set_reduce_motion(e.matches));
   $('loading').style.opacity = 0;
