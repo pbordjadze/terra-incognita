@@ -1,7 +1,7 @@
 name: Toys
 
-# The toys (toys/README.md). A toy Terra holds ships only inside Terra: where it would be built, Terra is built
-# instead (ci_plan.py). The ones Terra doesn't hold are their own apps beside Terra and Adrift in the SideStore source.
+# The toys (toys/README.md). Terra is the only toy app: a toy it holds is built as Terra (ci_plan.py), and a toy
+# it doesn't hold is checked on Linux but never built for the phone.
 #   plan    which toys this push touches (tools/toys/ci_plan.py).
 #   check   Linux, a toy at a time: built, tested, every plan in toys/<toy>/plans played headless on Mesa's
 #           software Vulkan; the shots, films (MP4 and contact sheet) and sound are the `<toy>-check`

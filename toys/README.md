@@ -1,27 +1,27 @@
 # The toys
 
-Small toys, most of them held inside Terra Incognita (`terra/`): a toy Terra links ships only inside it, with no
-app of its own, so the shared macOS runners build one IPA rather than one a toy (Nov 16, 2026). The few
-Terra doesn't hold are their own apps beside Terra and Adrift in the same SideStore source (painting-company
-rows 201–204). Each does one core thing, beautifully, on real data. Working titles (the names and icons are
+Small toys, held inside Terra Incognita (`terra/`), the one toy app, beside Adrift in the SideStore source
+(painting-company rows 201–204). A toy Terra links ships only inside it, so the shared macOS runners build one
+IPA rather than one a toy; a toy Terra doesn't hold is checked on Linux but not on the phone until Terra
+holds it (Nov 16, 2026). Each does one core thing, beautifully, on real data. Working titles (the names and icons are
 the owner's to decide):
 
 | toy | directory | bundle id | release tag |
 | --- | --- | --- | --- |
-| Whales: two whales, their songs and their travels in the real oceans (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `whales/` | `com.pbordjadze.toy.whales` | `whales-build-<n>` |
+| Whales: two whales, their songs and their travels in the real oceans (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `whales/` | `com.pbordjadze.toy.whales` | none: not on the phone |
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | inside Terra |
-| Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
-| Bell: strike the Earth and it rings in its own measured free oscillations (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
-| Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
-| Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
-| Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | `jam-build-<n>` |
+| Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | none: not on the phone |
+| Bell: strike the Earth and it rings in its own measured free oscillations (off Terra's map since Nov 13, 2026: Terra holds local toys for now) | `bell/` | `com.pbordjadze.toy.bell` | none: not on the phone |
+| Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | none: not on the phone |
+| Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | none: not on the phone |
+| Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | none: not on the phone |
 | Meander: a river on the Rio Beni's floodplain that wanders and cuts off oxbow lakes; a finger lays its course (row 218) | `meander/` | `com.pbordjadze.toy.meander` | inside Terra |
-| Taste: a creature that keeps changing and lingers where you hold it (row 225) | `taste/` | `com.pbordjadze.toy.taste` | `taste-build-<n>` |
-| Night Walk: one walker's footprints in the dark map a land no one can see, until dawn (row 224) | `walk/` | `com.pbordjadze.toy.walk` | `walk-build-<n>` |
+| Taste: a creature that keeps changing and lingers where you hold it (row 225) | `taste/` | `com.pbordjadze.toy.taste` | none: not on the phone |
+| Night Walk: one walker's footprints in the dark map a land no one can see, until dawn (row 224) | `walk/` | `com.pbordjadze.toy.walk` | none: not on the phone |
 | Terra Incognita: the toy that holds the others, the whole Earth with a living light for each (row 217) | `terra/` | `com.pbordjadze.terraincognita` | `terra-build-<n>` |
 | Frost: frost on a cabin window at Oymyakon; your finger is warm, wipe it and it grows back (row 218) | `frost/` | `com.pbordjadze.toy.frost` | inside Terra |
 | Throats: side-blotched lizards on a California hillside play rock–paper–scissors; the colours turn in spirals; a finger pours a colour (row 257) | `throats/` | `com.pbordjadze.toy.throats` | inside Terra |
-| Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
+| Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | none: not on the phone |
 | Elkmont: the synchronous fireflies in the woods at Elkmont, flashing together; a light held low and the females answer (the Fireflies light on Terra's Earth since Nov 13, 2026) | `elkmont/` | `com.pbordjadze.toy.elkmont` | inside Terra |
 | Nazaré: the Atlantic swell over the real floor off Nazaré, Portugal; it bends round the canyon and stacks up at Praia do Norte; a swipe toward the coast sends a swell from that side, and its set breaks there (the Swell light on Terra's Earth since Nov 13, 2026) | `nazare/` | `com.pbordjadze.toy.nazare` | inside Terra |
 | Bats: millions of free-tailed bats leave Bracken Cave at dusk in a turning column and stream away; you are the hawk, and a dive ripples down the stream | `bats/` | `com.pbordjadze.toy.bats` | inside Terra |
@@ -161,9 +161,9 @@ A full-size phone frame (1179×2556) takes about a second on the software driver
 
 1. Build on your branch (`toy-<toy>`), from `main`. Render and play on Linux until it is right.
 2. Prove the device build when the Swift or the GPU's limits matter: a push whose first line carries
-   `[toys-ipa <toy>]` builds the IPA on a branch (an artifact, not released; Terra's, for a toy it holds).
+   `[toys-ipa <toy>]` builds the IPA on a branch (an artifact, not released; always Terra's).
 3. Ship: merge into `main` with a merge commit (no `[toys-ipa]` needed there). The merge builds your
-   toy's IPA once (Terra's, for a toy Terra holds), releases it as `<toy>-build-<n>` (`terra-build-<n>`)
+   Terra's IPA once (only for a toy Terra holds), releases it as `<toy>-build-<n>` (`terra-build-<n>`)
    and regenerates the SideStore source. One IPA a toy
    a round: the five macOS runners are shared with every app, so check on Linux first and don't merge
    twice for one round. Push to `main` only what touches your toy's directory (and, compatibly, the kit:
