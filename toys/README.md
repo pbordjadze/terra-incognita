@@ -161,11 +161,11 @@ A full-size phone frame (1179×2556) takes about a second on the software driver
 
 1. Build on your branch (`toy-<toy>`), from `main`. Render and play on Linux until it is right.
 2. Prove the device build when the Swift or the GPU's limits matter: a push whose first line carries
-   `[toys-ipa <toy>]` builds the IPA on a branch (an artifact, not released; always Terra's).
-3. Ship: merge into `main` with a merge commit (no `[toys-ipa]` needed there). The merge builds your
-   Terra's IPA once (only for a toy Terra holds), releases it as `<toy>-build-<n>` (`terra-build-<n>`)
-   and regenerates the SideStore source. One IPA a toy
-   a round: the five macOS runners are shared with every app, so check on Linux first and don't merge
+   `[toys-ipa terra]` builds Terra's IPA on a branch (an artifact, not released). Only a toy Terra holds
+   is on the phone.
+3. Ship: merge into `main` with a merge commit (no `[toys-ipa]` needed there). For a toy Terra holds, the
+   merge builds Terra's IPA once, releases it as `terra-build-<n>` and regenerates the SideStore source.
+   One IPA a round: the five macOS runners are shared with every app, so check on Linux first and don't merge
    twice for one round. Push to `main` only what touches your toy's directory (and, compatibly, the kit:
    a kit change builds every toy's check, and the other toys' sessions must be told).
 4. A critic judges the round from full-size renders and played plans against the taste above; the next

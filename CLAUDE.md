@@ -44,7 +44,7 @@ before design work. Keep design discussions and plans in that private repository
   data and studies), `tools/globe/` and `tools/ocean/` (the data above). Every one is listed in
   `docs/tools.md` or `docs/kit.md`: read them before building one.
 - **CI** (`.github/workflows/`): `toys.yml` (the toys and Terra: Linux checks of every plan, then on
-  `main` or with `[toys-ipa <toy>]` an IPA on macOS, released as `<toy>-build-<n>`), `adrift.yml`
+  `main` or with `[toys-ipa terra]` Terra's IPA on macOS, released as `terra-build-<n>`), `adrift.yml`
   (Adrift, the same shape, `[adrift-ipa]`), and `lint.yml` (Linux, first in both; `ci/lint.sh`). Each
   regenerates the SideStore source on the `sidestore` branch after a release (`ci/sidestore_publish.sh`,
   `ci/sidestore_apps.json`); CI owns that branch. Every macOS job builds with the one Xcode `ci/xcode.sh`
