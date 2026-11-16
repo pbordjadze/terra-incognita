@@ -8,11 +8,12 @@
 pub mod lake;
 pub mod sound;
 
-use lake::{Lake, DU, DV, EYE_M, MOON_EL, NU, NV};
+use lake::{Lake, DU, DV, EYE_M, MOON_EL, NU, NV, RULES};
 use sound::{Chime, Sound};
 use toy_kit::backdrop::BackdropParams;
 use toy_kit::field::Field;
 use toy_kit::sound::pentatonic;
+use toy_kit::switches::Switch;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Synth, Toy};
 
 /// Where it is: the beach at Marquette, Michigan, looking out over Lake Superior (lon, lat).
@@ -254,8 +255,18 @@ impl Toy for MoonRoad {
         Some(info::Rules::lines(&[
             "The moon is low over Lake Superior. Only water tilted just right sends its light to your eye, so the road always points at you.",
             "The moon paints each bit it lights. A gust tilts more, and the road spreads.",
-            "Drag to walk the shore; the road follows.",
+            "Drag to walk the shore; the road follows. Switch the ripples and the swell off below, and the lake is a mirror.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<Switch> {
+        Switch::all(&RULES, &self.lake.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(r) = self.lake.on.get_mut(i) {
+            *r = on;
+        }
     }
 }
 

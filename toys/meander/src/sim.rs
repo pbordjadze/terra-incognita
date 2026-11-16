@@ -51,6 +51,13 @@ pub fn erodible(p: [f64; 2]) -> f64 {
     0.12 + 0.88 * (-out / 700.0).exp()
 }
 
+/// The rules the sheet can switch off: the outside of a bend wearing away (off, the river stands still),
+/// and a closed neck being cut through (off, the loops grow on into each other).
+pub const RULES: [&str; 2] = [
+    "The outside of a bend wears away",
+    "A closed neck is cut through",
+];
+
 #[derive(Clone)]
 pub struct Oxbow {
     pub line: Vec<[f64; 2]>,
@@ -73,6 +80,8 @@ pub struct River {
     /// 0..1: how far the rest of the river is held back while a push is fresh, so the bend the finger
     /// made is the one that moves (the toy sets it).
     pub calm: f64,
+    /// which of `RULES` hold
+    pub on: [bool; 2],
     rng: u64,
     r0: Vec<f64>,
     r1: Vec<f64>,
@@ -94,6 +103,7 @@ impl River {
             cuts: Vec::new(),
             kicks: Vec::new(),
             calm: 0.0,
+            on: [true; 2],
             rng: seed | 1,
             r0: Vec::new(),
             r1: Vec::new(),
@@ -129,7 +139,7 @@ impl River {
 
     fn step(&mut self, dt: f64) {
         let n = self.line.len();
-        if n < 8 {
+        if n < 8 || !self.on[0] {
             self.year += dt;
             return;
         }
@@ -424,7 +434,7 @@ impl River {
     }
 
     fn cutoffs(&mut self) {
-        loop {
+        while self.on[1] {
             let n = self.line.len();
             let cell = CUT;
             let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> =

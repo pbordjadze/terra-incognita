@@ -38,7 +38,7 @@ impl OneLeaf {
         self.breath = self.breath.max(6.0 * (1.0 - (-speed / 1.2).exp()));
     }
 
-    pub fn step(&mut self, w: f32, t: f32, dt: f32) {
+    pub fn step(&mut self, w: f32, t: f32, dt: f32, flat: bool) {
         self.breath *= (-dt / 0.9).exp();
         let n = (dt / (1.0 / 240.0)).ceil().max(1.0) as usize;
         let h = dt / n as f32;
@@ -48,7 +48,7 @@ impl OneLeaf {
         // feels here is the stem's, eased (it hangs low and in the lee of the crown)
         let felt = 0.7 * w + self.breath;
         for s in 0..n {
-            self.leaf.step(felt, t + s as f32 * h, h);
+            self.leaf.step(felt, t + s as f32 * h, h, flat);
         }
         self.leaf.swing = self.leaf.swing.clamp(-0.18, 0.18);
     }

@@ -32,6 +32,8 @@ pub struct Tree {
 
 pub struct Grove {
     pub trees: Vec<Tree>,
+    /// the stalks are flattened (`RULES`' first): off, a leaf hardly turns, and no gust pales the crowns
+    pub flat: bool,
 }
 
 /// The view of the grove: focal length (px), the middle, and the horizon's height (px).
@@ -132,7 +134,7 @@ impl Grove {
         }
         // far to near, so nearer crowns cover farther ones
         trees.sort_by(|a, b| b.z.total_cmp(&a.z));
-        Grove { trees }
+        Grove { trees, flat: true }
     }
 
     pub fn step(&mut self, wind: &Wind, dt: f32) {
@@ -196,7 +198,7 @@ impl Grove {
             let blob = (rx * 0.13).max(0.9 * ppp);
             let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
             let w = wind.at([tr.x, tr.z]);
-            let share = turned(w);
+            let share = if self.flat { turned(w) } else { 0.02 };
             // the crown's body first: its shaded inside, so the leaves on its surface have depth
             let deep = mix3([0.50, 0.30, 0.07], HAZE, k);
             for (dy, rk) in [(-0.55f32, 0.62f32), (0.0, 0.78), (0.5, 0.62)] {
@@ -249,7 +251,7 @@ impl Grove {
                 };
                 // where a gust is passing, the whole crown pales and brightens, so the gust is a band
                 // of light running over the grove, not only leaves switching
-                let gust = ((w - 2.2) / 4.0).clamp(0.0, 1.0);
+                let gust = ((w - 2.2) / 4.0).clamp(0.0, 1.0) * self.flat as u32 as f32;
                 let col = mix3(col, [1.0, 0.93, 0.70], 0.4 * gust * (0.4 + 0.6 * sun));
                 let col = mix3(col, HAZE, k);
                 let q = [c[0] + ox * rx + sway, c[1] + oy * ry];

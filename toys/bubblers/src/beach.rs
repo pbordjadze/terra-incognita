@@ -93,7 +93,17 @@ pub struct Beach {
     /// what happened this step, for the sound and the hand: balls laid, crabs that bolted
     pub laid: Vec<[f32; 2]>,
     pub bolted: Vec<[f32; 2]>,
+    /// which of `RULES` hold
+    pub on: [bool; 2],
 }
+
+/// The rules the sheet can switch off: each run beside the last on unsifted sand (off, a crab heads out
+/// any way at all), and a crab bolting when it sees a neighbour go (off, only the ones that felt the
+/// footstep run).
+pub const RULES: [&str; 2] = [
+    "Each run starts beside the last",
+    "A crab that sees one bolt bolts too",
+];
 
 /// The tide: it rises over the beach in this long, stands, and falls back (seconds).
 pub const TIDE_IN: f32 = 6.0;
@@ -158,6 +168,7 @@ impl Beach {
             dirty: true,
             laid: Vec::new(),
             bolted: Vec::new(),
+            on: [true; 2],
         }
     }
 
@@ -212,6 +223,12 @@ impl Beach {
     fn next_spoke(&mut self, k: usize) {
         let c = self.crabs[k];
         let reach = (c.reach + self.rng.range(-0.3, 1.2)).clamp(2.5, 9.0);
+        if !self.on[0] {
+            let crab = &mut self.crabs[k];
+            crab.heading = self.rng.range(0.0, std::f32::consts::TAU);
+            crab.reach = reach;
+            return;
+        }
         let mut best = (f32::MAX, c.heading);
         for _ in 0..5 {
             let a = c.heading + c.turn * self.rng.range(0.45, 0.8);
@@ -379,8 +396,9 @@ impl Beach {
                     c.state = State::Flee;
                     self.bolted.push(c.p);
                     // the neighbours see it go
+                    let see = self.on[1];
                     for (j, o) in self.crabs.iter_mut().enumerate() {
-                        if j == k || matches!(o.state, State::Hidden(_) | State::Flee) {
+                        if !see || j == k || matches!(o.state, State::Hidden(_) | State::Flee) {
                             continue;
                         }
                         let d = ((o.p[0] - c.p[0]).powi(2) + (o.p[1] - c.p[1]).powi(2)).sqrt();

@@ -108,6 +108,12 @@ struct Finger {
     in_dive: bool,
 }
 
+/// The rules the sheet can switch off.
+pub const RULES: [&str; 2] = [
+    "Each leaf hangs on a flattened stalk",
+    "Pores open in light, close in shade",
+];
+
 pub struct Pando {
     backdrop: Backdrop,
     painter: Painter,
@@ -117,6 +123,8 @@ pub struct Pando {
     stem: Option<Stem>,
     one: Option<OneLeaf>,
     skin: Option<Skin>,
+    /// which of `RULES` hold
+    on: [bool; 2],
     scale: Scale,
     tree: usize,
     dive: Option<Dive>,
@@ -344,6 +352,7 @@ impl Toy for Pando {
             stem: None,
             one: None,
             skin: None,
+            on: [true; 2],
             scale: Scale::Grove,
             tree: 0,
             dive: None,
@@ -420,17 +429,18 @@ impl Toy for Pando {
         let dtf = dt as f32;
         self.wind.step(dtf);
         self.grove.step(&self.wind, dtf);
+        self.grove.flat = self.on[0];
         let w = self.tree_wind();
         let t = self.t as f32;
         if let Some(stem) = self.stem.as_mut() {
-            stem.step(w, t, dtf);
+            stem.step(w, t, dtf, self.on[0]);
         }
         if let Some(one) = self.one.as_mut() {
-            one.step(w, t, dtf);
+            one.step(w, t, dtf, self.on[0]);
             self.facing += (one.facing() - self.facing) * (1.0 - (-dtf / 0.6).exp());
         }
         if let Some(skin) = self.skin.as_mut() {
-            skin.step(self.facing, dtf);
+            skin.step(self.facing, dtf, self.on[1]);
         }
         if let Some(d) = &self.dive {
             let u = (self.t - d.start) / d.length();
@@ -612,7 +622,18 @@ impl Toy for Pando {
             "Pando, in Utah, looks like a forest but is one aspen: over 40,000 stems from one root.",
             "Each leaf hangs on a stalk flattened side to side, so the faintest air flips it, and a gust runs over the grove as a pale wave.",
             "Drag to blow. Tap a tree, then a leaf, then closer: the pores on its underside open in light and close in your shade.",
+            "Switch the flat stalks or the pores' answer to light off below.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&RULES, &self.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(r) = self.on.get_mut(i) {
+            *r = on;
+        }
     }
 }
 

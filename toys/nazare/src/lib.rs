@@ -101,6 +101,8 @@ pub struct Nazare {
     field: Field,
     /// the swell a finger has asked for, and its solve under way (taken up at the time given)
     want: (f64, f64),
+    /// which of `sea::RULES` the sheet has on (the field is solved again when they change)
+    on: [bool; 2],
     pending: Option<(Solving, f64)>,
     /// where the waves break at Praia do Norte (the tallest of them off the beach), and the crest's
     /// place in its cycle there a frame ago
@@ -366,8 +368,9 @@ impl Nazare {
         let floor = std::sync::Arc::clone(&self.floor);
         let shade = std::sync::Arc::clone(&self.shade);
         let (period, from) = self.want;
+        let rules = self.on;
         let solve = move || {
-            let field = Field::new(&floor, period, from);
+            let field = Field::with_rules(&floor, period, from, rules);
             let data = texels(&floor, &shade, &field);
             (field, data)
         };
@@ -585,6 +588,7 @@ impl Toy for Nazare {
             shade,
             field,
             want: (PERIOD, FROM_DEG),
+            on: [true; 2],
             pending: None,
             peak: None,
             last_w: 0.0,
@@ -643,7 +647,8 @@ impl Toy for Nazare {
         }
         // (after any take-up, so a swell just taken up is not asked for again)
         let asked = (self.want.0 - self.field.period).abs() > 0.05
-            || (self.want.1 - self.field.from_deg).abs() > 0.2;
+            || (self.want.1 - self.field.from_deg).abs() > 0.2
+            || self.on != self.field.rules;
         if asked && self.pending.is_none() {
             self.ask();
         }
@@ -710,7 +715,18 @@ impl Toy for Nazare {
             "A swell slows where the sea is shallow and runs on where it is deep.",
             "Off Nazaré a canyon reaches almost to the beach. The swell bends away from it on both sides, and the two halves meet at Praia do Norte.",
             "There they stack into the tallest waves ever surfed. Swipe toward the coast to send a swell from that side: the longer the swipe, the longer the swell.",
+            "Switch the shallows' slowing or the bending's growth off below.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<toy_kit::switches::Switch> {
+        toy_kit::switches::Switch::all(&sea::RULES, &self.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(r) = self.on.get_mut(i) {
+            *r = on;
+        }
     }
 
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {

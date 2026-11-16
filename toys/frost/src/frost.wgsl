@@ -42,7 +42,7 @@ struct Globals {
   bar: f32,            // the crossbar's middle, points from the top (0: none)
   fringe: f32,         // how far frost creeps back into a melt from its edge, points (on average)
   relax: f32,          // how much shallower every glaze gets this frame (the holes heal), points
-  _g1: f32,
+  glaze: f32,          // 1 while a melt freezes smooth, 0 with that rule off
   _g2: f32,
   slots: array<Slot, 12>,
 };
@@ -331,7 +331,9 @@ fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);
       // the meltwater freezes smooth: how far inside the melt's edge (the deepest any melt went)
-      atomicMax(&glaze[m], bitcast<u32>(max(rr - d, 0.0)));
+      if G.glaze > 0.5 {
+        atomicMax(&glaze[m], bitcast<u32>(max(rr - d, 0.0)));
+      }
     }
   }
 }

@@ -34,8 +34,9 @@ pub const TWIST_DAMP: f32 = 0.10;
 const SWING_HZ: f32 = 1.1;
 
 impl Leaf {
-    /// One step of the leaf in a wind of `w` m/s blowing toward +x.
-    pub fn step(&mut self, w: f32, t: f32, dt: f32) {
+    /// One step of the leaf in a wind of `w` m/s blowing toward +x, on a stalk flattened side to side
+    /// (`flat`) or, with that rule off, a round one that hardly lets it turn.
+    pub fn step(&mut self, w: f32, t: f32, dt: f32, flat: bool) {
         let om = TAU * self.freq;
         let s1 = hash(self.seed ^ 0xa1) * TAU;
         let s2 = hash(self.seed ^ 0xb2) * TAU;
@@ -43,7 +44,7 @@ impl Leaf {
         // square, as the force of moving air does
         let kick = (om * 0.93 * t + s1 + 1.5 * (0.37 * t + s2).sin()).sin()
             + 0.7 * (om * 1.11 * t + s2 + 1.1 * (0.23 * t + s1).sin()).sin();
-        let force = 0.55 * w * w * om * om * 0.05 * kick;
+        let force = 0.55 * w * w * om * om * 0.05 * kick * if flat { 1.0 } else { 0.06 };
         let acc = force - om * om * self.twist - 2.0 * TWIST_DAMP * om * self.twist_v;
         self.twist_v += acc * dt;
         self.twist += self.twist_v * dt;
@@ -201,8 +202,8 @@ impl Stem {
         w
     }
 
-    /// One step, in the grove's wind at this tree (`w`, m/s).
-    pub fn step(&mut self, w: f32, t: f32, dt: f32) {
+    /// One step, in the grove's wind at this tree (`w`, m/s), its leaves on flat stalks or not.
+    pub fn step(&mut self, w: f32, t: f32, dt: f32, flat: bool) {
         for b in &mut self.breaths {
             b.at[0] += b.vel[0] * dt * 0.8;
             b.at[1] += b.vel[1] * dt * 0.8;
@@ -220,7 +221,7 @@ impl Stem {
             let a = self.leaves[i].anchor;
             let local = w + self.breath_at(a);
             for s in 0..n {
-                self.leaves[i].step(local, t + s as f32 * h, h);
+                self.leaves[i].step(local, t + s as f32 * h, h, flat);
             }
         }
     }

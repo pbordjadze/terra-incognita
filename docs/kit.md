@@ -38,7 +38,7 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | Sound: a `Synth` on the audio thread | `lib.rs` | ✓ | |
 | The device's C ABI, `ios_shell!` | `shell.rs`, `ios.rs` | ✓ | |
 | A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptic` | `lib.rs` | ✓ | Terra, Nov 4 |
-| The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; `toy_switches_text`, `toy_switch_set`) | `switches.rs`, `info.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and ten more, Nov 13; one sheet Nov 15 |
+| The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; `toy_switches_text`, `toy_switch_set`) | `switches.rs`, `info.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and ten more, Nov 13; one sheet Nov 15; every globe toy Nov 16 (row 358) |
 | VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
 | **Launch safety**: the iPhone's GPU limits requested on Linux (`KIT_IPHONE_LIMITS=1`), so a pipeline the phone refuses fails the check; GPU memory counted as it is allocated; a budget in `toy.json` | `gpu/`, `budget.rs` | + | the two launch crashes |
@@ -224,6 +224,15 @@ by standing on the kit:
   switches stay set when the sheet closes, while the toy is held; an amber dot on the mark says a rule is
   off. The three entries above are its history. Proof: `plans/rules.json`, `plans/switches.json`, Terra's
   `plans/rules.json` on the Earth.
+- **Switches on every toy on the globe** (Nov 16, painting-company row 358): the seven without them got
+  them (Nazaré: the shallows slowing the swell, the bending raising it; Meander: the outside of a bend
+  wearing away, a closed neck cut through; Frost: the damp air low on the glass, the meltwater
+  refreezing smooth; Catatumbo: the forks, the restrikes, thunder at sound's speed; Bubblers: each run
+  beside the last, bolting when a neighbour bolts, both now shown by a footstep and a long look;
+  Pando: the flattened stalks, the pores answering light; Moon Road: the ripples, the swell).
+  `tools/toys/switches_check.py`, in `ci/lint.sh`, fails a toy a door of Terra's opens that has no
+  `fn switches` or no `plans/switches.json` turning one, and CI's play of that plan fails if the toy
+  has no rules.
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.
