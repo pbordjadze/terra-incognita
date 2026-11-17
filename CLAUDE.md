@@ -49,6 +49,11 @@ before design work. Keep design discussions and plans in that private repository
   regenerates the SideStore source on the `sidestore` branch after a release (`ci/sidestore_publish.sh`,
   `ci/sidestore_apps.json`); CI owns that branch. Every macOS job builds with the one Xcode `ci/xcode.sh`
   names.
+  - `testflight.yml` (painting-company row 312): Terra, the toy app, for TestFlight's internal testers
+    (no Beta App Review), on `toys/ios/build.sh`'s store build (`STORE=1`): cloud-signed with the App Store
+    Connect API key, validated, and uploaded only from `main` (Run workflow, Upload ticked); a
+    `claude/testflight*` push builds, signs and validates. Version 1.0, build `<run>.<attempt>`; secrets
+    `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`.
 
 ## Staying current
 
