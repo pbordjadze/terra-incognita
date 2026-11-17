@@ -212,7 +212,7 @@ impl Toy for MosquitoBay {
                 self.size_pt[0] as f32 / self.k * 0.5,
                 self.size_pt[1] as f32 / self.k * 0.5,
             ],
-            p: [self.moon, CELL, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            p: [self.moon, CELL, self.bay.w, 0.0, 0.0, 0.0, 0.0, 0.0],
         };
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());

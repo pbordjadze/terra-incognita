@@ -3,7 +3,7 @@
 // the water has been stirred, as a haze and as the single cells' sparks. With the moon up, the water takes
 // its glints in Paint by Moonlight's moonlight paints, and the blue light all but drowns.
 // A field (toy-kit field.rs): per cell (light, charge, stir, -).
-// u.p0 = (the moon 0..1, CELL cm, -, -); world is in cm from the top left.
+// u.p0 = (the moon 0..1, CELL cm, the water's width cm, -); world is in cm from the top left.
 
 const NIGHT = vec3<f32>(0.058, 0.036, 0.082);
 const MOONLIT = vec3<f32>(0.20, 0.17, 0.25);
@@ -31,21 +31,19 @@ fn star_glints(world: vec2<f32>, t: f32) -> f32 {
   return b * exp(-d * d / 0.012) * (0.6 + 0.4 * sin(t * (1.0 + 3.0 * h) + h * 40.0));
 }
 
-// The moon's glints on the ripples: sparse points that catch it where a ripple's slope is right, flickering
-// as the ripples run, each a dab of a moonlight paint.
+// The moon's glints on the ripples: short bright dashes along the ripples' crests, broken up and running
+// with them, thickest in a broad band of glitter where the slopes send the moon to the eye; each dash a
+// dab of a moonlight paint.
 fn moon_glints(world: vec2<f32>, t: f32) -> vec3<f32> {
-  let s = 0.55;
-  let g = world / s;
-  let c = floor(g);
-  // the ripples' slope comes right in long bands that run across the water
-  let band = noise2(world * vec2<f32>(0.22, 0.6) + vec2<f32>(t * 0.35, t * 0.9));
-  let beat = floor(t * 7.0 + hash2(c + 4.4) * 7.0);
-  let on = hash2(c + vec2<f32>(beat * 0.53, beat * 0.29));
-  let k = smoothstep(0.86, 0.97, on * (0.55 + 0.6 * band));
-  let sp = vec2<f32>(hash2(c + 3.1), hash2(c + 7.7)) * 0.7 + 0.15;
-  let d = length(fract(g) - sp) * s;
-  let r = 0.05 + 0.05 * hash2(c + 1.9);
-  return paint_of(hash2(c + 6.1)) * k * exp(-d * d / (r * r));
+  let warp = noise2(world * 0.12 + vec2<f32>(t * 0.05, 0.0)) * 6.0 + noise2(world * 0.5 - t * 0.2) * 1.2;
+  let phase = world.y * 1.5 + world.x * 0.25 + warp - t * 1.8;
+  let crest = pow(0.5 + 0.5 * cos(phase), 18.0);
+  // the band of glitter, slanting down the water toward the moon's side
+  let band = exp(-pow((world.x - u.p0.z * 0.68 + world.y * 0.12) / (u.p0.z * 0.22), 2.0));
+  let broken = noise2(world * vec2<f32>(0.9, 2.8) + vec2<f32>(t * 0.6, -t * 1.1));
+  let k = crest * smoothstep(0.78 - 0.3 * band, 0.95 - 0.3 * band, broken);
+  let dash = floor(vec2<f32>(world.x * 0.7, phase / 6.2832));
+  return paint_of(hash2(dash)) * k * (0.35 + 0.9 * band);
 }
 
 // The single cells lighting: a spark each, where the light is, twinkling as they flash and go out.
@@ -99,7 +97,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let swell = noise2(world * 0.045 + vec2<f32>(t * 0.03, t * 0.02)) * 0.6 + noise2(world * 0.16 - t * 0.05) * 0.4;
   var col = mix(NIGHT, MOONLIT, moon) * (0.8 + 0.4 * swell);
   col = col + vec3<f32>(0.75, 0.78, 0.95) * star_glints(world, t) * (1.0 - moon) * 0.55;
-  col = col + moon_glints(world, t) * moon * 1.1;
+  col = col + moon_glints(world, t) * moon * 0.9;
 
   // the light: its haze in the water, and the sparks of the single cells; the moon drowns them
   let seen = mix(1.0, 0.16, moon);
