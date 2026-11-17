@@ -1,0 +1,26 @@
+[package]
+name = "shimmering"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Shimmering (a working title): giant honeybees on an open comb in Chitwan, Nepal; a finger is a hornet, and waves of flipping bees ripple across the curtain to drive it off."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "shimmering-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true
