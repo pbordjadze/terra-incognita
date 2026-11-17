@@ -86,9 +86,27 @@ fn roots(world: vec2<f32>) -> f32 {
   return cov;
 }
 
+// The surface itself: low ripples running across the bay, which catch the sky's faint light on their
+// crests; where the water has been stirred they run higher, so a stroke, a drop or a fish leaves its
+// disturbance on the surface. Returns (the crests' sheen, the surface's tilt, to bend what is seen under it,
+// and how much the surface focuses the light under it: brighter under a crest, as a lens).
+fn surface(world: vec2<f32>, t: f32, stir: f32) -> vec4<f32> {
+  let warp = noise2(world * 0.10 + vec2<f32>(t * 0.04, 0.0)) * 7.0;
+  let phase = world.y * 1.1 + world.x * 0.3 + warp - t * 1.3;
+  let rough = noise2(world * 0.9 + vec2<f32>(t * 1.5, -t * 0.8));
+  let crest = pow(0.5 + 0.5 * cos(phase + rough * 2.5 * stir), 10.0);
+  let high = 0.25 + 0.75 * smoothstep(0.0, 1.5, stir);
+  let tilt = vec2<f32>(rough - 0.5, sin(phase)) * (0.12 + 0.6 * smoothstep(0.0, 2.0, stir));
+  let lens = 0.55 + 0.9 * pow(0.5 + 0.5 * cos(phase + rough * 2.5 * stir), 3.0);
+  return vec4<f32>(crest * high * (0.6 + 0.8 * rough), tilt, lens);
+}
+
 fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let moon = u.p0.x;
-  let f = fld(world / u.p0.y + 0.5);
+  let here = fld(world / u.p0.y + 0.5);
+  let sea = surface(world, u.time, here.z);
+  // what lies under the surface is seen through it, bent by its tilt
+  let f = fld(clamp((world + sea.yz) / u.p0.y + 0.5, vec2<f32>(0.5), u.grid - 0.5));
   let light = f.x;
   let root = roots(world);
   let t = u.time;
@@ -96,11 +114,12 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   // the water: the night's paper, a slow swell of lighter and darker
   let swell = noise2(world * 0.045 + vec2<f32>(t * 0.03, t * 0.02)) * 0.6 + noise2(world * 0.16 - t * 0.05) * 0.4;
   var col = mix(NIGHT, MOONLIT, moon) * (0.8 + 0.4 * swell);
-  col = col + vec3<f32>(0.75, 0.78, 0.95) * star_glints(world, t) * (1.0 - moon) * 0.55;
+  col = col + vec3<f32>(0.75, 0.78, 0.95) * star_glints(world + sea.yz * 3.0, t) * (1.0 - moon) * 0.55;
+  col = col + vec3<f32>(0.20, 0.17, 0.30) * sea.x * 0.35 * (1.0 - moon);
   col = col + moon_glints(world, t) * moon * 0.9;
 
   // the light: its haze in the water, and the sparks of the single cells; the moon drowns them
-  let seen = mix(1.0, 0.16, moon);
+  let seen = mix(1.0, 0.16, moon) * sea.w;
   let haze = 1.0 - exp(-light * 0.45);
   col = col + HAZE * haze * 0.5 * seen;
   col = col + SPARK * sparks(world, light, t) * (1.2 + 1.2 * smoothstep(1.0, 5.0, light)) * seen;

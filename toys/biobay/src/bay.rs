@@ -214,7 +214,7 @@ impl Bay {
         let mut gone = Vec::new();
         let mut trails = Vec::new();
         for (k, f) in self.fish.iter_mut().enumerate() {
-            f.turn += self.rng.s() * 2.2 * dt;
+            f.turn += self.rng.s() * 5.0 * dt;
             f.turn *= (-dt * 0.8).exp();
             let target = if f.dart > 0.0 {
                 f.cruise * 7.0
