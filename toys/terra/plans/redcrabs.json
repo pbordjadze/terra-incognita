@@ -1,0 +1,55 @@
+{
+ "_": "Red Crabs, its light on Christmas Island, the red crabs walking to the sea. Touched, its card comes up; the card touched, it opens; the Earth mark puts it back.",
+ "restore": "{\"camera\":{\"lon\":105.6,\"lat\":-10.5,\"zoom\":1.4,\"roll\":0.0},\"known\":[\"fireflies\",\"swell\",\"murmuration\",\"meander\",\"throats\",\"bats\",\"huddle\",\"wave\",\"frost\",\"catatumbo\",\"bubblers\",\"barchans\",\"pando\",\"hoh\",\"moonroad\",\"biobay\"]}",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": "redcrabs"
+  },
+  {
+   "t": 2.6,
+   "tap": "card"
+  },
+  {
+   "t": 8.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "the-light"
+  },
+  {
+   "t": 2.2,
+   "name": "light-touched"
+  },
+  {
+   "t": 2.2,
+   "name": "card"
+  },
+  {
+   "t": 3.0,
+   "name": "opening"
+  },
+  {
+   "t": 6.5,
+   "name": "inside"
+  },
+  {
+   "t": 9.0,
+   "name": "back-to-card"
+  },
+  {
+   "t": 12.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 13,
+  "every": 0.1
+ }
+}

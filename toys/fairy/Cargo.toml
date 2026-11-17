@@ -1,0 +1,26 @@
+[package]
+name = "fairy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Fairy Circles (a working title): the bare discs in the grass of the NamibRand, Namibia, grown by grasses competing for scarce rain; press to rain."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "fairy-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

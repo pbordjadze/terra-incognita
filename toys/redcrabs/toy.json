@@ -1,0 +1,5 @@
+{
+  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id. It ships only inside Terra (toys/terra), so it has no SideStore entry.",
+  "name": "Red Crabs",
+  "bundleIdentifier": "com.pbordjadze.toy.redcrabs"
+}

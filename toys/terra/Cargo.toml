@@ -32,6 +32,9 @@ throats = { path = "../throats" }
 bats = { path = "../bats" }
 huddle = { path = "../huddle" }
 wave = { path = "../wave" }
+shimmering = { path = "../shimmering" }
+redcrabs = { path = "../redcrabs" }
+fairy = { path = "../fairy" }
 
 [[bin]]
 name = "terra-check"

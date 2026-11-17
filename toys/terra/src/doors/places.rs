@@ -11,6 +11,7 @@ pub fn doors() -> Vec<Door> {
     all.extend(scenes());
     all.extend(ground_scenes());
     all.extend(homages());
+    all.extend(far_places());
     all
 }
 
@@ -185,4 +186,40 @@ fn homages() -> Vec<Door> {
         degree: 10,
         open: rooms::open::<biobay::MosquitoBay>,
     }]
+}
+
+/// The toys made for the map's empty stretches (Nov 17): South Asia, the Indian Ocean, southern Africa.
+fn far_places() -> Vec<Door> {
+    vec![
+        Door {
+            id: "shimmering",
+            name: "Shimmering",
+            place: "Chitwan, Nepal",
+            line: "Giant honeybees ripple a wave to chase off a hornet.",
+            at: [shimmering::PLACE.0, shimmering::PLACE.1],
+            tint: [0.95, 0.70, 0.25],
+            degree: 7,
+            open: rooms::open::<shimmering::Shimmering>,
+        },
+        Door {
+            id: "redcrabs",
+            name: "Red Crabs",
+            place: "Christmas Island, Indian Ocean",
+            line: "Fifty million red crabs walk to the sea with the rain.",
+            at: [redcrabs::PLACE.0, redcrabs::PLACE.1],
+            tint: [0.86, 0.16, 0.08],
+            degree: 2,
+            open: rooms::open::<redcrabs::RedCrabs>,
+        },
+        Door {
+            id: "fairy",
+            name: "Fairy Circles",
+            place: "NamibRand, Namibia",
+            line: "Bare circles in the grass, spaced like a honeycomb.",
+            at: [fairy::PLACE.0, fairy::PLACE.1],
+            tint: [0.80, 0.42, 0.24],
+            degree: 9,
+            open: rooms::open::<fairy::FairyCircles>,
+        },
+    ]
 }
