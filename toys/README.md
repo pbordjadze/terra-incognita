@@ -79,7 +79,10 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     nearest, a wave faster in deeper water) and how a finger joins in; under them each rule of
     `switches()` as a line with its switch; then "Show me" (the demo again) and, for a toy with
     `origins()`, "Where this comes from". Switches stay as the reader left them when the sheet closes, for
-    as long as the toy is held (in Terra, until its card is put away). Plain words, no title: a person can
+    as long as the toy is held (in Terra, until its card is put away). Every toy on Terra's globe has
+    switches (painting-company row 358): rules whose switch, off, changes what you see or hear within
+    seconds, and a `plans/switches.json` that turns one; `tools/toys/switches_check.py` (in `ci/lint.sh`)
+    fails a globe toy without them. Plain words, no title: a person can
     glance and go. Before the text ships, a reader who knows nothing of the toy is shown its shots and
     text and says what it is. `plans/rules.json` photographs it, `plans/info.json` plays the demo
     (`"show": "demo"`); `python3 tools/kit/shell_text.py <out>` draws the shell's text on the check's

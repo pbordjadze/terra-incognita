@@ -1,0 +1,1 @@
+{"_": "The rule's switch: with each run beside the last off, a crab heads out any way at all, and the starbursts blur into scribbled sand.", "size": [1179, 2556], "ppp": 3, "seconds": 30, "fps": 20, "events": [{"t": 1.0, "tap": "rules"}, {"t": 1.3, "switch": [0, false]}], "shots": [{"t": 1.2, "name": "sheet"}, {"t": 15, "name": "scribbling"}, {"t": 29.5, "name": "blurred"}]}

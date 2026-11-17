@@ -13,6 +13,7 @@ use bolt::{Bolt, Brewer, Rng, CELL_M, NZ};
 use sound::{Pulse, Thunder, SOUND_MS};
 use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::paint::Painter;
+use toy_kit::switches::Switch;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Synth, Toy};
 
 /// Where it is: the mouth of the Catatumbo, south-west Lake Maracaibo (lon, lat).
@@ -30,6 +31,13 @@ const RESTRIKE_S: (f64, f64) = (0.09, 0.26);
 const MAX_STROKES: usize = 9;
 /// A stroke's light dies in this long.
 const STROKE_S: f64 = 0.16;
+
+/// The rules the sheet can switch off.
+pub const RULES: [&str; 3] = [
+    "A stroke forks",
+    "Held, it strikes again",
+    "Thunder comes at sound's speed",
+];
 
 #[derive(Clone, Copy, PartialEq)]
 enum Kind {
@@ -66,6 +74,8 @@ pub struct Catatumbo {
     flicker: (f64, [f64; 2], f64),
     reduce_motion: bool,
     brewer: Brewer,
+    /// which of `RULES` hold
+    on: [bool; 3],
 }
 
 impl Catatumbo {
@@ -177,7 +187,7 @@ impl Catatumbo {
         let foot = b.foot() as f64;
         let mut out = Vec::new();
         for (k, c) in b.cells.iter().enumerate().skip(1) {
-            if !first && !c.main {
+            if (!first || !self.on[0]) && !c.main {
                 continue;
             }
             let (x, alt, depth) = match s.kind {
@@ -199,7 +209,12 @@ impl Catatumbo {
             // a little jitter: the channel's kinks spread each piece's arrival
             let j = (hash(s.seed ^ k as u64) - 0.5) * 0.02;
             out.push(Pulse {
-                delay: d / SOUND_MS + j,
+                // with the rule off, every piece's crack arrives at once, as the flash does
+                delay: if self.on[2] {
+                    d / SOUND_MS + j
+                } else {
+                    0.05 + j
+                },
                 amp: (0.7 * strength as f64 * (220.0 / d).min(1.6)) as f32
                     * if first { 1.0 } else { 0.5 }
                     * s.power,
@@ -290,6 +305,7 @@ impl Toy for Catatumbo {
             flicker: (-10.0, [0.0, 0.0], 0.0),
             reduce_motion: ctx.reduce_motion,
             brewer: Brewer::new(0xCA7A_7B30),
+            on: [true; 3],
         })
     }
 
@@ -337,7 +353,12 @@ impl Toy for Catatumbo {
             // a held finger keeps the channel striking
             let s = &self.strikes[i];
             let last = *s.strokes.last().unwrap_or(&s.born);
-            if s.finger.is_some() && !reduce && t > last && s.strokes.len() < MAX_STROKES {
+            if s.finger.is_some()
+                && self.on[1]
+                && !reduce
+                && t > last
+                && s.strokes.len() < MAX_STROKES
+            {
                 let gap = RESTRIKE_S.0
                     + (RESTRIKE_S.1 - RESTRIKE_S.0) * hash(s.seed ^ s.strokes.len() as u64);
                 if t - last > gap {
@@ -434,6 +455,16 @@ impl Toy for Catatumbo {
             "Every piece of the channel thunders. Sound takes 3 seconds a kilometre, so the near pieces crack first and the far ones roll in.",
         ]))
     }
+
+    fn switches(&self) -> Vec<Switch> {
+        Switch::all(&RULES, &self.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(r) = self.on.get_mut(i) {
+            *r = on;
+        }
+    }
 }
 
 impl Catatumbo {
@@ -459,7 +490,10 @@ impl Catatumbo {
         let foot_y = s.at[1];
         let ground = s.kind == Kind::Ground;
         let mut line = Vec::new();
-        for (k, c) in s.bolt.cells.iter().enumerate().skip(1) {
+        // (with the forks switched off, only the main channel)
+        let forks = self.on[0];
+        let cells = s.bolt.cells.iter().enumerate().skip(1);
+        for (k, c) in cells.filter(|(_, c)| c.main || forks) {
             if c.order > reveal {
                 break;
             }
@@ -497,7 +531,7 @@ impl Catatumbo {
                     self.painter
                         .glow(qa, qb, 0.0, r * 1.1 * p + p, [0.9, 0.86, 1.0, v * 0.9]);
                 }
-                if core && c.main && near > 0.7 {
+                if core && c.main && near > 0.7 && self.on[0] {
                     let seed = s.seed ^ (k as u64) << 3 ^ (j as u64) << 24;
                     self.paint_fork([pa, pb], seed, [near, foot_y], r, v, ppp);
                 }

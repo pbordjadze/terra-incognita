@@ -51,6 +51,13 @@ pub fn erodible(p: [f64; 2]) -> f64 {
     0.12 + 0.88 * (-out / 700.0).exp()
 }
 
+/// The rules the sheet can switch off: the outside of a bend wearing away (off, the river stands still),
+/// and a closed neck being cut through (off, the loops grow on into each other).
+pub const RULES: [&str; 2] = [
+    "The outside of a bend wears away",
+    "A closed neck is cut through",
+];
+
 #[derive(Clone)]
 pub struct Oxbow {
     pub line: Vec<[f64; 2]>,
@@ -73,6 +80,11 @@ pub struct River {
     /// 0..1: how far the rest of the river is held back while a push is fresh, so the bend the finger
     /// made is the one that moves (the toy sets it).
     pub calm: f64,
+    /// which of `RULES` hold
+    pub on: [bool; 2],
+    /// While no neck is cut, the most nodes the line may grow to (twice what it had when the cutting
+    /// stopped), so a river left uncut for minutes never grows without end
+    uncut_cap: Option<usize>,
     rng: u64,
     r0: Vec<f64>,
     r1: Vec<f64>,
@@ -94,6 +106,8 @@ impl River {
             cuts: Vec::new(),
             kicks: Vec::new(),
             calm: 0.0,
+            on: [true; 2],
+            uncut_cap: None,
             rng: seed | 1,
             r0: Vec::new(),
             r1: Vec::new(),
@@ -127,9 +141,20 @@ impl River {
         }
     }
 
+    /// Whether the river stands still this step: too short, its bends not wearing away, or grown to
+    /// its cap while no neck is cut.
+    fn standing(&mut self, n: usize) -> bool {
+        self.uncut_cap = if self.on[1] {
+            None
+        } else {
+            Some(*self.uncut_cap.get_or_insert(n * 2))
+        };
+        n < 8 || !self.on[0] || self.uncut_cap.is_some_and(|c| n >= c)
+    }
+
     fn step(&mut self, dt: f64) {
         let n = self.line.len();
-        if n < 8 {
+        if self.standing(n) {
             self.year += dt;
             return;
         }
@@ -424,7 +449,7 @@ impl River {
     }
 
     fn cutoffs(&mut self) {
-        loop {
+        while self.on[1] {
             let n = self.line.len();
             let cell = CUT;
             let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> =

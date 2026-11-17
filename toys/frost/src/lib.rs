@@ -9,9 +9,11 @@
 //! hex grid; the pane keeps who holds each patch of glass (the mask) and what the finished crystals
 //! left (the field), and how deep the glaze is (where a melt froze smooth), which `draw` (pane.wgsl) lights. painting-company row 218.
 
+mod layout;
 mod readback;
 mod sound;
 
+use toy_kit::switches::Switch;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Toy};
 use wgpu::util::DeviceExt;
 
@@ -45,6 +47,12 @@ const RELAX_PER_S: f64 = 0.55;
 /// How often a healing hole's edge is seeded again (seconds), and from what age.
 const RENEW_S: f64 = 0.9;
 const RENEW_AFTER_S: f64 = 10.0;
+/// The rules the sheet can switch off.
+pub const RULES: [&str; 2] = [
+    "The air is damper low on the glass",
+    "Meltwater refreezes smooth",
+];
+
 /// The stove's warmth (a shake): the clearing's speed, points a second.
 const SWEEP_SPEED: f64 = 900.0;
 
@@ -78,7 +86,9 @@ struct Globals {
     bar: f32,
     fringe: f32,
     relax: f32,
-    _g: [f32; 2],
+    /// 1 while a melt freezes smooth (the glaze), 0 with that rule off
+    glaze: f32,
+    _g: f32,
     slots: [SlotU; SLOTS],
 }
 
@@ -185,6 +195,8 @@ struct Finger {
 }
 
 pub struct Frost {
+    /// which of `RULES` hold
+    on: [bool; 2],
     globals: wgpu::Buffer,
     op: wgpu::Buffer,
     look: wgpu::Buffer,
@@ -239,31 +251,6 @@ pub struct Frost {
     sweep_asked: bool,
 }
 
-fn storage(binding: u32, read_only: bool, vis: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
-    wgpu::BindGroupLayoutEntry {
-        binding,
-        visibility: vis,
-        ty: wgpu::BindingType::Buffer {
-            ty: wgpu::BufferBindingType::Storage { read_only },
-            has_dynamic_offset: false,
-            min_binding_size: None,
-        },
-        count: None,
-    }
-}
-fn uniform(binding: u32, vis: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
-    wgpu::BindGroupLayoutEntry {
-        binding,
-        visibility: vis,
-        ty: wgpu::BindingType::Buffer {
-            ty: wgpu::BufferBindingType::Uniform,
-            has_dynamic_offset: false,
-            min_binding_size: None,
-        },
-        count: None,
-    }
-}
-
 impl Frost {
     fn rand(&mut self) -> f64 {
         self.rng ^= self.rng << 13;
@@ -293,17 +280,19 @@ impl Frost {
             field_h: self.field_side,
             // high on the glass the air is drier: compact plates; low, wetter: ferns (Reiter's phase
             // diagram; tools/toys/frost/reiter.py)
+            // (with that rule off, no damp pooled low: the drier air all the way down)
             beta_top: 0.45,
-            beta_bottom: 0.74,
+            beta_bottom: if self.on[0] { 0.74 } else { 0.45 },
             gamma_top: 0.001,
-            gamma_bottom: 0.0005,
+            gamma_bottom: if self.on[0] { 0.0005 } else { 0.001 },
             eps: 0.3,
             alpha: 1.0,
             frame: FRAME as f32,
             bar: (self.pane[1] * BAR_AT) as f32,
             fringe: FRINGE as f32,
             relax: 0.0,
-            _g: [0.0; 2],
+            glaze: self.on[1] as u32 as f32,
+            _g: 0.0,
             slots,
         }
     }
@@ -586,20 +575,7 @@ impl Toy for Frost {
         let look = ub("frost look", std::mem::size_of::<Look>());
 
         toy_kit::step("frost: the automaton's pipelines");
-        let cs = wgpu::ShaderStages::COMPUTE;
-        let layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("frost sim"),
-            entries: &[
-                uniform(0, cs),
-                storage(1, true, cs),
-                storage(2, false, cs),
-                storage(3, false, cs),
-                storage(4, false, cs),
-                storage(5, false, cs),
-                uniform(6, cs),
-                storage(7, false, cs),
-            ],
-        });
+        let layout = layout::sim(dev);
         let binds = [0usize, 1].map(|p| {
             dev.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("frost sim"),
@@ -667,11 +643,7 @@ impl Toy for Frost {
         let (probe, clear, relax) = (compute("probe"), compute("clear"), compute("relax"));
 
         toy_kit::step("frost: the window's pipeline");
-        let fs = wgpu::ShaderStages::FRAGMENT;
-        let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("frost draw"),
-            entries: &[uniform(0, fs), storage(1, true, fs)],
-        });
+        let draw_layout = layout::draw(dev);
         let draw_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("frost draw"),
             layout: &draw_layout,
@@ -691,6 +663,7 @@ impl Toy for Frost {
         toy_kit::step("frost: made");
 
         Ok(Frost {
+            on: [true; 2],
             globals,
             op,
             look,
@@ -1245,6 +1218,16 @@ impl Toy for Frost {
                 "The air is damper low on the glass, so long ferns race there; higher up grow stubbier stars.",
                 "Your warm finger melts the frost. The meltwater refreezes smooth, so frost creeps back only slowly, from the edges of the clear patch.",
         ]))
+    }
+
+    fn switches(&self) -> Vec<Switch> {
+        Switch::all(&RULES, &self.on)
+    }
+
+    fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
+        if let Some(r) = self.on.get_mut(i) {
+            *r = on;
+        }
     }
 }
 

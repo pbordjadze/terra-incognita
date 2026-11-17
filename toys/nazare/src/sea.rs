@@ -56,7 +56,13 @@ pub struct Field {
     pub height: Vec<f32>,
     /// how much the rays' crowding has raised the waves there (1 in the open sea; up to REFRACT_MAX)
     pub focus: Vec<f32>,
+    /// which of `RULES` held when it was solved
+    pub rules: [bool; 2],
 }
+
+/// The rules the sheet can switch off: the shallows slowing the swell (off, it runs at its deep-water
+/// speed over every depth, so nothing bends or grows), and its rays crowding together raising it.
+pub const RULES: [&str; 2] = ["Shallow water slows the swell", "Bent together, it grows"];
 
 /// The wavenumber (1/m) of a wave of angular frequency `omega` over depth `h`: Fenton and McKee's
 /// explicit form of the dispersion relation (within about 1.5%).
@@ -79,6 +85,13 @@ pub fn speeds(period: f64, h: f64) -> (f64, f64) {
 
 impl Field {
     pub fn new(floor: &Floor, period: f64, from_deg: f64) -> Field {
+        Field::with_rules(floor, period, from_deg, [true; 2])
+    }
+
+    /// A swell's field with some of `RULES` switched off.
+    pub fn with_rules(floor: &Floor, period: f64, from_deg: f64, rules: [bool; 2]) -> Field {
+        // the depth the swell feels: with the shallows not slowing it, the open ocean's everywhere
+        let felt = |i: usize| if rules[0] { floor.depth(i) } else { 4000.0 };
         let n = floor.w * floor.h;
         let mut phase = vec![f64::INFINITY; n];
         let mut group = vec![f64::INFINITY; n];
@@ -87,7 +100,7 @@ impl Field {
         let mut speed = vec![0.0f64; n];
         for i in 0..n {
             if floor.sea(i) {
-                let (c, cg) = speeds(period, floor.depth(i));
+                let (c, cg) = speeds(period, felt(i));
                 speed[i] = c / floor.cell_m;
                 slow[i] = floor.cell_m / c;
                 slow_g[i] = floor.cell_m / cg;
@@ -121,9 +134,13 @@ impl Field {
                 continue;
             }
             let h = floor.depth(i);
-            let (_, cg) = speeds(period, h);
+            let (_, cg) = speeds(period, felt(i));
             let shoal = (cg0 / cg).sqrt();
-            let refract = (crowd[i] * RAY * STEP).sqrt().min(REFRACT_MAX);
+            let refract = if rules[1] {
+                (crowd[i] * RAY * STEP).sqrt().min(REFRACT_MAX)
+            } else {
+                1.0
+            };
             height[i] = (H0 * shoal * refract).min(BREAK * h) as f32;
             focus[i] = refract as f32;
         }
@@ -134,6 +151,7 @@ impl Field {
             tau_group: group,
             height,
             focus,
+            rules,
         }
     }
 }

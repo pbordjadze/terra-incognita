@@ -35,6 +35,10 @@ const LIT_S: f64 = 2.2;
 /// A painted cell comes in over this long (seconds).
 const PAINT_S: f64 = 0.45;
 
+/// The rules as the sheet's switches name them, in `Lake::on`'s order: the little waves' wandering tilts,
+/// and the swell's bands. Both off, the water is a mirror and the road shrinks to the moon's one image.
+pub const RULES: [&str; 2] = ["Ripples tilt the water", "The swell rolls in"];
+
 #[derive(Clone, Copy)]
 pub struct Cell {
     /// the seed's place in its cell, 0..1 each way
@@ -71,6 +75,8 @@ pub struct Lake {
     rng: Rng,
     /// a slower walk when Reduce Motion is on
     pub slow: bool,
+    /// The rules, each on or off (the sheet's switches; `RULES`): the ripples' wandering tilts, the swell.
+    pub on: [bool; 2],
 }
 
 pub struct Rng(pub u64);
@@ -134,6 +140,7 @@ impl Lake {
             t: 0.0,
             rng,
             slow: false,
+            on: [true; 2],
         }
     }
 
@@ -218,12 +225,18 @@ impl Lake {
                 let d = self.row_m(row, cell.j[1] as f64);
                 let x = u * w;
                 let sigma = CALM + self.gusty(x, d);
+                // (ripples off: the tilts settle flat within a second; the swell keeps its own size)
+                let ripple = if self.on[0] { sigma } else { 0.0 };
                 let n = self.rng.n2();
-                cell.slope[0] = cell.slope[0] * decay + sigma * kick * n[0];
-                cell.slope[1] = cell.slope[1] * decay + sigma * kick * n[1];
+                cell.slope[0] = cell.slope[0] * decay + ripple * kick * n[0];
+                cell.slope[1] = cell.slope[1] * decay + ripple * kick * n[1];
                 // the swell's bands, rolling in toward the shore
                 let phase = k * d + omega * t + 0.6 * (x * 0.21).sin();
-                let swell = SWELL_K * sigma * phase.sin();
+                let swell = if self.on[1] {
+                    SWELL_K * sigma * phase.sin()
+                } else {
+                    0.0
+                };
                 let s = [cell.slope[0], cell.slope[1] + swell];
                 // the tilt that sends moonlight to the eye: the facet's normal halves the moon and the eye
                 let (vx, vy, vz) = (-(x - self.x_eye), -d, EYE_M);

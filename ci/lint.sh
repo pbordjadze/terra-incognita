@@ -7,11 +7,12 @@
 #   actionlint                        the workflows (.github/actionlint.yaml), with shellcheck on their scripts
 #   SwiftLint                         the Swift (.swiftlint.yml), when `swiftlint` is on PATH
 #   ci/silenced.py                    every lint silenced in the code says why, beside it
+#   tools/toys/switches_check.py      every toy on Terra's globe has its rules as switches, and a plan turning one
 #   ci/ratchet.py                     file length (800), function size and complexity (100, 20; lizard) and the
 #                                     Python's types (pyright): what is past a limit may only get better
 #
 #   bash ci/lint.sh            # everything; the exit status says whether all passed
-#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced, ratchet
+#   bash ci/lint.sh rust       # one of: rust, python, shell, actions, swift, silenced, switches, ratchet
 #   bash ci/lint.sh fix        # rustfmt and ruff's safe fixes in place, then everything
 # The versions are pinned: Rust by rust-toolchain.toml, ruff, shellcheck, actionlint, lizard and pyright by
 # tools/requirements.txt (python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt), SwiftLint
@@ -46,6 +47,9 @@ if want python; then
 fi
 if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = silenced ]; then
   run "every silenced lint says why" python3 ci/silenced.py
+fi
+if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = switches ]; then
+  run "every toy on Terra's globe has switches" python3 tools/toys/switches_check.py
 fi
 if [ "$only" = all ] || [ "$only" = fix ] || [ "$only" = ratchet ]; then
   run "ratchet: file length, complexity, types" python3 ci/ratchet.py

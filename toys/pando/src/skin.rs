@@ -82,10 +82,14 @@ impl Skin {
         (0.55 + 0.45 * facing) * (1.0 - 0.95 * shade)
     }
 
-    pub fn step(&mut self, facing: f32, dt: f32) {
+    /// One step; with `follow` off (`RULES`' second), the pores stay as they are, whatever the light.
+    pub fn step(&mut self, facing: f32, dt: f32, follow: bool) {
         let target = if self.held { 1.0 } else { 0.0 };
         self.shade += (target - self.shade) * (1.0 - (-dt / 0.25).exp());
         for i in 0..self.pores.len() {
+            if !follow {
+                break;
+            }
             let want = ((self.light(self.pores[i].at, facing) - 0.25) / 0.6).clamp(0.0, 1.0);
             let p = &mut self.pores[i];
             let tau = if want > p.open { OPEN_S } else { CLOSE_S };
