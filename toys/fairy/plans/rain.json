@@ -1,0 +1,3 @@
+{ "_": "A finger held rains on a patch: the grass there greens and the circles close; dragged, the shower follows it.", "size": [1179, 2556], "ppp": 3, "seconds": 16, "fps": 30,
+  "events": [ { "t": 1.0, "hold": [195, 420], "for": 4.0 }, { "t": 7.0, "drag": [[80, 700], [320, 720]], "for": 3.0 } ],
+  "shots": [0.9, 3.0, 5.0, 8.5, 10.0, 16.0] }
