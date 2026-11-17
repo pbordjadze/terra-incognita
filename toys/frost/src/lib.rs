@@ -47,13 +47,13 @@ const RELAX_PER_S: f64 = 0.55;
 /// How often a healing hole's edge is seeded again (seconds), and from what age.
 const RENEW_S: f64 = 0.9;
 const RENEW_AFTER_S: f64 = 10.0;
-/// The stove's warmth (a shake): the clearing's speed, points a second.
 /// The rules the sheet can switch off.
 pub const RULES: [&str; 2] = [
     "The air is damper low on the glass",
     "Meltwater refreezes smooth",
 ];
 
+/// The stove's warmth (a shake): the clearing's speed, points a second.
 const SWEEP_SPEED: f64 = 900.0;
 
 #[repr(C)]

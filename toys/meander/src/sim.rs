@@ -82,6 +82,9 @@ pub struct River {
     pub calm: f64,
     /// which of `RULES` hold
     pub on: [bool; 2],
+    /// While no neck is cut, the most nodes the line may grow to (twice what it had when the cutting
+    /// stopped), so a river left uncut for minutes never grows without end
+    uncut_cap: Option<usize>,
     rng: u64,
     r0: Vec<f64>,
     r1: Vec<f64>,
@@ -104,6 +107,7 @@ impl River {
             kicks: Vec::new(),
             calm: 0.0,
             on: [true; 2],
+            uncut_cap: None,
             rng: seed | 1,
             r0: Vec::new(),
             r1: Vec::new(),
@@ -139,7 +143,13 @@ impl River {
 
     fn step(&mut self, dt: f64) {
         let n = self.line.len();
-        if n < 8 || !self.on[0] {
+        let cap = if self.on[1] {
+            None
+        } else {
+            Some(*self.uncut_cap.get_or_insert(n * 2))
+        };
+        self.uncut_cap = cap;
+        if n < 8 || !self.on[0] || cap.is_some_and(|c| n >= c) {
             self.year += dt;
             return;
         }
