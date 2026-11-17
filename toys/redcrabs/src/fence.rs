@@ -52,6 +52,9 @@ impl Fences {
         let Some(line) = self.lines.last_mut() else {
             return;
         };
+        if line.len() >= MOST {
+            return;
+        }
         let last = *line.last().unwrap_or(&p);
         let d = sub(p, last);
         if dot(d, d) < 0.15 * 0.15 {

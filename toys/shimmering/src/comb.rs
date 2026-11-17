@@ -133,6 +133,13 @@ impl Comb {
         while self.acc >= STEP {
             self.acc -= STEP;
             self.t += STEP;
+            if self.t > 1000.0 {
+                // rebase the clock now and then so an f32 keeps counting 1/240 s after hours open
+                self.t -= 1000.0;
+                for f in &mut self.fired {
+                    *f -= 1000.0;
+                }
+            }
             self.spread();
             self.start_flips();
             self.fly(STEP);

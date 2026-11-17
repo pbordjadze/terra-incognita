@@ -175,18 +175,23 @@ impl RedCrabs {
     }
 }
 
+/// The island as it opens: the rain has just been, and the crabs are on their way.
+fn opening(w: f32, h: f32) -> Island {
+    let mut island = Island::new(w, h, 0x00C2_AB5E);
+    island.rain([w * 0.4, h * 0.15]);
+    for _ in 0..180 {
+        island.step(1.0 / 30.0);
+    }
+    island.t = 0.0;
+    island
+}
+
 impl Toy for RedCrabs {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let size_pt = ctx.points();
         let k = scale(size_pt);
         let (w, h) = (size_pt[0] as f32 / k, size_pt[1] as f32 / k);
-        let mut island = Island::new(w, h, 0x00C2_AB5E);
-        // the rain has just been, and the crabs are on their way
-        island.rain([w * 0.4, h * 0.15]);
-        for _ in 0..180 {
-            island.step(1.0 / 30.0);
-        }
-        island.t = 0.0;
+        let island = opening(w, h);
         Ok(RedCrabs {
             island,
             ground: Backdrop::new(&ctx.gpu, "redcrabs-ground", include_str!("ground.wgsl")),
@@ -206,11 +211,7 @@ impl Toy for RedCrabs {
         self.size_pt = size;
         self.k = scale(size);
         let on = self.island.on;
-        self.island = Island::new(
-            size[0] as f32 / self.k,
-            size[1] as f32 / self.k,
-            0x00C2_AB5E,
-        );
+        self.island = opening(size[0] as f32 / self.k, size[1] as f32 / self.k);
         self.island.on = on;
     }
 
@@ -245,10 +246,17 @@ impl Toy for RedCrabs {
                 }
             }
             _ => {
-                let Some(f) = self.finger.take().filter(|f| f.id == e.id) else {
+                if !self.finger.as_ref().is_some_and(|f| f.id == e.id) {
+                    return;
+                }
+                let Some(f) = self.finger.take() else {
                     return;
                 };
-                if f.laying {
+                if matches!(e.phase, Phase::Cancel) {
+                    if f.laying {
+                        self.island.fences.end();
+                    }
+                } else if f.laying {
                     self.island.fences.extend(p);
                     self.island.fences.end();
                 } else if self.t - f.t < TAP_S {

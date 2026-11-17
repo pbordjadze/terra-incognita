@@ -275,6 +275,10 @@ impl Island {
 
     pub fn step(&mut self, dt: f32) {
         self.t += dt;
+        if self.t > DAY_S * 100.0 {
+            // a whole number of days off the clock, so an f32 keeps counting after hours open
+            self.t -= DAY_S * 100.0;
+        }
         self.wet *= (-dt / DRY_S).exp();
         self.sky_rain -= dt;
         if self.sky_rain <= 0.0 {
