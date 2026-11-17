@@ -1,0 +1,25 @@
+[package]
+name = "redcrabs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Red Crabs (a working title): the red crab migration on Christmas Island; a finger builds the fences that lead them under the road, a tap brings rain."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "redcrabs-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

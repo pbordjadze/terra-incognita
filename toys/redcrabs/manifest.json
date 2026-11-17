@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Red Crabs loads none: the forest floor, the road, the shore and the crabs are made by code.",
+  "files": {}
+}
