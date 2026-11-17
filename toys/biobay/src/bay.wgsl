@@ -112,7 +112,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   var wide = 0.0;
   for (var k = 0; k < 8; k = k + 1) {
     let a = f32(k) * 0.785398;
-    wide = wide + fld(c + vec2<f32>(cos(a), sin(a)) * 4.0).x;
+    wide = wide + fld(clamp(c + vec2<f32>(cos(a), sin(a)) * 4.0, vec2<f32>(0.5), u.grid - 0.5)).x;
   }
   col = col + HAZE * (1.0 - exp(-wide / 8.0 * 0.35)) * 0.30 * seen;
 

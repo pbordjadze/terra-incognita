@@ -73,8 +73,6 @@ pub struct Bay {
     pub on: [bool; 3],
     /// seconds left of a rain shower
     pub shower: f32,
-    /// what lit this step, for the sound: (where, how much)
-    pub lit: Vec<([f32; 2], f32)>,
     /// raindrops that fell this step
     pub drops: Vec<[f32; 2]>,
     /// fish that darted this step
@@ -100,7 +98,6 @@ impl Bay {
             fish: Vec::new(),
             on: [true; 3],
             shower: 0.0,
-            lit: Vec::new(),
             drops: Vec::new(),
             darted: Vec::new(),
             t: 0.0,
@@ -202,7 +199,6 @@ impl Bay {
 
     pub fn step(&mut self, dt: f32) {
         self.t += dt;
-        self.lit.clear();
         self.drops.clear();
         if self.on[2] {
             self.swim(dt);
@@ -229,7 +225,6 @@ impl Bay {
             f.heading += f.turn * dt * if f.dart > 0.0 { 0.2 } else { 1.0 };
             f.dart -= dt;
             let (c, s) = (f.heading.cos(), f.heading.sin());
-            let before = f.p;
             f.p = [f.p[0] + c * f.speed * dt, f.p[1] + s * f.speed * dt];
             // keep under the open water, away from the roots
             if f.p[1] < h * 0.22 {
@@ -238,9 +233,9 @@ impl Bay {
             if f.p[0] < -30.0 || f.p[0] > w + 30.0 || f.p[1] < -30.0 || f.p[1] > h + 30.0 {
                 gone.push(k);
             }
-            trails.push((before, f.p, f.speed, f.len, [c, s]));
+            trails.push((f.p, f.speed, f.len, [c, s]));
         }
-        for (a, b, speed, len, dir) in trails {
+        for (b, speed, len, dir) in trails {
             // the body stirs along its length, the tail most
             let amount = (speed / 60.0).clamp(0.08, 1.6) * dt * 5.5;
             let tail = [b[0] - dir[0] * len, b[1] - dir[1] * len];
@@ -250,7 +245,6 @@ impl Bay {
                 let p = [b[0] + (tail[0] - b[0]) * u, b[1] + (tail[1] - b[1]) * u];
                 self.stir_at(p, 0.7 + 0.5 * u, amount * (0.4 + u));
             }
-            let _ = a;
         }
         for k in gone.into_iter().rev() {
             self.fish[k] = self.new_fish(false);
@@ -326,8 +320,6 @@ impl Bay {
         let fade = (-dt / GLOW_S).exp();
         let back = 1.0 - (-dt / RECHARGE_S).exp();
         let tire = self.on[1];
-        let mut total = 0.0;
-        let (mut sx, mut sy) = (0.0, 0.0);
         for i in 0..self.stir.len() {
             let make = self.stir[i] * self.charge[i];
             self.light[i] = self.light[i] * fade + make * dt * 6.0;
@@ -335,21 +327,7 @@ impl Bay {
                 self.charge[i] -= (make * SPEND * dt).min(self.charge[i]);
             }
             self.charge[i] += (1.0 - self.charge[i]) * back;
-            total += make;
-            sx += make * (i % self.gw) as f32;
-            sy += make * (i / self.gw) as f32;
         }
-        if total > 1e-3 {
-            self.lit
-                .push(([sx / total * CELL, sy / total * CELL], total * dt));
-        }
-    }
-
-    /// Everything still: a new night (the rules keep as they are).
-    pub fn calm(&mut self) {
-        self.stir.iter_mut().for_each(|v| *v = 0.0);
-        self.light.iter_mut().for_each(|v| *v = 0.0);
-        self.charge.iter_mut().for_each(|v| *v = 1.0);
     }
 
     /// The grid as the field's texels: (light, charge, stir, -).
@@ -404,13 +382,12 @@ mod tests {
             let mut b = Bay::new(100.0, 200.0, 7);
             b.on = [true, tire, false];
             let mut best = [0.0f32; 2];
-            for (k, best) in best.iter_mut().enumerate() {
+            for best in best.iter_mut() {
                 b.drag([20.0, 120.0], [60.0, 120.0], 0.3);
                 for _ in 0..90 {
                     b.step(1.0 / 30.0);
                     *best = best.max(total_light(&b));
                 }
-                let _ = k;
             }
             best[1] / best[0]
         };

@@ -43,13 +43,13 @@ impl Sound {
         Box::new(Voice {
             shared: self.0.clone(),
             clock: 0.0,
-            waiting: Vec::new(),
-            live: Vec::new(),
+            waiting: Vec::with_capacity(256),
+            live: Vec::with_capacity(64),
             seed: 0x1234_5679,
             swish: 0.0,
             pan: 0.0,
             water: [0.0; 3],
-            frogs: Vec::new(),
+            frogs: Vec::with_capacity(16),
             next_frog: 0.6,
         })
     }
@@ -93,7 +93,8 @@ impl Voice {
     }
 
     fn take(&mut self) {
-        if let Ok(mut s) = self.shared.lock() {
+        // never wait on the main thread here: a busy lock leaves the queue for the next buffer
+        if let Ok(mut s) = self.shared.try_lock() {
             for k in s.queue.drain(..) {
                 self.waiting.push((self.clock + k.delay as f64, k));
             }
@@ -108,7 +109,7 @@ impl Voice {
         while i < self.waiting.len() {
             if self.waiting[i].0 <= now {
                 let (_, k) = self.waiting.swap_remove(i);
-                if self.live.len() < 60 {
+                if self.live.len() < 60 && self.live.len() < self.live.capacity() {
                     self.live.push(Live {
                         k,
                         t: 0.0,
@@ -120,7 +121,7 @@ impl Voice {
                 i += 1;
             }
         }
-        if now >= self.next_frog {
+        if now >= self.next_frog && self.frogs.len() < self.frogs.capacity() {
             let near = (self.noise() * 0.5 + 0.5).powi(3);
             let pan = self.noise() * 0.9;
             let pitch = 1.0 + self.noise() * 0.06;

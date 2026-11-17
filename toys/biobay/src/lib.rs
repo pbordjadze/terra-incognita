@@ -18,7 +18,7 @@ use toy_kit::{info, Ctx, Phase, PointerEvent, Synth, Toy};
 /// Where it is: Puerto Mosquito, on the south coast of Vieques, Puerto Rico (lon, lat).
 pub const PLACE: (f64, f64) = (-65.443, 18.098);
 
-/// The screen is this many centimetres of water across.
+/// The screen's shorter side is this many centimetres of water.
 const WIDTH_CM: f32 = 60.0;
 /// The moon rises or sets on the water in about this long (seconds, a time constant).
 const MOON_S: f32 = 0.7;
@@ -60,6 +60,11 @@ impl MosquitoBay {
     }
 }
 
+/// Points a centimetre on a screen of `size` points: its shorter side is `WIDTH_CM` of water.
+fn scale(size: [f64; 2]) -> f32 {
+    (size[0].min(size[1]) as f32 / WIDTH_CM).max(1e-3)
+}
+
 /// The paddle's last stroke, still glowing as the toy opens: a sweep that curls back on itself (cm, on a
 /// screen `w` by `h`).
 fn paddle_stroke(w: f32, h: f32) -> Vec<[f32; 2]> {
@@ -67,7 +72,7 @@ fn paddle_stroke(w: f32, h: f32) -> Vec<[f32; 2]> {
         .map(|i| {
             let u = i as f32 / 40.0;
             let a = 3.6 - u * 5.6;
-            let r = w * (0.36 - 0.22 * u);
+            let r = w.min(h) * (0.36 - 0.22 * u);
             [w * 0.5 + a.cos() * r, h * 0.66 + a.sin() * r * 0.8]
         })
         .collect()
@@ -76,14 +81,14 @@ fn paddle_stroke(w: f32, h: f32) -> Vec<[f32; 2]> {
 impl Toy for MosquitoBay {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let size_pt = ctx.points();
-        let k = size_pt[0] as f32 / WIDTH_CM;
-        let h = size_pt[1] as f32 / k;
-        let mut bay = Bay::new(WIDTH_CM, h, 0x0B10_BA7);
+        let k = scale(size_pt);
+        let (w, h) = (size_pt[0] as f32 / k, size_pt[1] as f32 / k);
+        let mut bay = Bay::new(w, h, 0x00B1_0BA7);
         // the fish have been about a while, and the paddle has just come out of the water
         for _ in 0..30 {
             bay.step(1.0 / 15.0);
         }
-        let stroke = paddle_stroke(WIDTH_CM, h);
+        let stroke = paddle_stroke(w, h);
         for pair in stroke.windows(2) {
             bay.drag(pair[0], pair[1], 0.02);
             bay.step(0.02);
@@ -112,9 +117,25 @@ impl Toy for MosquitoBay {
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
-        // the water keeps its size; the screen shows it from the top left at the same scale
+        // the water keeps its scale by the shorter side; a screen that outgrows it gets new, still water
         self.size_pt = ctx.points();
-        self.k = self.size_pt[0] as f32 / WIDTH_CM;
+        self.k = scale(self.size_pt);
+        let (w, h) = (
+            self.size_pt[0] as f32 / self.k,
+            self.size_pt[1] as f32 / self.k,
+        );
+        if (w - self.bay.w).abs() > CELL || (h - self.bay.h).abs() > CELL {
+            let on = self.bay.on;
+            self.bay = Bay::new(w, h, 0x00B1_0BA7);
+            self.bay.on = on;
+            self.field = Field::new(
+                &ctx.gpu,
+                "biobay-water",
+                [self.bay.gw as u32, self.bay.gh as u32],
+                include_str!("bay.wgsl"),
+                None,
+            );
+        }
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -160,7 +181,7 @@ impl Toy for MosquitoBay {
             let h = ((p[0] * 13.1 + p[1] * 7.7).sin() * 0.5 + 0.5).fract();
             splashes.push(self.splash(*p, 0.05 + 0.06 * h, 0.012, 0.8, i as f32 * 0.009));
         }
-        for p in self.bay.darted.drain(..).collect::<Vec<_>>() {
+        for p in std::mem::take(&mut self.bay.darted) {
             splashes.push(self.splash(p, 0.16, 0.05, 0.6, 0.0));
         }
         if !splashes.is_empty() {
