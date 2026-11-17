@@ -141,15 +141,20 @@ impl River {
         }
     }
 
-    fn step(&mut self, dt: f64) {
-        let n = self.line.len();
-        let cap = if self.on[1] {
+    /// Whether the river stands still this step: too short, its bends not wearing away, or grown to
+    /// its cap while no neck is cut.
+    fn standing(&mut self, n: usize) -> bool {
+        self.uncut_cap = if self.on[1] {
             None
         } else {
             Some(*self.uncut_cap.get_or_insert(n * 2))
         };
-        self.uncut_cap = cap;
-        if n < 8 || !self.on[0] || cap.is_some_and(|c| n >= c) {
+        n < 8 || !self.on[0] || self.uncut_cap.is_some_and(|c| n >= c)
+    }
+
+    fn step(&mut self, dt: f64) {
+        let n = self.line.len();
+        if self.standing(n) {
             self.year += dt;
             return;
         }
