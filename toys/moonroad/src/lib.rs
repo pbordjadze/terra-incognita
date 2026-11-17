@@ -266,6 +266,8 @@ impl Toy for MoonRoad {
     fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
         if let Some(r) = self.lake.on.get_mut(i) {
             *r = on;
+            // a new page, so the road painted next is the new rules' alone
+            self.lake.clear();
         }
     }
 }
