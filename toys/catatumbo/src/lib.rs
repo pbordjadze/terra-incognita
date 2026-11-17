@@ -453,7 +453,6 @@ impl Toy for Catatumbo {
             "Over Lake Maracaibo, in Venezuela, lightning flashes on most nights of the year.",
             "A stroke breaks the air a step at a time, likeliest where the pull is strongest, so it forks. Your finger is the ground it reaches for; hold, and it strikes again.",
             "Every piece of the channel thunders. Sound takes 3 seconds a kilometre, so the near pieces crack first and the far ones roll in.",
-            "Switch the forks, the restrikes or the speed of sound off below.",
         ]))
     }
 

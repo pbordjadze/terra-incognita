@@ -622,7 +622,6 @@ impl Toy for Pando {
             "Pando, in Utah, looks like a forest but is one aspen: over 40,000 stems from one root.",
             "Each leaf hangs on a stalk flattened side to side, so the faintest air flips it, and a gust runs over the grove as a pale wave.",
             "Drag to blow. Tap a tree, then a leaf, then closer: the pores on its underside open in light and close in your shade.",
-            "Switch the flat stalks or the pores' answer to light off below.",
         ]))
     }
 

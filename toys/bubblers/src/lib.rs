@@ -263,7 +263,6 @@ impl Toy for Bubblers {
             "On the beaches of Phuket at low tide, sand-bubbler crabs feed outward from their burrows, leaving the sifted sand behind in little balls.",
             "Each run starts beside the last, on unsifted sand, so the balls spread into starbursts.",
             "A crab that sees a neighbour bolt bolts too. Your tap is a footstep; drag to draw in the sand; shake, and the tide comes in.",
-            "Switch the side-by-side runs or the bolting together off below.",
         ]))
     }
 

@@ -1217,7 +1217,6 @@ impl Toy for Frost {
                 "Frost grows as water from the air freezes onto ice already there. Each crystal branches out in six arms.",
                 "The air is damper low on the glass, so long ferns race there; higher up grow stubbier stars.",
                 "Your warm finger melts the frost. The meltwater refreezes smooth, so frost creeps back only slowly, from the edges of the clear patch.",
-                "Switch the damp low air or the smooth refreezing off below.",
         ]))
     }
 

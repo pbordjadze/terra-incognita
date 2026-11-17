@@ -94,16 +94,12 @@ pub struct Beach {
     pub laid: Vec<[f32; 2]>,
     pub bolted: Vec<[f32; 2]>,
     /// which of `RULES` hold
-    pub on: [bool; 2],
+    pub on: [bool; 1],
 }
 
-/// The rules the sheet can switch off: each run beside the last on unsifted sand (off, a crab heads out
-/// any way at all), and a crab bolting when it sees a neighbour go (off, only the ones that felt the
-/// footstep run).
-pub const RULES: [&str; 2] = [
-    "Each run starts beside the last",
-    "A crab that sees one bolt bolts too",
-];
+/// The rule the sheet can switch off: each run beside the last on unsifted sand (off, a crab heads out
+/// any way at all). (The bolting together is not one: it shows only after the reader's footstep.)
+pub const RULES: [&str; 1] = ["Each run starts beside the last"];
 
 /// The tide: it rises over the beach in this long, stands, and falls back (seconds).
 pub const TIDE_IN: f32 = 6.0;
@@ -168,7 +164,7 @@ impl Beach {
             dirty: true,
             laid: Vec::new(),
             bolted: Vec::new(),
-            on: [true; 2],
+            on: [true; 1],
         }
     }
 
@@ -396,9 +392,8 @@ impl Beach {
                     c.state = State::Flee;
                     self.bolted.push(c.p);
                     // the neighbours see it go
-                    let see = self.on[1];
                     for (j, o) in self.crabs.iter_mut().enumerate() {
-                        if !see || j == k || matches!(o.state, State::Hidden(_) | State::Flee) {
+                        if j == k || matches!(o.state, State::Hidden(_) | State::Flee) {
                             continue;
                         }
                         let d = ((o.p[0] - c.p[0]).powi(2) + (o.p[1] - c.p[1]).powi(2)).sqrt();

@@ -383,6 +383,10 @@ impl Nazare {
 
     /// The tallest wave off Praia do Norte: within a kilometre or so seaward of the beach.
     fn find_peak(&self) -> Option<usize> {
+        // a swell that never feels the bottom never stacks into a set breaking there
+        if !self.field.rules[0] {
+            return None;
+        }
         let (w, h) = (self.floor.w as i64, self.floor.h as i64);
         let c = self.bounds.places.praia_do_norte.cell;
         let (cx, cy) = (c[0] as i64, c[1] as i64);
@@ -715,7 +719,6 @@ impl Toy for Nazare {
             "A swell slows where the sea is shallow and runs on where it is deep.",
             "Off Nazaré a canyon reaches almost to the beach. The swell bends away from it on both sides, and the two halves meet at Praia do Norte.",
             "There they stack into the tallest waves ever surfed. Swipe toward the coast to send a swell from that side: the longer the swipe, the longer the swell.",
-            "Switch the shallows' slowing or the bending's growth off below.",
         ]))
     }
 

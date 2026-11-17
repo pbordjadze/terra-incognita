@@ -228,7 +228,7 @@ by standing on the kit:
   them (Nazaré: the shallows slowing the swell, the bending raising it; Meander: the outside of a bend
   wearing away, a closed neck cut through; Frost: the damp air low on the glass, the meltwater
   refreezing smooth; Catatumbo: the forks, the restrikes, thunder at sound's speed; Bubblers: each run
-  beside the last, bolting when a neighbour bolts, both now shown by a footstep and a long look;
+  beside the last, seen over half a minute (its bolting together, seen only after a footstep, stays off);
   Pando: the flattened stalks, the pores answering light; Moon Road: the ripples, the swell).
   `tools/toys/switches_check.py`, in `ci/lint.sh`, fails a toy a door of Terra's opens that has no
   `fn switches` or no `plans/switches.json` turning one, and CI's play of that plan fails if the toy
