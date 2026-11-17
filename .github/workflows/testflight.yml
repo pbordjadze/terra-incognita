@@ -60,7 +60,7 @@ jobs:
       # The uploaded build, for `testers` (kept when a failed `testers` alone is re-run).
       build: ${{ steps.upload.outputs.build }}
     env:
-      BUILD: ${{ github.run_number }}.${{ github.run_attempt }}
+      TF_BUILD: ${{ github.run_number }}.${{ github.run_attempt }}
       UPLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.upload && 'true' || 'false' }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -85,7 +85,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p out
-          STORE=1 VERSION="$VERSION" BUILD_NUMBER="$BUILD" bash toys/ios/build.sh "$TOY" build/store 2>&1 | tee out/build.log | tail -40
+          BUILD=0 STORE=1 VERSION="$VERSION" BUILD_NUMBER="$TF_BUILD" bash toys/ios/build.sh "$TOY" build/store 2>&1 | tee out/build.log | tail -40
           bash tools/toys/check_store.sh "build/store/Payload/$EXEC.app" 2>&1 | tee out/store-check.log
       - name: API key
         id: key
@@ -187,8 +187,8 @@ jobs:
           xcrun altool --upload-app -f "$(ls build/export/*.ipa)" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
             2>&1 | tee out/upload.log | tail -40
           grep -qiE 'No errors uploading|UPLOAD SUCCEEDED' out/upload.log
-          echo "Uploaded build $BUILD: App Store Connect processes it (usually 5 to 30 minutes) before TestFlight offers it."
-          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "Uploaded build $TF_BUILD: App Store Connect processes it (usually 5 to 30 minutes) before TestFlight offers it."
+          echo "build=$TF_BUILD" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
         if: always()
         with: { name: testflight, path: out, if-no-files-found: ignore }
