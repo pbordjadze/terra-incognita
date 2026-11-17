@@ -229,7 +229,8 @@ by standing on the kit:
   wearing away, a closed neck cut through; Frost: the damp air low on the glass, the meltwater
   refreezing smooth; Catatumbo: the forks, the restrikes, thunder at sound's speed; Bubblers: each run
   beside the last, seen over half a minute (its bolting together, seen only after a footstep, stays off);
-  Pando: the flattened stalks, the pores answering light; Moon Road: the ripples, the swell).
+  Pando: the flattened stalks, the pores answering light; Mosquito Bay: the moon set, the flashes tiring,
+  the fish).
   `tools/toys/switches_check.py`, in `ci/lint.sh`, fails a toy a door of Terra's opens that has no
   `fn switches` or no `plans/switches.json` turning one, and CI's play of that plan fails if the toy
   has no rules.
