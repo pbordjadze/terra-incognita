@@ -84,6 +84,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "biobay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1039,6 +1050,7 @@ dependencies = [
  "anyhow",
  "barchans",
  "bats",
+ "biobay",
  "bubblers",
  "bytemuck",
  "catatumbo",
@@ -1047,7 +1059,6 @@ dependencies = [
  "hoh",
  "huddle",
  "meander",
- "moonroad",
  "murmuration",
  "nazare",
  "pando",

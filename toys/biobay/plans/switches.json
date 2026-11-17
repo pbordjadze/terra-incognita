@@ -1,0 +1,3 @@
+{"_": "The moon's switch: with the moon up, the water takes its glints and the blue light all but drowns; a stroke under it barely shows. Then the moon sets again.", "size": [1179, 2556], "ppp": 3, "seconds": 9, "fps": 20,
+ "events": [{"t": 1.0, "tap": "rules"}, {"t": 1.3, "switch": [0, false]}, {"t": 2.5, "tap": [195, 253], "inert": true}, {"t": 3.5, "drag": [[60, 520], [330, 600]], "for": 0.8}, {"t": 6.0, "tap": "rules"}, {"t": 6.3, "switch": [0, true]}],
+ "shots": [{"t": 1.2, "name": "sheet"}, {"t": 2.4, "name": "moon-up"}, {"t": 4.4, "name": "stroke-under-the-moon"}, {"t": 8.8, "name": "moon-set"}]}

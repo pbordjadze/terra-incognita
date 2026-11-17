@@ -31,7 +31,8 @@ the owner's to decide):
 | Bubblers: sand-bubbler crabs at Phuket lay starbursts of sifted sand; a tap is a footstep they flee (row 327) | `bubblers/` | `com.pbordjadze.toy.bubblers` | inside Terra |
 | Barchans: crescent dunes walking the Sahara near Tarfaya by Werner's slab rule; drag to turn the wind (row 327) | `barchans/` | `com.pbordjadze.toy.barchans` | inside Terra |
 | Pando: the aspen clone in Utah that looks like a forest and is one tree; drag to blow, tap into one stem, one leaf, its pores (row 334) | `pando/` | `com.pbordjadze.toy.pando` | inside Terra |
-| Moon Road: Lake Superior at moonrise, the water a numbered template the moon paints wherever a facet tilts its light to you, so the glitter path fills in; a tap gusts, a drag walks the shore and the road follows (row 333) | `moonroad/` | `com.pbordjadze.toy.moonroad` | inside Terra |
+| Moon Road: Lake Superior at moonrise, the water a numbered template the moon paints wherever a facet tilts its light to you, so the glitter path fills in; a tap gusts, a drag walks the shore and the road follows (row 333; off Terra's map since Nov 17, 2026, Mosquito Bay in its place) | `moonroad/` | `com.pbordjadze.toy.moonroad` | none: not on the phone |
+| Mosquito Bay: the bioluminescent bay on Vieques, Puerto Rico, at night, in Paint by Moonlight's colours; a finger stirs the water and it flashes blue, fish streak and dart, a shake brings rain; the moon, when up, drowns the light (row 359) | `biobay/` | `com.pbordjadze.toy.biobay` | inside Terra |
 | Hoh: the rainforest at the foot of Mount Olympus, Washington; moss smothers seedlings on the floor, so trees grow in rows along fallen logs and stand on stilts when the logs rot; drag to run the years, tap a giant to fell it (row 343) | `hoh/` | `com.pbordjadze.toy.hoh` | inside Terra |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.

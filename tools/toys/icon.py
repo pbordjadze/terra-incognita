@@ -636,6 +636,42 @@ def moonroad():
     return img
 
 
+def biobay():
+    # Mosquito Bay: Paint by Moonlight's night paper for water, the mangroves' roots dark at the top, and a
+    # finger's swirl of blue light, a haze with its sparks
+    img = Image.new('RGBA', (N, N), (12, 10, 20, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        k = y / N
+        d.line([(0, y), (N, y)], fill=(int(14 + 6 * k), int(11 + 5 * k), int(24 + 8 * k), 255))
+    glow = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    g = ImageDraw.Draw(glow)
+    pts = []
+    for i in range(121):
+        u = i / 120
+        a = 3.4 - u * 7.0
+        r = 330 - 220 * u
+        pts.append((512 + math.cos(a) * r, 600 + math.sin(a) * r * 0.85))
+    g.line(pts, fill=(30, 120, 255, 200), width=120, joint='curve')
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(60)))
+    img = Image.alpha_composite(img, glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(362)
+    for (x, y) in pts:
+        for _ in range(14):
+            sx, sy = x + rnd.gauss(0, 34), y + rnd.gauss(0, 34)
+            r = rnd.uniform(3, 8)
+            d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(170, 236, 255, 255))
+    for k in range(9):
+        x0 = 40 + k * 120 + rnd.uniform(-20, 20)
+        reach = rnd.uniform(130, 300)
+        lean = rnd.uniform(-60, 60)
+        seg = [(x0 + lean * (t / 20) ** 2, -10 + reach * t / 20) for t in range(21)]
+        d.line(seg, fill=(4, 3, 7, 255), width=int(rnd.uniform(14, 26)), joint='curve')
+    d.rectangle([0, 0, N, 40], fill=(4, 3, 7, 255))
+    return img
+
+
 def hoh():
     # the Hoh: a row of young spruces standing on their root stilts along a mossy nurse log, in green mist
     img = Image.new('RGBA', (N, N), (0, 0, 0, 255))
@@ -664,7 +700,7 @@ def hoh():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad, 'hoh': hoh}
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad, 'biobay': biobay, 'hoh': hoh}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

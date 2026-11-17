@@ -172,16 +172,17 @@ fn ground_scenes() -> Vec<Door> {
     ]
 }
 
-/// The scenes made in homage to the owner's other apps: Moon Road, after Paint by Moonlight.
+/// The scenes made in homage to the owner's other apps: Mosquito Bay, after Paint by Moonlight (in its colours,
+/// and the moon its rule).
 fn homages() -> Vec<Door> {
     vec![Door {
-        id: "moonroad",
-        name: "Moon Road",
-        place: "Marquette, on Lake Superior",
-        line: "The moon paints a road across the water.",
-        at: [moonroad::PLACE.0, moonroad::PLACE.1],
-        tint: [0.98, 0.90, 0.68],
+        id: "biobay",
+        name: "Mosquito Bay",
+        place: "Vieques, Puerto Rico",
+        line: "Water that glows blue wherever it is stirred.",
+        at: [biobay::PLACE.0, biobay::PLACE.1],
+        tint: [0.42, 0.78, 1.0],
         degree: 10,
-        open: rooms::open::<moonroad::MoonRoad>,
+        open: rooms::open::<biobay::MosquitoBay>,
     }]
 }
