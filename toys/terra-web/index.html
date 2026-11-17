@@ -177,7 +177,8 @@ function askMotion() {
   asked = true;
   const ask = DeviceMotionEvent.requestPermission;
   if (typeof ask !== 'function') { listenMotion(); return; }
-  ask.call(DeviceMotionEvent).then(r => { if (r === 'granted') listenMotion(); }).catch(() => { /* refused: no shakes */ });
+  ask.call(DeviceMotionEvent).then(r => { if (r === 'granted') listenMotion(); })
+    .catch(() => { asked = false; /* not taken as a touch's: ask again at the next */ });
 }
 function listenMotion() {
   if (moving) return;

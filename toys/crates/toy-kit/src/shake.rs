@@ -14,6 +14,9 @@ const LOW: f64 = 0.6;
 const JOLTS: usize = 3;
 /// ...within this long (seconds) are a shake: a back and forth and a back.
 const WITHIN: f64 = 0.9;
+/// Jolts closer than this (seconds) are one: a phone set down hard rings for a tenth of a second, while a
+/// hand's strokes are 80–250 ms apart.
+const APART: f64 = 0.08;
 /// After a shake, nothing for this long (seconds), from either path.
 const REST: f64 = 1.2;
 
@@ -43,6 +46,9 @@ impl Shake {
             return false;
         }
         self.high = true;
+        if self.jolts.last().is_some_and(|&j| (t - j).abs() < APART) {
+            return false;
+        }
         self.jolts.retain(|&j| t - j <= WITHIN && t >= j);
         self.jolts.push(t);
         if self.jolts.len() < JOLTS {
@@ -54,7 +60,7 @@ impl Shake {
 
     /// Whether a shake at `t` (seconds) lands: not within `REST` of the last one.
     pub fn cooled(&mut self, t: f64) -> bool {
-        if self.last.is_some_and(|l| t >= l && t - l < REST) {
+        if self.last.is_some_and(|l| (t - l).abs() < REST) {
             return false;
         }
         self.last = Some(t);
@@ -108,6 +114,14 @@ mod tests {
             })
             .collect();
         assert_eq!(count(&mut s, &knock), 0);
+        // a hard set-down that rings: big, but within a tenth of a second
+        let ring = [5.8, 0.0, 3.0, 0.0, 1.55, 0.0, 0.0];
+        let rung: Vec<_> = ring
+            .iter()
+            .enumerate()
+            .map(|(i, &x)| (40.0 + i as f64 / 60.0, [x, 0.0, 0.0]))
+            .collect();
+        assert_eq!(count(&mut s, &rung), 0);
     }
 
     #[test]
