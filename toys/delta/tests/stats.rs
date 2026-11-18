@@ -1,19 +1,27 @@
-use delta::land::*;
+//! The flood's reach: run from the opening for a minute with the phone flat, it covers a fair share of the
+//! fan and sinks into the sand before the screen's bottom, as the real one never reaches the sea.
+use delta::land::{Land, WET};
+
 #[test]
-fn stats() {
-    let mut l = Land::new(72, 156, 0x0CA7_A460);
-    for s in 0..40 {
+fn the_flood_spreads_and_sinks() {
+    let (w, h) = (72, 156);
+    let mut l = Land::new(w, h, delta::SEED);
+    for _ in 0..60 {
         l.run(1.0, 1440);
-        let tot: f32 = l.water.iter().sum();
-        let wet = l.water.iter().filter(|w| **w > WET).count();
-        let any = l.water.iter().filter(|w| **w > 0.0).count();
-        let mx = l.water.iter().cloned().fold(0.0, f32::max);
-        let maxy = (0..l.water.len())
-            .filter(|i| l.water[*i] > WET)
-            .map(|i| i / 72)
-            .max();
-        if s % 5 == 0 {
-            eprintln!("t={s} tot={tot:.1} wet={wet} any={any} max={mx:.2} maxy={maxy:?}");
-        }
     }
+    let wet = l.water.iter().filter(|d| **d > WET).count();
+    let deepest_row = (0..l.water.len())
+        .filter(|i| l.water[*i] > WET)
+        .map(|i| i / w)
+        .max()
+        .unwrap_or(0);
+    assert!(
+        wet * 100 > w * h * 8,
+        "the flood covers {wet} of {} cells",
+        w * h
+    );
+    assert!(
+        deepest_row < h - 4,
+        "the flood reaches row {deepest_row} of {h}: it should sink first"
+    );
 }

@@ -63,14 +63,32 @@ pub struct Cell {
     pub phase: f32,
     /// How bright it scatters (size).
     pub glint: f32,
+    /// A spirillum (a long corkscrew, slower) rather than a coccus.
+    pub spiral: bool,
+    /// How far from the plane of focus (0 sharp, 1 a soft blur).
+    pub blur: f32,
+}
+
+/// A larger, unmagnetic protist (a ciliate) wandering the drop at its own will, for scale.
+#[derive(Clone, Copy)]
+pub struct Drifter {
+    pub p: [f32; 2],
+    pub a: f32,
+    /// Its length, points.
+    pub len: f32,
+    pub v: f32,
 }
 
 pub struct Drop {
+    /// The drop's centre and its half-width and half-height (pressed under the cover glass, it spreads
+    /// into an oval), points.
     pub c: [f32; 2],
     pub r: f32,
+    pub ry: f32,
     /// Micrometres a point.
     pub um: f32,
     pub cells: Vec<Cell>,
+    pub drifters: Vec<Drifter>,
     /// Magnetite turns them; they swim.
     pub on: [bool; 2],
     pub rng: Rng,
@@ -95,36 +113,50 @@ pub fn field_at(p: [f32; 2], b: [f32; 2], poles: &[[f32; 2]]) -> [f32; 2] {
 impl Drop {
     /// `n` cells in a drop at `c` of radius `r` points, already steered by a field toward `north` (a
     /// direction on the screen): most of them streaming that way, a band gathered at that edge.
-    pub fn new(c: [f32; 2], r: f32, n: usize, north: [f32; 2], seed: u64) -> Drop {
+    pub fn new(c: [f32; 2], r: f32, ry: f32, n: usize, north: [f32; 2], seed: u64) -> Drop {
         let mut rng = Rng(seed | 1);
         let um = 1500.0 / (2.0 * r);
+        let oval = |rad: f32, ang: f32| [c[0] + rad * ang.cos() * r, c[1] + rad * ang.sin() * ry];
         let na = north[1].atan2(north[0]);
         let mut cells = Vec::with_capacity(n);
         for _ in 0..n {
             let south = rng.f() < SOUTH;
             // a third gathered at the north edge, the rest anywhere, thinning away from north
             let (rad, ang) = if rng.f() < 0.35 {
-                (r * (0.88 + 0.11 * rng.f()), na + 0.9 * rng.n())
+                (0.9 + 0.09 * rng.f(), na + 0.7 * rng.n())
             } else {
-                let rad = r * rng.f().sqrt() * 0.97;
-                (rad, rng.f() * TAU)
+                (rng.f().sqrt() * 0.97, rng.f() * TAU)
             };
-            let p = [c[0] + rad * ang.cos(), c[1] + rad * ang.sin()];
+            let p = oval(rad, ang);
+            let spiral = rng.f() < 0.15;
             let toward = if south { na + PI } else { na };
             cells.push(Cell {
                 p,
                 a: toward + 0.6 * rng.n(),
-                v: (SPEED[0] + (SPEED[1] - SPEED[0]) * rng.f().powi(2)) / um,
+                v: (SPEED[0] + (SPEED[1] - SPEED[0]) * rng.f().powi(2)) / um
+                    * if spiral { 0.5 } else { 1.0 },
                 south,
                 phase: rng.f() * TAU,
-                glint: 0.55 + 0.45 * rng.f(),
+                glint: 0.35 + 0.65 * rng.f().powf(1.5),
+                spiral,
+                blur: rng.f().powi(7),
             });
         }
+        let drifters = (0..5)
+            .map(|_| Drifter {
+                p: oval(rng.f().sqrt() * 0.8, rng.f() * TAU),
+                a: rng.f() * TAU,
+                len: (60.0 + 80.0 * rng.f()) / um,
+                v: 25.0 / um,
+            })
+            .collect();
         Drop {
             c,
             r,
+            ry,
             um,
             cells,
+            drifters,
             on: [true, true],
             rng,
         }
@@ -159,13 +191,29 @@ impl Drop {
                 cell.p[0] += j * self.rng.n();
                 cell.p[1] += j * self.rng.n();
             }
-            // the drop's edge: a cell pressing on it slides along it
-            let d = [cell.p[0] - self.c[0], cell.p[1] - self.c[1]];
-            let rr = (d[0] * d[0] + d[1] * d[1]).sqrt();
-            let lim = self.r - 2.0;
-            if rr > lim {
-                cell.p = [self.c[0] + d[0] / rr * lim, self.c[1] + d[1] / rr * lim];
-            }
+            cell.p = inside(self.c, self.r, self.ry, cell.p, 2.0);
+        }
+        // the protists wander, slowly turning, unmoved by the field
+        for d in &mut self.drifters {
+            d.a += (2.0 * 0.3 * dt).sqrt() * self.rng.n();
+            d.p[0] += d.a.cos() * d.v * dt;
+            d.p[1] += d.a.sin() * d.v * dt;
+        }
+        for i in 0..self.drifters.len() {
+            let d = self.drifters[i];
+            self.drifters[i].p = inside(self.c, self.r, self.ry, d.p, d.len * 0.6);
         }
     }
+}
+
+/// `p` kept `margin` points inside the oval drop at `c` (half-width `r`, half-height `ry`): a cell pressing
+/// on its edge slides along it.
+pub fn inside(c: [f32; 2], r: f32, ry: f32, p: [f32; 2], margin: f32) -> [f32; 2] {
+    let (rx, ry) = (r - margin, ry - margin);
+    let q = [(p[0] - c[0]) / rx, (p[1] - c[1]) / ry];
+    let m = (q[0] * q[0] + q[1] * q[1]).sqrt();
+    if m <= 1.0 {
+        return p;
+    }
+    [c[0] + q[0] / m * rx, c[1] + q[1] / m * ry]
 }

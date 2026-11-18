@@ -1,3 +1,3 @@
-{ "_": "The rules' switches: with the water no longer sinking into the sand, the flood spreads on and on over the fan; then with the islands down, the land is smooth and the flood covers where they stood.", "size": [1170, 2532], "ppp": 3, "seconds": 26, "fps": 20,
-  "events": [ { "t": 0.0, "gravity": [0, 0, -1] }, { "t": 2, "tap": "switches" }, { "t": 2.3, "switch": [0, false] }, { "t": 14, "switch": [1, false] } ],
-  "shots": [{ "t": 2.2, "name": "open" }, { "t": 7, "name": "spreading" }, { "t": 13.8, "name": "spread" }, { "t": 25.5, "name": "no-islands" }] }
+{ "_": "The rules' switches: with the water no longer sinking into the sand, the flood spreads on and on over the fan; then with the islands down, the land is smooth and the flood covers where they stood.", "size": [1170, 2532], "ppp": 3, "seconds": 40, "fps": 20,
+  "events": [ { "t": 0.0, "gravity": [0, 0, -1] }, { "t": 2, "tap": "switches" }, { "t": 2.3, "switch": [0, false] }, { "t": 28, "switch": [1, false] } ],
+  "shots": [{ "t": 2.2, "name": "open" }, { "t": 12, "name": "spreading" }, { "t": 27.5, "name": "spread" }, { "t": 39.5, "name": "no-islands" }] }

@@ -31,8 +31,8 @@ What the toy follows and what it draws. It loads no data: the land and its water
 ## What is the toy's own
 
 - **The tilt is scaled down.** The real fan leans a hundredth of a degree; a phone tipped 15° here leans the
-  land about four times its own fall (the tilt is divided by some 200), and past 30° more tilt changes
-  nothing. A finger pressed is a low place, a few metres down, that the flood runs to.
+  land about three times its own fall (the tilt is divided by some 300), and past 30° more tilt changes
+  nothing. A finger pressed leans the land toward its side, as a hand pressing the edge of a tray.
 - **The time is pressed.** The flood that takes months to cross the delta crosses the screen in seconds,
   and the screen shows about 14 by 30 km of the fan.
 - The colours, the trees and the low sun are drawn, not measured.

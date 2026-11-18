@@ -17,7 +17,7 @@ use toy_kit::{info, Ctx, Phase, PointerEvent, Toy};
 pub const PLACE: (f64, f64) = (-70.67, 41.53);
 pub const SEED: u64 = 0xB1A4_E140;
 /// How many cells are in the drop.
-const CELLS: usize = 1400;
+const CELLS: usize = 900;
 /// The field when the phone has no compass: the Earth's across a phone lying flat, north up (µT).
 const NORTH_UP: [f32; 2] = [0.0, -20.0];
 /// How quickly the shown field follows the phone's (seconds): the compass jitters.
@@ -34,10 +34,11 @@ pub struct MagnetMarsh {
     size_pt: [f64; 2],
 }
 
-/// The drop's centre and radius for a screen of `s` points.
-fn place(s: [f64; 2]) -> ([f32; 2], f32) {
-    let r = (s[0] * 0.46).min(s[1] * 0.3) as f32;
-    ([s[0] as f32 * 0.5, s[1] as f32 * 0.46], r)
+/// The drop's centre, half-width and half-height for a screen of `s` points: an oval filling most of it.
+fn place(s: [f64; 2]) -> ([f32; 2], f32, f32) {
+    let rx = (s[0] * 0.47) as f32;
+    let ry = (s[1] * 0.41).max(s[0] * 0.47) as f32;
+    ([s[0] as f32 * 0.5, s[1] as f32 * 0.47], rx, ry)
 }
 
 impl MagnetMarsh {
@@ -53,10 +54,10 @@ impl MagnetMarsh {
 impl Toy for MagnetMarsh {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let size_pt = ctx.points();
-        let (c, r) = place(size_pt);
+        let (c, r, ry) = place(size_pt);
         let b = Self::phone_field(ctx);
         Ok(MagnetMarsh {
-            drop: Drop::new(c, r, CELLS, b, SEED),
+            drop: Drop::new(c, r, ry, CELLS, b, SEED),
             backdrop: Backdrop::new(&ctx.gpu, "marsh", include_str!("drop.wgsl")),
             painter: Painter::new(&ctx.gpu),
             fingers: Vec::new(),
@@ -68,17 +69,24 @@ impl Toy for MagnetMarsh {
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.size_pt = ctx.points();
-        let (c, r) = place(self.size_pt);
-        let (c0, r0) = (self.drop.c, self.drop.r);
+        let (c, r, ry) = place(self.size_pt);
+        let (c0, r0, ry0) = (self.drop.c, self.drop.r, self.drop.ry);
+        let at = |p: [f32; 2]| {
+            [
+                c[0] + (p[0] - c0[0]) * r / r0,
+                c[1] + (p[1] - c0[1]) * ry / ry0,
+            ]
+        };
         for cell in &mut self.drop.cells {
-            cell.p = [
-                c[0] + (cell.p[0] - c0[0]) * r / r0,
-                c[1] + (cell.p[1] - c0[1]) * r / r0,
-            ];
+            cell.p = at(cell.p);
             cell.v *= r / r0;
         }
+        for d in &mut self.drop.drifters {
+            d.p = at(d.p);
+            (d.v, d.len) = (d.v * r / r0, d.len * r / r0);
+        }
         self.drop.um *= r0 / r;
-        (self.drop.c, self.drop.r) = (c, r);
+        (self.drop.c, self.drop.r, self.drop.ry) = (c, r, ry);
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -127,39 +135,89 @@ impl Toy for MagnetMarsh {
                 d.r * k,
                 k,
                 (m / 60.0).min(1.0),
-                0.0,
+                d.ry * k,
                 0.0,
                 0.0,
             ],
         };
         let swim = d.on[1];
+        // the protists first, behind: big, dim, out of the field's reach
+        for f in &d.drifters {
+            let (dx, dy) = (f.a.cos(), f.a.sin());
+            let h = f.len * 0.5 * k;
+            let a = [f.p[0] * k - dx * h * 0.6, f.p[1] * k - dy * h * 0.6];
+            let b = [f.p[0] * k + dx * h * 0.6, f.p[1] * k + dy * h * 0.6];
+            self.painter
+                .glow(a, b, h * 0.35, 4.0 * k, [0.40, 0.55, 0.60, 0.1]);
+            // its edge: an oval outline, the light a dark field catches on a cell wall
+            let (nx, ny) = (-dy, dx);
+            let edge = |j: usize| {
+                let t = j as f32 / 24.0 * std::f32::consts::TAU;
+                let (u, v) = (t.cos() * h * 0.8, t.sin() * h * 0.4);
+                [f.p[0] * k + dx * u + nx * v, f.p[1] * k + dy * u + ny * v]
+            };
+            for j in 0..24 {
+                self.painter.glow(
+                    edge(j),
+                    edge(j + 1),
+                    0.4 * k,
+                    2.5 * k,
+                    [0.6, 0.75, 0.8, 0.2],
+                );
+            }
+        }
         for c in &d.cells {
             let wob = 0.35 * c.phase.sin();
             let (dx, dy) = ((c.a + wob).cos(), (c.a + wob).sin());
             let head = [c.p[0] * k, c.p[1] * k];
-            let g = c.glint;
+            // out of the plane of focus a cell is a dimmer, softer blur
+            let soft = (0.9 + 8.0 * c.blur) * k;
+            let g = c.glint * (1.0 - 0.85 * c.blur);
             if swim {
                 // the streak a long exposure would leave: a quarter second of its swim
                 let len = c.v * 0.25 * k;
                 let tail = [head[0] - dx * len, head[1] - dy * len];
-                self.painter
-                    .glow(tail, head, 0.45 * k, 1.2 * k, [0.45, 0.72, 1.0, 0.22 * g]);
+                self.painter.glow(
+                    tail,
+                    head,
+                    0.45 * k,
+                    soft * 1.3,
+                    [0.45, 0.72, 1.0, 0.45 * g],
+                );
             }
-            // the cell: a short rod, its magnetite chain scattering bright
-            let rod = 0.9 * k;
-            self.painter.glow(
-                [head[0] - dx * rod, head[1] - dy * rod],
-                [head[0] + dx * rod, head[1] + dy * rod],
-                0.5 * k,
-                0.9 * k,
-                [0.82, 0.93, 1.0, 0.85 * g],
-            );
+            if c.spiral {
+                // a spirillum: a long corkscrew, seen as a wave
+                let (nx, ny) = (-dy, dx);
+                let mut prev = head;
+                for j in 1..=6 {
+                    let u = j as f32 / 6.0;
+                    let w = (u * 9.0 + c.phase * 2.0).sin() * 0.8 * k;
+                    let p = [
+                        head[0] - dx * u * 7.0 * k + nx * w,
+                        head[1] - dy * u * 7.0 * k + ny * w,
+                    ];
+                    self.painter
+                        .glow(prev, p, 0.35 * k, soft, [0.8, 0.92, 1.0, 0.7 * g]);
+                    prev = p;
+                }
+            } else {
+                // a coccus: a short rod, its magnetite chain scattering bright
+                // out of focus it blurs to a round smudge, not a dash
+                let rod = 0.9 * k * (1.0 - c.blur).max(0.0);
+                self.painter.glow(
+                    [head[0] - dx * rod, head[1] - dy * rod],
+                    [head[0] + dx * rod, head[1] + dy * rod],
+                    0.5 * k,
+                    soft,
+                    [0.82, 0.93, 1.0, 0.85 * g],
+                );
+            }
         }
-        // the finger's magnet: the pole's soft shadow over the drop
+        // the finger's magnet: a warm soft glow where the pole is held over the drop
         for f in &self.fingers {
             let p = [f.1[0] * k, f.1[1] * k];
             self.painter
-                .glow_ring(p, 26.0 * k, 1.0 * k, 3.0 * k, [0.9, 0.55, 0.35, 0.18]);
+                .glow(p, p, 18.0 * k, 26.0 * k, [1.0, 0.7, 0.45, 0.07]);
         }
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
@@ -175,7 +233,7 @@ impl Toy for MagnetMarsh {
             ("centre".into(), [d.c[0] as f64, d.c[1] as f64]),
             (
                 "south-edge".into(),
-                [d.c[0] as f64, (d.c[1] + d.r * 0.8) as f64],
+                [d.c[0] as f64, (d.c[1] + d.ry * 0.8) as f64],
             ),
         ]
     }
@@ -184,7 +242,7 @@ impl Toy for MagnetMarsh {
         let d = &self.drop;
         let at = [
             d.c[0] as f64 + d.r as f64 * 0.3,
-            d.c[1] as f64 + d.r as f64 * 0.55,
+            d.c[1] as f64 + d.ry as f64 * 0.55,
         ];
         Some(info::Demo::new(
             "Marsh bacteria steer north. Your finger is a magnet.",

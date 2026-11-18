@@ -12,9 +12,9 @@ pub const CELL_M: f32 = 190.0;
 /// The fan's own fall a cell, down the screen (1 in 3,400).
 pub const FALL: f32 = CELL_M / 3400.0;
 /// The phone's tilt, as the land's: the sine of the phone's lean times this is the extra fall a cell. A
-/// phone leaning 15° tips the land about four times its own fall: the toy's tilt is scaled down some 200
+/// phone leaning 15° tips the land about three times its own fall: the toy's tilt is scaled down some 300
 /// times, since the real land's whole lean is a hundredth of a degree.
-pub const TILT: f32 = FALL * 16.0;
+pub const TILT: f32 = FALL * 11.0;
 /// The steepest lean that counts (its sine): past it, more tilt changes nothing.
 pub const TILT_MAX: f32 = 0.5;
 /// How freely water runs between cells: the share of a head difference that moves a substep.
@@ -67,8 +67,6 @@ pub struct Land {
     pub green: Vec<f32>,
     /// The phone's tilt as the land's extra fall a cell, across and down the screen.
     pub tilt: [f32; 2],
-    /// A finger pressing the land down there (cells), and how hard (0..1).
-    pub press: Option<[f32; 2]>,
     pub on: [bool; 2],
     flux: Vec<f32>,
     level: Vec<f32>,
@@ -104,7 +102,7 @@ impl Land {
             for x in 0..w {
                 let p = [x as f32, y as f32];
                 let relief = (noise(seed, p, 22.0) - 0.5) * 1.6
-                    + (noise(seed ^ 1, p, 7.0) - 0.5) * 0.8
+                    + (noise(seed ^ 1, p, 7.0) - 0.5) * 1.3
                     + (noise(seed ^ 2, p, 2.5) - 0.5) * 0.35;
                 // the fan: falling away from the Panhandle's mouth every way, a little faster down it
                 let (dx, dy) = (x as f32 - MOUTH.0 * w as f32, y as f32 + 6.0);
@@ -120,7 +118,6 @@ impl Land {
             water: vec![0.0; w * h],
             green: vec![0.0; w * h],
             tilt: [0.0, 0.0],
-            press: None,
             on: [true, true],
             flux: vec![0.0; w * h],
             level: vec![0.0; w * h],
@@ -218,8 +215,8 @@ impl Land {
         }
     }
 
-    /// The surface at cell `i` (x, y) without its water, as the flow sees it: ground, islands, the tilt,
-    /// a finger.
+    /// The surface at cell `i` (x, y) without its water, as the flow sees it: ground, islands, the
+    /// tilt.
     fn bed(&self, i: usize, x: usize, y: usize) -> f32 {
         let mut s = self.ground[i];
         if self.on[1] {
@@ -227,10 +224,6 @@ impl Land {
         }
         s -= self.tilt[0] * (x as f32 - self.w as f32 * 0.5)
             + self.tilt[1] * (y as f32 - self.h as f32 * 0.5);
-        if let Some(p) = self.press {
-            let d2 = (x as f32 + 0.5 - p[0]).powi(2) + (y as f32 + 0.5 - p[1]).powi(2);
-            s -= 4.0 * (-d2 / (2.0 * 14.0 * 14.0)).exp();
-        }
         s
     }
 

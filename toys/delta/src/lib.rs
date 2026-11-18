@@ -2,7 +2,7 @@
 //! fell on the Angolan highlands months before comes down the Panhandle and fans out across land so flat
 //! (about 1 m in 3,400) that a termite mound decides where it goes, and it never reaches the sea: it sinks
 //! into the Kalahari sand (`land.rs`). The phone held flat is that land: its tilt (`Ctx::sensors`) leans
-//! the fan, and the flood follows. A finger pressed on the land is a low place the water runs to; with no
+//! the fan, and the flood follows. A finger pressed on the land leans it toward that side, as a hand pressing a tray's edge; with no
 //! sense of tilt (a desktop browser) it is the only way to steer.
 
 pub mod land;
@@ -27,6 +27,16 @@ const EASE: f32 = 0.25;
 /// The low sun's way across the screen (from the upper left).
 const SUN: [f32; 2] = [-0.7, -0.7];
 
+/// How far a finger at the screen's edge leans the land (the sine of a phone's tilt).
+const FINGER: f64 = 0.3;
+
+/// A lean held to the steepest that counts (`TILT_MAX`).
+fn clamp(v: [f32; 2]) -> [f32; 2] {
+    let m = (v[0] * v[0] + v[1] * v[1]).sqrt();
+    let k = if m > TILT_MAX { TILT_MAX / m } else { 1.0 };
+    [v[0] * k, v[1] * k]
+}
+
 pub struct Delta {
     land: Land,
     field: Field,
@@ -46,20 +56,25 @@ impl Delta {
         let Some(d) = ctx.sensors.downhill() else {
             return [0.0, 0.0];
         };
-        let (x, y) = (d[0] as f32, d[1] as f32);
-        let m = (x * x + y * y).sqrt();
-        let k = if m > TILT_MAX { TILT_MAX / m } else { 1.0 };
-        [x * k, y * k]
+        clamp([d[0] as f32, d[1] as f32])
     }
 
-    fn cell(&self, p: [f64; 2]) -> [f32; 2] {
-        [(p[0] / self.cell_pt) as f32, (p[1] / self.cell_pt) as f32]
+    /// A finger pressing the land down on one side, as a hand presses the edge of a tray: the land
+    /// leans toward it, more the farther it is from the middle.
+    fn finger_lean(&self) -> [f32; 2] {
+        let Some(f) = self.fingers.last() else {
+            return [0.0, 0.0];
+        };
+        let s = self.size_pt;
+        [
+            ((f.1[0] / s[0] - 0.5) * 2.0 * FINGER) as f32,
+            ((f.1[1] / s[1] - 0.5) * 2.0 * FINGER) as f32,
+        ]
     }
 
     /// Runs the flood `secs` seconds.
     fn run(&mut self, secs: f64) {
         self.land.tilt = [self.lean[0] * TILT, self.lean[1] * TILT];
-        self.land.press = self.fingers.last().map(|f| self.cell(f.1));
         self.acc += secs * RATE;
         let n = self.acc.floor();
         self.acc -= n;
@@ -121,7 +136,8 @@ impl Toy for Delta {
 
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.t = t;
-        let want = Self::phone_lean(ctx);
+        let (p, f) = (Self::phone_lean(ctx), self.finger_lean());
+        let want = clamp([p[0] + f[0], p[1] + f[1]]);
         let k = 1.0 - (-(dt as f32) / EASE).exp();
         self.lean = [
             self.lean[0] + (want[0] - self.lean[0]) * k,
@@ -181,7 +197,7 @@ impl Toy for Delta {
             &[
                 "Rain from Angola reaches Botswana months later and fans out over land that falls 1 m in 3,400.",
                 "So flat that islands a metre high, many begun as termite mounds, steer it. It never reaches the sea: it sinks into the sand.",
-                "Hold the phone flat and tilt it: the flood follows. Or press where it should go.",
+                "Hold the phone flat and tilt it: the flood follows. Or press a side down.",
             ],
             "",
         ))
