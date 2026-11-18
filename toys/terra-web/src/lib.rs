@@ -147,6 +147,18 @@ impl Shell {
         self.host.motion([x, y, z], t);
     }
 
+    /// What the phone feels: which way is down (g, the device's frame: `devicemotion`'s
+    /// `accelerationIncludingGravity` turned round and divided by g) and the compass's heading (degrees from
+    /// magnetic north); NaN where the browser gives none. A browser has no magnetic field.
+    pub fn sense(&mut self, gx: f64, gy: f64, gz: f64, heading: f64) {
+        let g = [gx, gy, gz];
+        self.host.sense(toy_kit::Sensors {
+            gravity: g.iter().all(|v| v.is_finite()).then_some(g),
+            field: None,
+            heading: heading.is_finite().then_some(heading),
+        });
+    }
+
     pub fn take_haptic(&mut self) -> bool {
         self.host.take_haptic()
     }

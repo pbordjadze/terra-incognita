@@ -1,0 +1,4 @@
+{ "_": "The reader turns round on the spot, half a turn: the field across the glass swings from the top of the screen to its bottom, and every cell makes its U-turn to follow north.", "size": [1179, 2556], "ppp": 3, "seconds": 16, "fps": 30,
+  "events": [ { "t": 0.0, "field": [0, 20, -45] }, { "t": 2.0, "field": [-20, 0, -45], "for": 1.0 }, { "t": 3.0, "field": [0, -20, -45], "for": 1.0 } ],
+  "shots": [{ "t": 1.9, "name": "north-up" }, { "t": 5.0, "name": "turning" }, { "t": 9.0, "name": "streaming-down" }, { "t": 15.8, "name": "gathered-south-of-screen" }],
+  "film": { "from": 0.5, "to": 16, "every": 0.1 } }

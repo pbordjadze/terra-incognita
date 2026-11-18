@@ -32,6 +32,7 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | Part | Module | Today | From |
 | --- | --- | --- | --- |
 | The toy's life: new, pointer, update, draw, save/restore, shaken, settings | `lib.rs` (`Toy`, `Ctx`, `Host`) | ✓ | |
+| What the phone feels: tilt, magnetic field, heading (`Sensors`, `ctx.sensors`; `toy_sense`, the web's `sense`; plans' `gravity`/`field`/`heading`) | `lib.rs`, `ios.rs`, `check.rs`, `toys/ios`, `toys/terra-web` | ✓ | Magnet Marsh, The Delta, Nov 18 |
 | The GPU, textures, the view uniform | `gpu/` | ✓ | |
 | The globe by day and night, its hand (drag, pinch, fling), project/unproject | `globe/` | ✓ | adrift-core, Nov 2 |
 | Real data: a manifest, files by name, the bundle or a directory | `assets.rs` | ✓ | |

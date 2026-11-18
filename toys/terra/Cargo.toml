@@ -35,6 +35,8 @@ wave = { path = "../wave" }
 shimmering = { path = "../shimmering" }
 redcrabs = { path = "../redcrabs" }
 fairy = { path = "../fairy" }
+marsh = { path = "../marsh" }
+delta = { path = "../delta" }
 
 [[bin]]
 name = "terra-check"

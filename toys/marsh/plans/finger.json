@@ -1,0 +1,4 @@
+{ "_": "A finger held on the drop is a magnet's pole over the glass: the cells near it swing round and gather under it; lifted, they head north again.", "size": [1179, 2556], "ppp": 3, "seconds": 12, "fps": 30,
+  "events": [ { "t": 0.0, "field": [0, 20, -45] }, { "t": 1.0, "hold": [250, 520], "for": 6.0 } ],
+  "shots": [{ "t": 0.9, "name": "before" }, { "t": 3.0, "name": "turning-in" }, { "t": 6.8, "name": "gathered" }, { "t": 11.8, "name": "let-go" }],
+  "film": { "from": 0.5, "to": 12, "every": 0.1, "fingers": true } }

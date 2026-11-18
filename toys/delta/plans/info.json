@@ -1,0 +1,3 @@
+{ "_": "The demo (toy-kit info.rs): tapped, its ghost finger presses the land; a tap closes it.", "size": [1170, 2532], "ppp": 3, "seconds": 7, "fps": 20,
+  "events": [ { "t": 0.0, "gravity": [0, 0, -1] }, { "t": 1.5, "show": "demo" }, { "t": 6.0, "tap": [195, 60], "inert": true } ],
+  "shots": [ { "t": 1.4, "name": "mark" }, { "t": 2.4, "name": "ghost" }, { "t": 3.6, "name": "answer" }, { "t": 6.5, "name": "closed" } ] }

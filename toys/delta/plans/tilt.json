@@ -1,0 +1,4 @@
+{ "_": "The phone tipped to the right, then to the left: the flood swings over to the low side, new ground floods and greens, and the side it left dries; the old channels hold water longest.", "size": [1179, 2556], "ppp": 3, "seconds": 36, "fps": 30,
+  "events": [ { "t": 0.0, "gravity": [0, 0, -1] }, { "t": 2.0, "gravity": [0.26, 0, -0.97], "for": 1.0 }, { "t": 18.0, "gravity": [-0.26, 0, -0.97], "for": 1.5 } ],
+  "shots": [{ "t": 1.9, "name": "flat" }, { "t": 3.6, "name": "tipped-right" }, { "t": 17.8, "name": "settled-right" }, { "t": 20.0, "name": "tipped-left" }, { "t": 35.8, "name": "settled-left" }],
+  "film": { "from": 0.5, "to": 36, "every": 0.2 } }

@@ -12,6 +12,7 @@ pub fn doors() -> Vec<Door> {
     all.extend(ground_scenes());
     all.extend(homages());
     all.extend(far_places());
+    all.extend(senses());
     all
 }
 
@@ -220,6 +221,32 @@ fn far_places() -> Vec<Door> {
             tint: [0.80, 0.42, 0.24],
             degree: 9,
             open: rooms::open::<fairy::FairyCircles>,
+        },
+    ]
+}
+
+/// The toys built on one thing the phone feels (Nov 18): the compass, the tilt.
+fn senses() -> Vec<Door> {
+    vec![
+        Door {
+            id: "marsh",
+            name: "Magnet Marsh",
+            place: "Woods Hole, Massachusetts",
+            line: "Bacteria that steer by the Earth's magnetic field.",
+            at: [marsh::PLACE.0, marsh::PLACE.1],
+            tint: [0.62, 0.82, 1.0],
+            degree: 5,
+            open: rooms::open::<marsh::MagnetMarsh>,
+        },
+        Door {
+            id: "delta",
+            name: "The Delta",
+            place: "Okavango Delta, Botswana",
+            line: "A flood on land so flat a tilt decides its way.",
+            at: [delta::PLACE.0, delta::PLACE.1],
+            tint: [0.36, 0.62, 0.30],
+            degree: 1,
+            open: rooms::open::<delta::Delta>,
         },
     ]
 }

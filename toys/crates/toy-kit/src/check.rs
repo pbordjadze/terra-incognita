@@ -24,6 +24,7 @@
 //!     { "t": 5.0, "down": [10, 10], "id": 7 }, { "t": 5.2, "move": [40, 10], "id": 7 }, { "t": 5.3, "up": [40, 10], "id": 7 },
 //!     { "t": 5.6, "tap": [20, 20], "inert": true },
 //!     { "t": 6.0, "shake": true },
+//!     { "t": 6.5, "gravity": [0.3, 0, -0.95], "for": 2.0 }, { "t": 6.5, "field": [0, 20, -40] }, { "t": 7, "heading": 90 },
 //!     { "t": 0.2, "open": "build/screw/song.wav" },
 //!     { "t": 7.0, "tap": "switches" }, { "t": 7.5, "switch": [1, false] },
 //!     { "t": 9.0, "show": "demo" }
@@ -46,7 +47,10 @@
 //! from Files (`Toy::opened`; on the device the shell decodes any format iOS plays). `switch` turns rule
 //! `i` of the sheet's switches on or off as the reader would (switches.rs; the sheet must be open). `show`
 //! presses one of the sheet's buttons: `"demo"` (Show me) or `"origins"` (Where this comes from; the sheet
-//! must be open).
+//! must be open). `gravity`, `field` and `heading` are what the phone feels from then on (`Ctx::sensors`:
+//! gravity in g and the magnetic field in µT in the device's frame, the heading in degrees from magnetic
+//! north), with `for` eased there over that long from what it felt; until a plan gives one, the toy has
+//! no such sense, as in a desktop browser.
 //!
 //! **Places.** Wherever a plan gives a point (`tap`, `hold`, `drag`'s ends, `pinch`'s fingers,
 //! `down`/`move`/`up`) it may instead name a place, resolved at the moment the event starts: a name
@@ -80,179 +84,14 @@
 
 use crate::{block_on, Ctx, DirAssets, Gpu, Host, Offscreen, Phase, PointerEvent, Toy};
 use image::ImageEncoder;
-use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-#[derive(Deserialize, Default)]
-#[serde(default)]
-pub struct Plan {
-    pub size: Option<[u32; 2]>,
-    pub ppp: Option<f64>,
-    pub night: bool,
-    pub reduce_motion: bool,
-    pub seconds: Option<f64>,
-    pub fps: Option<f64>,
-    pub events: Vec<Event>,
-    pub shots: Vec<Shot>,
-    pub film: Option<Film>,
-    pub audio: bool,
-    pub restore: Option<String>, // handed to the toy's `restore` before the first frame
-    pub strict_taps: bool,       // a touch that does nothing fails the check (else a warning)
-    pub first_info: bool,        // the demo opens by itself as on a first visit (info::First)
-}
-
-/// One event of a plan. The point fields hold the places given as points; `places` holds every
-/// place as written (points, names, `lonlat`), which the player resolves.
-#[derive(Deserialize, Default, Clone)]
-#[serde(from = "RawEvent")]
-pub struct Event {
-    pub t: f64,
-    pub tap: Option<[f64; 2]>,
-    pub drag: Option<[[f64; 2]; 2]>,
-    pub pinch: Option<[[f64; 2]; 2]>,
-    pub to: Option<f64>,
-    pub hold: Option<[f64; 2]>,
-    pub dur: Option<f64>,
-    pub down: Option<[f64; 2]>,
-    pub mv: Option<[f64; 2]>,
-    pub up: Option<[f64; 2]>,
-    pub id: Option<u64>,
-    pub shake: bool,
-    /// A sound file (WAV) handed to the toy as if the reader chose it from Files (`Toy::opened`).
-    pub open: Option<String>,
-    /// A rule on the switches panel turned on or off, as the reader would (`[i, on]`; switches.rs).
-    pub switch: Option<(usize, bool)>,
-    /// One of the sheet's buttons pressed: "demo" or "origins" (info.rs).
-    pub show: Option<String>,
-    /// The event is meant to change nothing on screen (the touch check leaves it alone).
-    pub inert: bool,
-    pub places: Places,
-}
-
-/// A place in a plan: a point (points from the top left), a name the toy gives (`Toy::anchors`), or a
-/// longitude and latitude on the toy's globe (`Toy::project`).
-#[derive(Deserialize, Clone, Debug, PartialEq)]
-#[serde(untagged)]
-pub enum Place {
-    At([f64; 2]),
-    Named(String),
-    LonLat { lonlat: [f64; 2] },
-}
-
-/// An event's places as the plan wrote them.
-#[derive(Default, Clone, Debug)]
-pub struct Places {
-    pub tap: Option<Place>,
-    pub hold: Option<Place>,
-    pub drag: Option<[Place; 2]>,
-    pub pinch: Option<[Place; 2]>,
-    pub down: Option<Place>,
-    pub mv: Option<Place>,
-    pub up: Option<Place>,
-}
-
-impl Places {
-    fn slots(&self) -> [Option<&Place>; 9] {
-        fn two(p: &Option<[Place; 2]>, i: usize) -> Option<&Place> {
-            p.as_ref().map(|p| &p[i])
-        }
-        [
-            self.tap.as_ref(),
-            self.hold.as_ref(),
-            two(&self.drag, 0),
-            two(&self.drag, 1),
-            two(&self.pinch, 0),
-            two(&self.pinch, 1),
-            self.down.as_ref(),
-            self.mv.as_ref(),
-            self.up.as_ref(),
-        ]
-    }
-}
-
-#[derive(Deserialize, Default)]
-#[serde(default)]
-struct RawEvent {
-    t: f64,
-    tap: Option<Place>,
-    drag: Option<[Place; 2]>,
-    pinch: Option<[Place; 2]>,
-    to: Option<f64>,
-    hold: Option<Place>,
-    #[serde(rename = "for")]
-    dur: Option<f64>,
-    down: Option<Place>,
-    #[serde(rename = "move")]
-    mv: Option<Place>,
-    up: Option<Place>,
-    id: Option<u64>,
-    shake: bool,
-    open: Option<String>,
-    switch: Option<(usize, bool)>,
-    show: Option<String>,
-    inert: bool,
-}
-
-impl From<RawEvent> for Event {
-    fn from(r: RawEvent) -> Event {
-        let pt = |p: &Option<Place>| match p {
-            Some(Place::At(a)) => Some(*a),
-            _ => None,
-        };
-        let two = |p: &Option<[Place; 2]>| match p {
-            Some([Place::At(a), Place::At(b)]) => Some([*a, *b]),
-            _ => None,
-        };
-        Event {
-            t: r.t,
-            tap: pt(&r.tap),
-            drag: two(&r.drag),
-            pinch: two(&r.pinch),
-            to: r.to,
-            hold: pt(&r.hold),
-            dur: r.dur,
-            down: pt(&r.down),
-            mv: pt(&r.mv),
-            up: pt(&r.up),
-            id: r.id,
-            shake: r.shake,
-            open: r.open,
-            switch: r.switch,
-            show: r.show,
-            inert: r.inert,
-            places: Places {
-                tap: r.tap,
-                hold: r.hold,
-                drag: r.drag,
-                pinch: r.pinch,
-                down: r.down,
-                mv: r.mv,
-                up: r.up,
-            },
-        }
-    }
-}
-
-#[derive(Deserialize, Clone)]
-#[serde(untagged)]
-pub enum Shot {
-    At(f64),
-    Named { t: f64, name: String },
-}
-
-#[derive(Deserialize, Clone)]
-pub struct Film {
-    #[serde(default)]
-    pub from: f64,
-    pub to: f64,
-    pub every: f64,
-    /// Draw a soft ring where each finger is down on the film's frames (not on shots), so a film of
-    /// several fingers shows which is where.
-    #[serde(default)]
-    pub fingers: bool,
-}
+/// The plan's format (check_plan.rs).
+#[path = "check_plan.rs"]
+mod plan;
+pub use plan::*;
 
 /// Where each finger is down at `t` (points), from a plan's point events: a finger is down from its
 /// `down` (or a tap, hold or drag's start) to its `up`.
@@ -442,6 +281,8 @@ enum What {
     Switch(usize, bool),
     /// The event's `show`: one of the sheet's buttons.
     Show,
+    /// The event's senses (`gravity`, `field`, `heading`), `k` of the way there from what the phone felt.
+    Sense(f64),
 }
 
 /// One thing that happens at `t`, from the plan's event `ev`.
@@ -524,6 +365,7 @@ fn schedule(events: &[Event]) -> Vec<Item> {
         if s[UP].is_some() {
             ptr(t, id, Phase::Up, Pos::Slot(UP));
         }
+        sense_items(e, ev, &mut out);
         // the events that are no finger
         let others = [
             e.shake.then_some(What::Shake),
@@ -540,6 +382,27 @@ fn schedule(events: &[Event]) -> Vec<Item> {
     }
     out.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
     out
+}
+
+/// An event's senses as a schedule: at once, or eased over `for` at 60 steps a second.
+fn sense_items(e: &Event, ev: usize, out: &mut Vec<Item>) {
+    if e.gravity.is_none() && e.field.is_none() && e.heading.is_none() {
+        return;
+    }
+    let d = e.dur.unwrap_or(0.0);
+    let n = if d > 0.0 {
+        (d * 60.0).ceil() as usize
+    } else {
+        1
+    };
+    for i in 1..=n {
+        let k = i as f64 / n as f64;
+        out.push(Item {
+            t: e.t + d * k,
+            ev,
+            what: What::Sense(k),
+        });
+    }
 }
 
 /// A place as a point now: a point is itself, a name is looked up in the toy's `anchors`, a
@@ -639,6 +502,8 @@ struct Run<T: Toy> {
     items: Vec<Item>,
     next: usize,
     resolved: Vec<Option<[[f64; 2]; 9]>>,
+    /// What the phone felt as each sensing event began (it eases from there).
+    sensed_from: Vec<Option<crate::Sensors>>,
     /// A `"switch"` with the panel shut fails the plan (not in the touch check's shadow runs, which
     /// may leave out the tap that opened it).
     strict: bool,
@@ -669,6 +534,7 @@ impl<T: Toy> Run<T> {
             items,
             next: 0,
             resolved: vec![None; plan.events.len()],
+            sensed_from: vec![None; plan.events.len()],
             strict,
         })
     }
@@ -705,6 +571,11 @@ impl<T: Toy> Run<T> {
                     });
                 }
                 What::Shake => self.host.toy.shaken(&mut self.host.ctx),
+                What::Sense(k) => {
+                    let from = *self.sensed_from[it.ev].get_or_insert(self.host.ctx.sensors);
+                    let s = eased(from, &events[it.ev], k);
+                    self.host.sense(s);
+                }
                 What::Open => {
                     let path = events[it.ev].open.as_deref().unwrap_or_default();
                     let f = crate::AudioFile::wav(Path::new(path)).map_err(|e| {
