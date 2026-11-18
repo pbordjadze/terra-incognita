@@ -465,6 +465,7 @@ impl Toy for Terra {
         }
         self.life.update(t, dt);
         if let Some(r) = self.room.as_mut() {
+            r.sense(ctx.sensors);
             r.update(t);
         }
         match self.state {

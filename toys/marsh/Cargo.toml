@@ -1,0 +1,26 @@
+[package]
+name = "marsh"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Magnet Marsh (a working title): magnetotactic bacteria from the salt marsh at Woods Hole, Massachusetts, in a drop under a dark-field microscope, steering by the magnetic field the phone itself feels; a finger is a magnet."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "marsh-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

@@ -1,0 +1,77 @@
+{
+ "_": "The Delta, its light at the Okavango Delta, Botswana, a flood steered by the phone's tilt. Touched, its card comes up; the card touched, it opens, feeling the phone; the Earth mark puts it back.",
+ "restore": "{\"camera\":{\"lon\":16.0,\"lat\":-25.0,\"zoom\":1.4,\"roll\":0.0},\"known\":[\"fireflies\",\"swell\",\"murmuration\",\"meander\",\"throats\",\"bats\",\"huddle\",\"wave\",\"frost\",\"catatumbo\",\"bubblers\",\"barchans\",\"pando\",\"hoh\",\"moonroad\",\"biobay\"]}",
+ "seconds": 15,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.0,
+   "gravity": [
+    0.2,
+    0,
+    -0.98
+   ]
+  },
+  {
+   "t": 0.3,
+   "drag": [
+    [
+     60,
+     430
+    ],
+    [
+     340,
+     430
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 2.5,
+   "tap": "delta"
+  },
+  {
+   "t": 4.1,
+   "tap": "card"
+  },
+  {
+   "t": 9.5,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 2.4,
+   "name": "the-light"
+  },
+  {
+   "t": 3.7,
+   "name": "light-touched"
+  },
+  {
+   "t": 3.7,
+   "name": "card"
+  },
+  {
+   "t": 4.5,
+   "name": "opening"
+  },
+  {
+   "t": 8.0,
+   "name": "inside"
+  },
+  {
+   "t": 10.5,
+   "name": "back-to-card"
+  },
+  {
+   "t": 14.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 15,
+  "every": 0.1
+ }
+}

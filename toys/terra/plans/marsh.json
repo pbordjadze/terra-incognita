@@ -1,0 +1,59 @@
+{
+ "_": "Magnet Marsh, its light at Woods Hole, Massachusetts, bacteria steering by the magnetic field. Touched, its card comes up; the card touched, it opens, feeling the phone; the Earth mark puts it back.",
+ "restore": "{\"camera\":{\"lon\":-70.67,\"lat\":41.53,\"zoom\":1.4,\"roll\":0.0},\"known\":[\"fireflies\",\"swell\",\"murmuration\",\"meander\",\"throats\",\"bats\",\"huddle\",\"wave\",\"frost\",\"catatumbo\",\"bubblers\",\"barchans\",\"pando\",\"hoh\",\"moonroad\",\"biobay\",\"shimmering\",\"redcrabs\",\"fairy\",\"delta\"]}",
+ "seconds": 14,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.0,
+   "field": [
+    0,
+    20,
+    -45
+   ]
+  },
+  {
+   "t": 1.0,
+   "tap": "marsh"
+  },
+  {
+   "t": 2.6,
+   "tap": "card"
+  },
+  {
+   "t": 9.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "the-light"
+  },
+  {
+   "t": 2.4,
+   "name": "card"
+  },
+  {
+   "t": 3.0,
+   "name": "opening"
+  },
+  {
+   "t": 7.5,
+   "name": "inside"
+  },
+  {
+   "t": 10.0,
+   "name": "back-to-card"
+  },
+  {
+   "t": 13.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 14,
+  "every": 0.1
+ }
+}

@@ -239,6 +239,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
+name = "delta"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "dispatch2"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -521,6 +532,17 @@ name = "log"
 version = "0.4.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
+
+[[package]]
+name = "marsh"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
 
 [[package]]
 name = "meander"
@@ -1086,11 +1108,13 @@ dependencies = [
  "bubblers",
  "bytemuck",
  "catatumbo",
+ "delta",
  "elkmont",
  "fairy",
  "frost",
  "hoh",
  "huddle",
+ "marsh",
  "meander",
  "murmuration",
  "nazare",

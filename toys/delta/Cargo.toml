@@ -1,0 +1,26 @@
+[package]
+name = "delta"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The Delta (a working title): the Okavango Delta, Botswana, in flood, from the air; the land is so flat that the phone's faintest tilt decides where the water spreads before it sinks into the Kalahari sand."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "delta-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

@@ -1,0 +1,4 @@
+{ "_": "A fridge magnet held against the phone's right side: the field there is hundreds of microtesla, and every cell snaps round and pours toward it; taken away, they drift back to north.", "size": [1179, 2556], "ppp": 3, "seconds": 16, "fps": 30,
+  "events": [ { "t": 0.0, "field": [0, 20, -45] }, { "t": 2.0, "field": [400, 30, -60], "for": 0.4 }, { "t": 9.0, "field": [0, 20, -45], "for": 0.4 } ],
+  "shots": [{ "t": 1.9, "name": "before" }, { "t": 3.0, "name": "magnet-on" }, { "t": 8.5, "name": "gathered-at-the-magnet" }, { "t": 15.8, "name": "back-to-north" }],
+  "film": { "from": 0.5, "to": 16, "every": 0.1 } }

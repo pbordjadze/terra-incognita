@@ -33,6 +33,8 @@ pub trait Room {
     fn take_haptic(&mut self) -> bool;
     /// The device was shaken (Frost sweeps its window clear).
     fn shaken(&mut self);
+    /// What the phone feels now (its tilt, the magnetic field: `Ctx::sensors`).
+    fn sense(&mut self, s: toy_kit::Sensors);
     /// The toy's globe camera now, if it has a globe (read from what it saves: every globe toy keeps
     /// its camera, as `camera` or last in a list).
     fn camera(&self) -> Option<Camera>;
@@ -168,6 +170,9 @@ impl<T: Toy> Room for Inside<T> {
     }
     fn shaken(&mut self) {
         self.toy.shaken(&mut self.ctx);
+    }
+    fn sense(&mut self, s: toy_kit::Sensors) {
+        self.ctx.sensors = s;
     }
     fn camera(&self) -> Option<Camera> {
         self.toy.save().as_deref().and_then(saved_camera)

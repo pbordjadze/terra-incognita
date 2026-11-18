@@ -1,0 +1,2 @@
+{ "_": "No compass (a desktop browser): north is the top of the screen, and a finger still pulls them.", "size": [1179, 2556], "ppp": 3, "seconds": 6, "fps": 30,
+  "events": [ { "t": 2.0, "hold": [150, 300], "for": 3.0 } ], "shots": [1.9, 5.0] }
