@@ -272,8 +272,13 @@ impl Land {
                     self.spill(y * w + x, if x == 0 { 1 } else { -1 }, 0);
                 }
             }
+            // and off the top, beside the river's mouth, when the phone is tipped that way
+            let mouth = (MOUTH.0 * w as f32) as usize;
             for x in 0..w {
                 self.spill((h - 1) * w + x, 0, -1);
+                if x + MOUTH.1 + 2 < mouth || x > mouth + MOUTH.1 + 2 {
+                    self.spill(x, 0, 1);
+                }
             }
         }
         let lose = if self.on[0] { SINKS } else { DRIES } * dt;

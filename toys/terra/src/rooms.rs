@@ -71,6 +71,7 @@ pub fn context(from: &Ctx, assets: &Arc<dyn Assets>) -> Ctx {
     );
     ctx.night = from.night;
     ctx.reduce_motion = from.reduce_motion;
+    ctx.sensors = from.sensors;
     ctx
 }
 

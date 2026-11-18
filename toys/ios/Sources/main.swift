@@ -182,13 +182,25 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             guard let m, let shell = self?.shell else { return }
             let a = m.userAcceleration
             toy_motion(shell, a.x, a.y, a.z, m.timestamp)
+            // the device's axes turned to the screen's when the interface is turned (landscape)
+            let turn: Double
+            switch self?.window?.windowScene?.interfaceOrientation {
+            case .landscapeRight: turn = 90
+            case .landscapeLeft: turn = -90
+            case .portraitUpsideDown: turn = 180
+            default: turn = 0
+            }
+            let (c, s) = (cos(turn * .pi / 180), sin(turn * .pi / 180))
             let g = m.gravity
             let b = m.magneticField
             let known = b.accuracy != .uncalibrated && (b.field.x != 0 || b.field.y != 0 || b.field.z != 0)
             let nan = Double.nan
-            toy_sense(shell, g.x, g.y, g.z,
-                      known ? b.field.x : nan, known ? b.field.y : nan, known ? b.field.z : nan,
-                      known && m.heading >= 0 ? m.heading : nan)
+            // the heading can hold while the field's calibration comes and goes
+            let h = m.heading >= 0 ? (m.heading + turn + 360).truncatingRemainder(dividingBy: 360) : nan
+            toy_sense(shell, g.x * c - g.y * s, g.x * s + g.y * c, g.z,
+                      known ? b.field.x * c - b.field.y * s : nan,
+                      known ? b.field.x * s + b.field.y * c : nan,
+                      known ? b.field.z : nan, h)
         }
         if frames.contains(.xMagneticNorthZVertical) {
             motion.startDeviceMotionUpdates(using: .xMagneticNorthZVertical, to: .main, withHandler: handler)

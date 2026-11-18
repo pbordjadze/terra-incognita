@@ -187,17 +187,31 @@ function askMotion() {
 // screen, z out of it: devicemotion's accelerationIncludingGravity is the push against gravity, so turned
 // round), and the compass heading (iPhone Safari's webkitCompassHeading; elsewhere the absolute
 // orientation's alpha, anticlockwise). A browser gives no magnetic field.
-let down = null, heading = NaN;
+// Down is taken from the orientation's beta and gamma where there are any (their signs agree across
+// browsers, where devicemotion's do not), and turned, with the heading, to the screen when it is turned.
+let down = null, heading = NaN, tilted = false;
 addEventListener('deviceorientation', e => {
-  if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) { heading = e.webkitCompassHeading; sense(); }
+  if (e.beta != null && e.gamma != null) {
+    const b = e.beta * Math.PI / 180, g = e.gamma * Math.PI / 180;
+    down = [Math.cos(b) * Math.sin(g), -Math.sin(b), -Math.cos(b) * Math.cos(g)];
+    tilted = true;
+  }
+  if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) heading = e.webkitCompassHeading;
+  sense();
 });
 addEventListener('deviceorientationabsolute', e => {
   if (e.absolute && e.alpha != null) { heading = (360 - e.alpha) % 360; sense(); }
 });
+function turn() {
+  const a = screen.orientation && typeof screen.orientation.angle === 'number' ? screen.orientation.angle : (window.orientation || 0);
+  return a;
+}
 function sense() {
   if (shell && (down || !Number.isNaN(heading))) {
+    const t = turn() * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
     const d = down || [NaN, NaN, NaN];
-    shell.sense(d[0], d[1], d[2], heading);
+    const h = Number.isNaN(heading) ? NaN : (heading + turn() + 360) % 360;
+    shell.sense(d[0] * c - d[1] * s, d[0] * s + d[1] * c, d[2], h);
   }
 }
 function listenMotion() {
@@ -216,7 +230,7 @@ function listenMotion() {
     }
     shell.motion(a.x / G, a.y / G, (a.z ?? 0) / G, t);
     const g = e.accelerationIncludingGravity;
-    if (g && g.x != null) { down = [-g.x / G, -g.y / G, -(g.z ?? 0) / G]; sense(); }
+    if (!tilted && g && g.x != null) { down = [-g.x / G, -g.y / G, -(g.z ?? 0) / G]; sense(); }
   });
 }
 
