@@ -1,0 +1,143 @@
+{
+  "name": "Terra Incognita (CI builds)",
+  "identifier": "com.pbordjadze.terraincognita.source",
+  "subtitle": "Automatic builds",
+  "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+  "website": "https://github.com/pbordjadze/terra-incognita",
+  "tintColor": "#C9A243",
+  "apps": [
+    {
+      "name": "Terra Incognita",
+      "bundleIdentifier": "com.pbordjadze.terraincognita",
+      "developerName": "pbordjadze",
+      "subtitle": "The world, and the toys on it",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys, each where its thing really happens: starlings in Somerset, fireflies in the Smokies, the swell at Nazar\u00e9, a river on the Beni, frost on a window at Oymyakon. Touch one and fall into it. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+      "tintColor": "#C9A243",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.1327",
+          "buildVersion": "1327",
+          "date": "2026-11-18T04:12:04Z",
+          "localizedDescription": "Magnet Marsh and The Delta: two toys built on one sense each (#44)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-327/terra.ipa",
+          "size": 26087644,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1320",
+          "buildVersion": "1320",
+          "date": "2026-11-18T01:22:57Z",
+          "localizedDescription": "Three toys for the map's empty stretches: Shimmering, Red Crabs, Fairy Circles (#42)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-320/terra.ipa",
+          "size": 26064185,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1315",
+          "buildVersion": "1315",
+          "date": "2026-11-18T01:06:30Z",
+          "localizedDescription": "Terra's new icon, and a TestFlight pipeline for the toy app (#41)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-315/terra.ipa",
+          "size": 26031533,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1310",
+          "buildVersion": "1310",
+          "date": "2026-11-17T07:59:35Z",
+          "localizedDescription": "Mosquito Bay replaces Moon Road on Terra's map (#40)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-310/terra.ipa",
+          "size": 26037968,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.1306",
+          "buildVersion": "1306",
+          "date": "2026-11-17T01:46:43Z",
+          "localizedDescription": "Switches on every toy on Terra's globe, and a check that keeps it so (#39)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-306/terra.ipa",
+          "size": 26041039,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.1327",
+      "versionDate": "2026-11-18T04:12:04Z",
+      "versionDescription": "Magnet Marsh and The Delta: two toys built on one sense each (#44)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/terra-build-327/terra.ipa",
+      "size": 26087644,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Adrift",
+      "bundleIdentifier": "com.pbordjadze.adrift",
+      "developerName": "pbordjadze",
+      "subtitle": "Glass floats on the real sea",
+      "localizedDescription": "Tap the open sea and it rings; rest a beat longer and a glass float is yours, lamp amber on a cool sea. The month's real currents and winds, measured by drifting buoys, carry it; nothing scripts where it goes. Written from scratch in Rust on the GPU. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/adrift-icon.png",
+      "tintColor": "#E0A040",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.181",
+          "buildVersion": "181",
+          "date": "2026-11-16T22:25:27Z",
+          "localizedDescription": "Merge: Terra is the only toy app; the nine toys it doesn't hold leave SideStore (#38)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-181/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.179",
+          "buildVersion": "179",
+          "date": "2026-11-16T21:35:48Z",
+          "localizedDescription": "Merge: the toys Terra holds ship only inside it, one IPA not one a toy (#37)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-179/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.176",
+          "buildVersion": "176",
+          "date": "2026-11-14T10:39:37Z",
+          "localizedDescription": "Merge: Terra on the web, a WebGPU page built by CI onto the web branch (#31)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-176/Adrift.ipa",
+          "size": 33635203,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.174",
+          "buildVersion": "174",
+          "date": "2026-11-14T08:21:33Z",
+          "localizedDescription": "Hoh: a new toy, the rainforest below Mount Olympus (#32)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-174/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.170",
+          "buildVersion": "170",
+          "date": "2026-11-14T00:38:50Z",
+          "localizedDescription": "Merge: Terra holds local toys for now, Bell and Whales off the map, no rivers on the globe (#26)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-170/Adrift.ipa",
+          "size": 33635204,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.181",
+      "versionDate": "2026-11-16T22:25:27Z",
+      "versionDescription": "Merge: Terra is the only toy app; the nine toys it doesn't hold leave SideStore (#38)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-181/Adrift.ipa",
+      "size": 33635204,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}
