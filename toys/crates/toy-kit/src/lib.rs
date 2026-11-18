@@ -141,6 +141,44 @@ pub fn step(what: &str) {
     }
 }
 
+/// What the phone feels, in the device's own frame held upright (portrait): x to the screen's right, y
+/// to its top, z out of the glass toward the reader (iOS's Core Motion frame). Each is None where the
+/// device or the shell has no such sense (a desktop browser, the headless check unless a plan gives it), so
+/// a toy that reads one has a way to work without it.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Sensors {
+    /// Which way is down, in g (a unit vector at rest): flat on a table face up, [0, 0, -1].
+    pub gravity: Option<[f64; 3]>,
+    /// The magnetic field through the phone, in microtesla, the phone's own magnetism calibrated out
+    /// (the Earth's is 25 to 65 µT; a fridge magnet held near is hundreds or thousands).
+    pub field: Option<[f64; 3]>,
+    /// Where the top of the phone points, in degrees clockwise from magnetic north (the browser's compass,
+    /// where it gives no field).
+    pub heading: Option<f64>,
+}
+
+impl Sensors {
+    /// Which way the screen leans, in screen points' directions (x right, y down the screen), from 0 flat to
+    /// 1 on edge: where water on the glass would run. None without gravity.
+    pub fn downhill(&self) -> Option<[f64; 2]> {
+        self.gravity.map(|g| [g[0], -g[1]])
+    }
+
+    /// The field across the glass, in µT, as screen directions (x right, y down the screen): what a compass
+    /// needle lying on the screen would follow. From the field, or else the heading as the Earth's
+    /// horizontal field (about 20 µT) for a phone held flat. None with neither.
+    pub fn field_on_screen(&self) -> Option<[f64; 2]> {
+        if let Some(b) = self.field {
+            return Some([b[0], -b[1]]);
+        }
+        self.heading.map(|h| {
+            // north is `h` degrees anticlockwise from the phone's top, seen from above
+            let a = h.to_radians();
+            [-20.0 * a.sin(), -20.0 * a.cos()]
+        })
+    }
+}
+
 /// What a toy is given: the device, its data, the screen, the reader's settings, and a way back to
 /// the shell (a haptic tap).
 pub struct Ctx {
@@ -154,6 +192,8 @@ pub struct Ctx {
     pub night: bool,
     /// The reader's Reduce Motion.
     pub reduce_motion: bool,
+    /// What the phone feels: its tilt and the magnetic field through it (`Sensors`), as the shell last said.
+    pub sensors: Sensors,
     haptic: bool,
     show_info: bool,
     hide_info: bool,
@@ -169,6 +209,7 @@ impl Ctx {
             ppp,
             night: false,
             reduce_motion: false,
+            sensors: Sensors::default(),
             haptic: false,
             show_info: false,
             hide_info: false,
@@ -661,6 +702,12 @@ impl<T: Toy> Host<T> {
         if self.shake.sample(a, t) {
             self.toy.shaken(&mut self.ctx);
         }
+    }
+
+    /// What the phone feels now (the shells call it at 60 Hz while a sense is on): the open toy reads
+    /// `ctx.sensors`.
+    pub fn sense(&mut self, s: Sensors) {
+        self.ctx.sensors = s;
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).

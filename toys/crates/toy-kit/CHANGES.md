@@ -7,6 +7,12 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **What the phone feels** (`Sensors`, `ctx.sensors`): which way is down (gravity), the calibrated magnetic
+  field through the phone and the compass heading, each None where there is no such sense, with
+  `downhill()` and `field_on_screen()` in screen directions. The iPhone shell sends them from the same Core
+  Motion stream as the shakes (`toy_sense`, no permission), the web from `devicemotion` and the compass
+  (`Shell::sense`); Terra hands them to the open toy. Plans give them as `gravity`, `field` and `heading`
+  events, eased over `for`. Written for Magnet Marsh and The Delta.
 - **Shakes from the motion** (`shake`): a shell now feeds the device's own acceleration (`toy_motion`, the
   web's `motion`) and the kit tells a shake from a few hard jolts, because iOS's shake event never reached
   a toy (it needs Shake to Undo on and the view first responder). `toy_shaken` takes the time, so the

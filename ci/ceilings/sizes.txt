@@ -13,7 +13,7 @@ adrift/crates/adrift-core/src/studio.rs 2082
 adrift/crates/adrift-core/src/touch/camera.rs 1216
 adrift/crates/adrift-core/src/touch/gestures.rs 2273
 toys/carol/src/lib.rs 1345
-toys/crates/toy-kit/src/check.rs 1492
+toys/crates/toy-kit/src/check.rs 1363
 toys/crates/toy-kit/src/globe/mod.rs 1116
 toys/frost/src/lib.rs 1242
 toys/jam/src/lib.rs 1129

@@ -179,6 +179,26 @@ function askMotion() {
   if (typeof ask !== 'function') { listenMotion(); return; }
   ask.call(DeviceMotionEvent).then(r => { if (r === 'granted') listenMotion(); })
     .catch(() => { asked = false; /* not taken as a touch's: ask again at the next */ });
+  // the compass, for the toys that follow north (iPhone Safari asks for it separately)
+  const askO = window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission;
+  if (typeof askO === 'function') askO.call(DeviceOrientationEvent).catch(() => {});
+}
+// What the phone feels (toy-kit's Sensors): which way is down, in g, in the device's frame (x right, y up the
+// screen, z out of it: devicemotion's accelerationIncludingGravity is the push against gravity, so turned
+// round), and the compass heading (iPhone Safari's webkitCompassHeading; elsewhere the absolute
+// orientation's alpha, anticlockwise). A browser gives no magnetic field.
+let down = null, heading = NaN;
+addEventListener('deviceorientation', e => {
+  if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) { heading = e.webkitCompassHeading; sense(); }
+});
+addEventListener('deviceorientationabsolute', e => {
+  if (e.absolute && e.alpha != null) { heading = (360 - e.alpha) % 360; sense(); }
+});
+function sense() {
+  if (shell && (down || !Number.isNaN(heading))) {
+    const d = down || [NaN, NaN, NaN];
+    shell.sense(d[0], d[1], d[2], heading);
+  }
 }
 function listenMotion() {
   if (moving) return;
@@ -195,6 +215,8 @@ function listenMotion() {
       a = { x: g.x - gravity[0], y: g.y - gravity[1], z: g.z - gravity[2] };
     }
     shell.motion(a.x / G, a.y / G, (a.z ?? 0) / G, t);
+    const g = e.accelerationIncludingGravity;
+    if (g && g.x != null) { down = [-g.x / G, -g.y / G, -(g.z ?? 0) / G]; sense(); }
   });
 }
 

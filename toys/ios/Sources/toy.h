@@ -11,6 +11,7 @@ void toy_frame(ToyShell *shell, double t);
 void toy_pointer(ToyShell *shell, uint64_t id, uint32_t phase, double x, double y, double t);
 void toy_shaken(ToyShell *shell, double t);
 void toy_motion(ToyShell *shell, double x, double y, double z, double t);
+void toy_sense(ToyShell *shell, double gx, double gy, double gz, double bx, double by, double bz, double heading);
 bool toy_take_haptic(ToyShell *shell);
 void toy_set_night(ToyShell *shell, bool on);
 void toy_set_reduce_motion(ToyShell *shell, bool on);

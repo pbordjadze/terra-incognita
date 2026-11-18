@@ -171,13 +171,29 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
 
     /// The device's own acceleration (gravity out, in g) to the library at 60 Hz, on the main queue as
     /// every other call is; a few hard jolts there are a shake.
+    /// With them, what the phone feels (toy-kit's `Sensors`): which way is down, and, where the compass
+    /// is, the magnetic field through it (calibrated, in µT) and the heading, for the toys that tilt or
+    /// follow north (The Delta, Magnet Marsh). None of it asks permission.
     func startMotion() {
         guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
         motion.deviceMotionUpdateInterval = 1.0 / 60.0
-        motion.startDeviceMotionUpdates(to: .main) { [weak self] m, _ in
+        let frames = CMMotionManager.availableAttitudeReferenceFrames()
+        let handler: CMDeviceMotionHandler = { [weak self] m, _ in
             guard let m, let shell = self?.shell else { return }
             let a = m.userAcceleration
             toy_motion(shell, a.x, a.y, a.z, m.timestamp)
+            let g = m.gravity
+            let b = m.magneticField
+            let known = b.accuracy != .uncalibrated && (b.field.x != 0 || b.field.y != 0 || b.field.z != 0)
+            let nan = Double.nan
+            toy_sense(shell, g.x, g.y, g.z,
+                      known ? b.field.x : nan, known ? b.field.y : nan, known ? b.field.z : nan,
+                      known && m.heading >= 0 ? m.heading : nan)
+        }
+        if frames.contains(.xMagneticNorthZVertical) {
+            motion.startDeviceMotionUpdates(using: .xMagneticNorthZVertical, to: .main, withHandler: handler)
+        } else {
+            motion.startDeviceMotionUpdates(to: .main, withHandler: handler)
         }
     }
 

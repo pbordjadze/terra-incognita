@@ -55,6 +55,20 @@ macro_rules! ios_shell {
             pub unsafe extern "C" fn toy_motion(s: *mut S, x: f64, y: f64, z: f64, t: f64) {
                 if let Some(s) = s.as_mut() { s.host.motion([x, y, z], t) }
             }
+            /// What the phone feels (toy-kit's `Sensors`): gravity in g and the calibrated magnetic field in
+            /// µT, in the device's frame; a NaN in a vector is "no such sense". Heading NaN: none.
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_sense(
+                s: *mut S, gx: f64, gy: f64, gz: f64, bx: f64, by: f64, bz: f64, heading: f64,
+            ) {
+                let v = |a: f64, b: f64, c: f64| (a.is_finite() && b.is_finite() && c.is_finite()).then_some([a, b, c]);
+                let sense = $crate::Sensors {
+                    gravity: v(gx, gy, gz),
+                    field: v(bx, by, bz),
+                    heading: heading.is_finite().then_some(heading),
+                };
+                if let Some(s) = s.as_mut() { s.host.sense(sense) }
+            }
             #[no_mangle]
             pub unsafe extern "C" fn toy_take_haptic(s: *mut S) -> bool {
                 s.as_mut().map(|s| s.host.take_haptic()).unwrap_or(false)
