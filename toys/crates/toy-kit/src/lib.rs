@@ -27,6 +27,7 @@ pub mod ios;
 pub mod layer;
 pub mod model;
 pub mod paint;
+pub mod shake;
 #[cfg(target_os = "ios")]
 pub mod shell;
 pub mod sound;
@@ -501,6 +502,8 @@ pub struct Host<T: Toy> {
     title: std::ffi::CString,
     /// The toy's label as the shell reads it (`label_text`).
     label: std::ffi::CString,
+    /// Shakes told from the device's motion, and the rest after one (`shake`).
+    shake: shake::Shake,
 }
 
 impl<T: Toy> Host<T> {
@@ -521,6 +524,7 @@ impl<T: Toy> Host<T> {
             buttons: Default::default(),
             title: Default::default(),
             label: Default::default(),
+            shake: Default::default(),
         };
         host.marks_step();
         Ok(host)
@@ -643,6 +647,20 @@ impl<T: Toy> Host<T> {
             self.marks,
             self.ctx.reduce_motion,
         );
+    }
+
+    /// The system said the device was shaken at `t` (seconds): the toy's, unless a shake just landed.
+    pub fn shaken(&mut self, t: f64) {
+        if self.shake.cooled(t) {
+            self.toy.shaken(&mut self.ctx);
+        }
+    }
+
+    /// The device's own acceleration `a` (g, gravity out) at `t` (seconds); a shake is the toy's.
+    pub fn motion(&mut self, a: [f64; 3], t: f64) {
+        if self.shake.sample(a, t) {
+            self.toy.shaken(&mut self.ctx);
+        }
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).

@@ -134,6 +134,7 @@ function wire() {
     canvas.addEventListener(name, e => {
       const r = canvas.getBoundingClientRect();
       if (phase === 0) { try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* gone already */ } startSound(); }
+      if (phase === 2) askMotion();
       e.preventDefault();
       shell.pointer(e.pointerId >>> 0, phase, e.clientX - r.left, e.clientY - r.top, performance.now() / 1000);
     });
@@ -165,6 +166,36 @@ function wheel(e) {
     shell.pointer(A, 2, pinch.x - pinch.d, pinch.y, t2); shell.pointer(B, 2, pinch.x + pinch.d, pinch.y, t2);
     pinch = null;
   }, 180);
+}
+
+// ---- shakes: the device's own acceleration, in g, to the library, which tells a shake from a few hard jolts
+// (toy-kit's shake.rs), from the first touch's lift: iPhone Safari asks the reader then (it may ask only
+// from a touch); other browsers need no asking.
+let moving = false, asked = false, gravity = null;
+function askMotion() {
+  if (asked || moving || !window.DeviceMotionEvent) return;
+  asked = true;
+  const ask = DeviceMotionEvent.requestPermission;
+  if (typeof ask !== 'function') { listenMotion(); return; }
+  ask.call(DeviceMotionEvent).then(r => { if (r === 'granted') listenMotion(); })
+    .catch(() => { asked = false; /* not taken as a touch's: ask again at the next */ });
+}
+function listenMotion() {
+  if (moving) return;
+  moving = true;
+  addEventListener('devicemotion', e => {
+    if (!shell) return;
+    const G = 9.81, t = performance.now() / 1000;
+    let a = e.acceleration;
+    if (!a || a.x == null) {
+      // (no acceleration without gravity here: take a slow average of the one with it out)
+      const g = e.accelerationIncludingGravity;
+      if (!g || g.x == null) return;
+      gravity = gravity ? gravity.map((v, i) => v + 0.1 * ([g.x, g.y, g.z][i] - v)) : [g.x, g.y, g.z];
+      a = { x: g.x - gravity[0], y: g.y - gravity[1], z: g.z - gravity[2] };
+    }
+    shell.motion(a.x / G, a.y / G, (a.z ?? 0) / G, t);
+  });
 }
 
 let audio = null;

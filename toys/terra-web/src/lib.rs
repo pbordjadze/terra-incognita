@@ -141,6 +141,12 @@ impl Shell {
         });
     }
 
+    /// The device's own acceleration (g, gravity out; `devicemotion`'s `acceleration`) at `t` seconds: a
+    /// few hard jolts are a shake, the open toy's.
+    pub fn motion(&mut self, x: f64, y: f64, z: f64, t: f64) {
+        self.host.motion([x, y, z], t);
+    }
+
     pub fn take_haptic(&mut self) -> bool {
         self.host.take_haptic()
     }

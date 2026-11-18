@@ -5,6 +5,7 @@
 import UIKit
 import QuartzCore
 import AVFoundation
+import CoreMotion
 import UniformTypeIdentifiers
 
 final class ToyView: UIView, UIDocumentPickerDelegate {
@@ -13,6 +14,10 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     var synth: OpaquePointer?
     var link: CADisplayLink?
     var engine: AVAudioEngine?
+    /// The phone's own motion, for shakes (toy-kit's shake.rs): iOS's shake event comes only while Shake to
+    /// Undo is on (Settings › Accessibility › Touch), so the motion is read here as well. No permission:
+    /// Core Motion's accelerometer needs none.
+    let motion = CMMotionManager()
     var touchIds: [ObjectIdentifier: UInt64] = [:]
     var nextTouchId: UInt64 = 1
     let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -141,9 +146,14 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { toy_pause(shell) }
             self?.engine?.pause()
+            self?.motion.stopDeviceMotionUpdates()
         }
         center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
             try? self?.engine?.start()
+            self?.startMotion()
+        }
+        center.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.becomeFirstResponder()
         }
         center.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { toy_pause(shell) }
@@ -155,7 +165,20 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         l.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
         l.add(to: .main, forMode: .common)
         link = l
+        startMotion()
         becomeFirstResponder()
+    }
+
+    /// The device's own acceleration (gravity out, in g) to the library at 60 Hz, on the main queue as
+    /// every other call is; a few hard jolts there are a shake.
+    func startMotion() {
+        guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
+        motion.deviceMotionUpdateInterval = 1.0 / 60.0
+        motion.startDeviceMotionUpdates(to: .main) { [weak self] m, _ in
+            guard let m, let shell = self?.shell else { return }
+            let a = m.userAcceleration
+            toy_motion(shell, a.x, a.y, a.z, m.timestamp)
+        }
     }
 
     /// The toy's sound: an engine whose source node asks the library for samples (the ambient
@@ -578,7 +601,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
 
     override var canBecomeFirstResponder: Bool { true }
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        if motion == .motionShake, let shell { toy_shaken(shell) }
+        if motion == .motionShake, let shell { toy_shaken(shell, event?.timestamp ?? CACurrentMediaTime()) }
     }
 
     func send(_ touches: Set<UITouch>, _ phase: UInt32) {
@@ -594,7 +617,11 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     }
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 0) }
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 1) }
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 2) }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        send(touches, 2)
+        // (the sheet's switches and the file picker can take the first responder: the system's shake needs it)
+        if !isFirstResponder { becomeFirstResponder() }
+    }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 3) }
 }
 
@@ -639,6 +666,12 @@ final class ToyController: UIViewController {
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
+    // the view asks for the first responder as it reaches the window, before the window is key, which
+    // UIKit can refuse: ask again once it shows (the system's shake goes to the first responder)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        view.becomeFirstResponder()
+    }
 }
 
 // The scene lifecycle (an app built against the iOS 27 SDK must adopt it, or UIKit stops it at launch):

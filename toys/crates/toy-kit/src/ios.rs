@@ -47,8 +47,13 @@ macro_rules! ios_shell {
                 if let Some(s) = s.as_mut() { s.pointer(id, phase, x, y, t) }
             }
             #[no_mangle]
-            pub unsafe extern "C" fn toy_shaken(s: *mut S) {
-                if let Some(s) = s.as_mut() { s.host.toy.shaken(&mut s.host.ctx) }
+            pub unsafe extern "C" fn toy_shaken(s: *mut S, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.shaken(t) }
+            }
+            /// The device's own acceleration (g, gravity out) at `t`: a few hard jolts are a shake.
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_motion(s: *mut S, x: f64, y: f64, z: f64, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.motion([x, y, z], t) }
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_take_haptic(s: *mut S) -> bool {

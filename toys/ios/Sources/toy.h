@@ -9,7 +9,8 @@ ToyShell *toy_new(void *layer, uint32_t width, uint32_t height, double scale, co
 void toy_resize(ToyShell *shell, uint32_t width, uint32_t height, double scale);
 void toy_frame(ToyShell *shell, double t);
 void toy_pointer(ToyShell *shell, uint64_t id, uint32_t phase, double x, double y, double t);
-void toy_shaken(ToyShell *shell);
+void toy_shaken(ToyShell *shell, double t);
+void toy_motion(ToyShell *shell, double x, double y, double z, double t);
 bool toy_take_haptic(ToyShell *shell);
 void toy_set_night(ToyShell *shell, bool on);
 void toy_set_reduce_motion(ToyShell *shell, bool on);

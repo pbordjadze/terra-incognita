@@ -53,7 +53,7 @@ swiftc -O -target $STARGET -sdk "$SDK" \
   -parse-as-library -module-name "$EXEC" \
   "$ROOT/toys/ios/Sources/main.swift" "$LIB" \
   -framework UIKit -framework QuartzCore -framework Metal -framework CoreGraphics -framework Foundation \
-  -framework AVFoundation \
+  -framework AVFoundation -framework CoreMotion \
   -lc++ -o "$APP/$EXEC"
 echo "== bundle"
 sed -e "s/TOY_VERSION/$VERSION/" -e "s/TOY_BUILD/$BUILD_NUMBER/" -e "s/TOY_BUNDLE/$BUNDLE/" \

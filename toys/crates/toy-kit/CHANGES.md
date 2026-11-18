@@ -7,6 +7,10 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **Shakes from the motion** (`shake`): a shell now feeds the device's own acceleration (`toy_motion`, the
+  web's `motion`) and the kit tells a shake from a few hard jolts, because iOS's shake event never reached
+  a toy (it needs Shake to Undo on and the view first responder). `toy_shaken` takes the time, so the
+  system's shake and the motion's land once; `Host::shaken` and `Host::motion` are the shells' way in.
 - **One mark, one sheet** (painting-company row 355): the info, rules, origins and switches marks are one
   mark (three dots) that opens a sheet: the rules, the rules as switches under them, and the buttons "Show
   me" (the demo) and "Where this comes from" (the origins). Switches stay as the reader leaves them when the
