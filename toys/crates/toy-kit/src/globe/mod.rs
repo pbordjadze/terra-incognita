@@ -59,8 +59,7 @@ pub struct Globe {
     pub hand: Hand,
     /// The world's rivers over the ground, shown by the scale ([`Globe::with_rivers`]; None: none).
     pub rivers: Option<rivers::Rivers>,
-    /// Pictures of the ground laid at their true places over the ground and its rivers, the first lowest
-    /// ([`Globe::set_sheets`]).
+    /// Pictures of the ground at their true places over it and its rivers, the first lowest ([`Globe::set_sheets`]).
     pub sheets: Vec<sheet::SheetPass>,
     width: u32,
     height: u32,
@@ -301,21 +300,18 @@ impl Globe {
 /// - one finger drags the orb: the place it took stays under it (a trackball over the poles too, no
 ///   north to stop at), after a slop of `SLOP` points so a tap never turns it;
 /// - let go moving, it flings on and slows (`FLING_DECAY`), at the same glide whatever the frame rate;
-/// - two fingers pinch about what they hold (the place under their midpoint stays under it) and, turned
-///   about each other, roll the orb about that place (the twist);
+/// - two fingers pinch about what they hold (the place under their midpoint stays) and, turned, roll the orb (the twist);
 /// - Home: pinched out past the whole globe and let go, or three fingers swiped up, the camera flies the
 ///   short way back to `home` (or the toy calls [`Globe::home`]) and lands upright.
 ///
-/// Zoom is kept within `min_zoom..max_zoom`; below `rest_zoom` it eases back once the fingers lift.
+/// Zoom is kept within `min_zoom..max_zoom`.
 pub struct Hand {
     pub on: bool,
     pub min_zoom: f64,
     pub max_zoom: f64,
-    /// Below this zoom the globe eases back up once the fingers lift (a pinch out springs back to
-    /// fill its room); set it to `min_zoom` to keep wherever the pinch left it.
+    /// Below this zoom the globe eases back once the fingers lift; `min_zoom` keeps wherever the pinch left it.
     pub rest_zoom: f64,
-    /// Where Home flies to (the toy's opening view, upright: [`Globe::set_home`]); None: the place at
-    /// the centre now, north up, at `rest_zoom`.
+    /// Where Home flies to (the opening view: [`Globe::set_home`]); None: the centre now, north up, at `rest_zoom`.
     pub home: Option<Camera>,
     /// Reduce Motion: no fling, and Home a cut.
     pub reduce_motion: bool,

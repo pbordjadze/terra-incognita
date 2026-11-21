@@ -163,7 +163,11 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
         col = mix(col, ncol, night);
     }
     if (growth > 0.0) {
-        col = mix(col, growth_globe(G.v, landa, landCol, height, ice, hill, lightsRaw, night), growth);
+        // the picture's broad colour, a couple of mips coarser than the pixel's own (no finer, or the
+        // land reads as a photograph; no coarser, or its texels show as blocks close in)
+        let glod = clamp(alod + 2.5, 0.0, 4.0);
+        let broad = mix(textureSampleLevel(landA, linearS, G.uv, glod).rgb, textureSampleLevel(landB, linearS, G.uv, glod).rgb, U.time.w);
+        col = mix(col, growth_globe(G.v, landa, broad, height, ice, hill, lightsRaw, night), growth);
     }
     // the rim, against the page
     let edge = smoothstep(-0.5, 0.5, -ringpx / max(fwRing, 1e-5));
@@ -201,7 +205,7 @@ fn growth_ball(r: vec3f) -> vec3f {
     c = mix(c, vec3f(1.0, 0.82, 0.36), smoothstep(0.5, 0.58, t));
     c = mix(c, vec3f(0.22, 0.72, 0.92), smoothstep(0.58, 0.78, t));
     c = mix(c, vec3f(0.06, 0.16, 0.62), smoothstep(0.78, 1.0, t));
-    return c * (0.62 + 0.38 * step(0.5, fract(q / 24.0 + 0.25)));
+    return c * (0.4 + 0.6 * step(0.5, fract(q / 24.0 + 0.25)));
 }
 
 fn growth_page(ringpx: f32) -> vec3f {
@@ -220,7 +224,7 @@ fn growth_globe(n: vec3f, landa: f32, landCol: vec3f, height: f32, ice: f32, hil
     // the land in steps of height (each step its own colour, as his parts each had theirs), the
     // lowlands green where the month's picture is green and sand where it is dry
     let up = max(height, 0.0) * 50.0;
-    let dry = smoothstep(0.0, 0.08, landCol.r - landCol.g + 0.02);
+    let dry = smoothstep(0.03, 0.05, landCol.r - landCol.g + 0.02);
     var land = mix(vec3f(0.10, 0.52, 0.24), vec3f(0.86, 0.66, 0.30), dry);
     land = mix(land, mix(vec3f(0.42, 0.60, 0.16), vec3f(0.80, 0.52, 0.22), dry), step(250.0, up));
     land = mix(land, vec3f(0.74, 0.40, 0.16), step(800.0, up));
@@ -228,16 +232,21 @@ fn growth_globe(n: vec3f, landa: f32, landCol: vec3f, height: f32, ice: f32, hil
     land = mix(land, vec3f(0.92, 0.88, 0.96), step(3200.0, up));
     land *= 1.0 + 0.08 * hill;
     // snow and the ice sheets, where the month's picture is white
-    land = mix(land, vec3f(0.94, 0.96, 1.0), smoothstep(0.7, 0.82, dot(landCol, vec3f(0.30, 0.59, 0.11))));
+    // (white and cold: the deserts are bright too, but warm)
+    let snow = smoothstep(0.62, 0.68, dot(landCol, vec3f(0.30, 0.59, 0.11))) * smoothstep(-0.06, -0.02, landCol.b - landCol.r);
+    land = mix(land, vec3f(0.94, 0.96, 1.0), snow);
     var albedo = mix(sea, land, landa);
     albedo = mix(albedo, vec3f(0.9, 0.94, 1.0), smoothstep(0.35, 0.5, ice));
-    let gloss = mix(1.0, 0.35, landa);
+    let gloss = mix(1.0, 0.12, landa);
     let key = normalize(vec3f(-0.5, 0.6, 0.65));
     let r = reflect(vec3f(0.0, 0.0, -1.0), n);
     let diff = max(dot(n, key), 0.0);
-    let spec = pow(max(dot(r, key), 0.0), 40.0);
-    let fres = 0.15 + 0.85 * pow(1.0 - n.z, 3.0);
-    var col = albedo * (0.25 + 0.85 * diff) + growth_ball(r) * fres * 0.6 * gloss + vec3f(spec) * 0.85 * gloss;
+    // a hard white spot, as his lamp left on every glossy part
+    let spec = smoothstep(0.988, 0.992, dot(r, key)) + 0.25 * pow(max(dot(r, key), 0.0), 40.0);
+    let fres = 0.12 + 0.88 * pow(1.0 - n.z, 2.0);
+    // the ball laid over the lit colour, not added to it, so its stripes keep their own saturated
+    // colours: strongest at the rim, faint face-on, and on the sea (the land is nearly matte)
+    var col = mix(albedo * (0.25 + 0.85 * diff), growth_ball(r), fres * 0.6 * gloss) + vec3f(spec) * 0.9 * max(gloss, 0.5);
     col *= mix(1.0, 0.28, night);
     let lights = pow(lightsRaw, 0.75) * smoothstep(0.45, 1.0, night);
     col = mix(col, vec3f(1.0, 0.78, 0.34), smoothstep(0.08, 0.6, lights));

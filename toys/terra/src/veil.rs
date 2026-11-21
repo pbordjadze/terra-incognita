@@ -63,10 +63,12 @@ fn rbox(p: vec2<f32>, b: vec4<f32>, r: f32) -> f32 {
   // the card in the Growth look: black lacquer, its rim catching the striped ball round the scene
   // in bands (gold above, violet below), the words in light ink (lib.rs: dark: false)
   let h = clamp((p.y - u.card.y) / max(u.card.w - u.card.y, 1.0), 0.0, 1.0);
-  let band = floor(h * 6.0) / 5.0;
-  let ball = mix(vec3<f32>(1.0, 0.8, 0.36), vec3<f32>(0.55, 0.12, 0.62), band) * (0.7 + 0.3 * step(0.5, fract(band * 2.5)));
-  let rim = 1.0 - smoothstep(0.0, 2.2 * u.map.w, -dc);
-  let ink = mix(vec3<f32>(0.035, 0.035, 0.05), ball, rim);
+  let ball = mix(vec3<f32>(1.0, 0.8, 0.36), vec3<f32>(0.55, 0.12, 0.62), h);
+  // a glossy tube round the card: lit from above its middle, a hard white line along its crest
+  let x = clamp(-dc / (4.0 * u.map.w), 0.0, 1.0);
+  let tube = ball * (0.35 + 0.65 * sin(x * 3.14159)) + vec3<f32>(smoothstep(0.82, 0.95, sin(x * 3.14159)) * 0.6 * (1.0 - h));
+  let rim = 1.0 - smoothstep(3.5 * u.map.w, 4.5 * u.map.w, -dc);
+  let ink = mix(vec3<f32>(0.035, 0.035, 0.05), tube, rim);
   let col = mix(ink, toy, in_pic);
   let a = in_card * mix(paper, 1.0, in_pic);
   // a soft shadow under the card, gone as it becomes the glass
