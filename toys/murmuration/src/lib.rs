@@ -7,7 +7,9 @@
 //! leans toward the finger, its neighbours heed it, and the flock bends round you. Lean hard and you
 //! slip out; let go and the seven nearest still pull you home, and the flock heals.
 
+mod count;
 pub mod flock;
+mod growth;
 pub mod sky;
 pub mod sun;
 mod wind;
@@ -126,6 +128,7 @@ pub struct Murmuration {
     inst: wgpu::Buffer,
     msaa: wgpu::TextureView,
     exposure: f32,
+    growth: Option<growth::Growth>,
 }
 
 /// The heading of the birds between `r0` and `r1` metres of yours: the flock round you that your
@@ -582,7 +585,6 @@ impl Toy for Murmuration {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let msaa = msaa_view(ctx);
         let mut flock = Flock::new(BIRDS, 0x5eed_2026);
         for _ in 0..360 {
             flock.step(1.0 / 60.0);
@@ -635,7 +637,8 @@ impl Toy for Murmuration {
             bird_bind,
             bird_buf,
             inst,
-            msaa,
+            msaa: msaa_view(ctx),
+            growth: growth::ON.then(|| growth::Growth::new(ctx, &sky_layout)),
             exposure: 1.0,
         };
         let (el, az) = m.sun_at(m.minutes);
@@ -648,6 +651,9 @@ impl Toy for Murmuration {
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.msaa = msaa_view(ctx);
+        if let Some(g) = &mut self.growth {
+            g.resize(ctx);
+        }
     }
 
     fn demo(&self, ctx: &Ctx) -> Option<toy_kit::info::Demo> {
@@ -916,6 +922,17 @@ impl Toy for Murmuration {
         ctx.gpu
             .queue
             .write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
+        if let Some(g) = &mut self.growth {
+            let reeds = 1.0 - self.near.min(1.0) * 2.0;
+            let t = self.t as f32;
+            let scene = growth::Scene {
+                flock: &self.flock,
+                eye: e,
+                t,
+                reeds,
+            };
+            return g.draw(ctx, target, &self.sky_bind, scene);
+        }
         // The birds: dark against the sky, a little hazed with distance.
         let hz = [
             (h0[0] + h1[0]) * 0.5,
@@ -956,53 +973,7 @@ impl Toy for Murmuration {
             .queue
             .write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
         if std::env::var_os("MURMURATION_COUNT").is_some() {
-            // For tools/toys/murmuration/holds.py: how many birds are on the glass, and how many of
-            // them against the sky.
-            let (mut n, mut sky, mut big) = (0, 0, 0);
-            for b in &self.flock.birds {
-                let rel = sub(b.pos, e.pos);
-                let z = dot(rel, e.fwd);
-                let me = std::ptr::eq(b, &self.flock.birds[self.flock.you]);
-                // As the shader culls: other birds nearer than 5 m, or wider than an eighth of
-                // the glass, are not drawn, so not counted.
-                let span_px = 0.38 * b.size * e.focal / z.max(0.05);
-                if z < 0.1 || (!me && (z < 5.0 || span_px > 0.12 * w)) {
-                    continue;
-                }
-                let x = dot(rel, e.right) * e.focal / z;
-                let y = dot(rel, e.up) * e.focal / z;
-                if x.abs() < 0.5 * w && y.abs() < 0.5 * h {
-                    n += 1;
-                    // Big enough to read as a bird near you: a wingspan of 12 points or more.
-                    if 0.5 * e.focal / z >= 12.0 * ctx.ppp as f32 {
-                        big += 1;
-                    }
-                    if b.pos[1] > e.pos[1] || z > 2000.0 {
-                        sky += 1;
-                    }
-                }
-            }
-            println!(
-                "visible {:.2} {} {} near {:.2} big {}",
-                self.t, n, sky, self.near, big
-            );
-            if std::env::var_os("MURMURATION_YOU").is_some() {
-                let b = &self.flock.birds[self.flock.you];
-                let rel = sub(b.pos, e.pos);
-                let z = dot(rel, e.fwd);
-                println!("you {} z {:.2} x {:.0} y {:.0} dist {:.2} alt {:.1} vel {:.1} {:.1} {:.1} eye {:.1}", self.flock.you, z, dot(rel, e.right) * e.focal / z, dot(rel, e.up) * e.focal / z, length(rel), b.pos[1], b.vel[0], b.vel[1], b.vel[2], e.pos[1]);
-                let (_, _, n15) = local(&self.flock, 15.0);
-                let c = self.flock.centre().0;
-                let to_c = sub(c, e.pos);
-                println!(
-                    "round {} centre_dist {:.1} centre_in_view_z {:.1} cx {:.0} cy {:.0}",
-                    n15,
-                    length(sub(c, b.pos)),
-                    dot(to_c, e.fwd),
-                    dot(to_c, e.right) * e.focal / dot(to_c, e.fwd),
-                    dot(to_c, e.up) * e.focal / dot(to_c, e.fwd)
-                );
-            }
+            self.count(ctx);
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
