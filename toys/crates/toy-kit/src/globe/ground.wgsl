@@ -4,6 +4,7 @@
 // By night (U.pad.x, DEMANDS.md D4) the N_ palette: the land a dark slate shaded by the month's picture,
 // the sea darker and the abyss darkest, the ice a pale grey-blue, the coast a faint line, the air's glow
 // at the limb, the page near-black; the cities' lights come with their sheet (Terra's night.jpg).
+// In the Growth look (U.pad.z, Terra's own globe) the Earth is one glossy form on black (growth_globe).
 
 @group(0) @binding(0) var<uniform> U: View;
 @group(1) @binding(0) var geoTex: texture_2d<f32>;
@@ -165,8 +166,8 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     if (growth > 0.0) {
         // the picture's broad colour, a couple of mips coarser than the pixel's own (no finer, or the
         // land reads as a photograph; no coarser, or its texels show as blocks close in)
-        let glod = clamp(alod + 2.5, 0.0, 4.0);
-        let broad = mix(textureSampleLevel(landA, linearS, G.uv, glod).rgb, textureSampleLevel(landB, linearS, G.uv, glod).rgb, U.time.w);
+        let blod = clamp(alod + 2.5, 0.0, 4.0);
+        let broad = mix(textureSampleLevel(landA, linearS, G.uv, blod).rgb, textureSampleLevel(landB, linearS, G.uv, blod).rgb, U.time.w);
         col = mix(col, growth_globe(G.v, landa, broad, height, ice, hill, lightsRaw, night), growth);
     }
     // the rim, against the page
