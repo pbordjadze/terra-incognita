@@ -21,7 +21,14 @@ pub const DRAWINGS_HZ: f64 = 12.0;
 const SHOT_S: f64 = 9.0;
 
 pub fn new(gpu: &toy_kit::Gpu, size: [u32; 2]) -> Film {
-    Film::new(gpu, "beflix", include_str!("beflix.wgsl"), CELLS, DRAWINGS_HZ, size)
+    Film::new(
+        gpu,
+        "beflix",
+        include_str!("beflix.wgsl"),
+        CELLS,
+        DRAWINGS_HZ,
+        size,
+    )
 }
 
 /// The film's values for drawing `d`: which shot (how it is dyed), and whether the gate weaves.

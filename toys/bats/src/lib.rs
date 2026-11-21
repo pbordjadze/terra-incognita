@@ -4,9 +4,10 @@
 //! swerve, and their swerve runs on down the stream from bat to bat.
 //!
 //! `colony.rs` is the bats (their rules), `land.wgsl` the sky and the land, `sound.rs` the detector's
-//! clicks. The watcher stands on a rise `EYE` metres up, the cave's mouth `colony::CAVE_Z` ahead.
+//! clicks, `pinscreen.rs` draws it all on Alexeieff and Parker's pinscreen. The watcher stands on a rise `EYE` metres up, the cave's mouth `colony::CAVE_Z` ahead.
 
 pub mod colony;
+pub mod pinscreen;
 pub mod sound;
 
 use colony::{len, Colony, Stage, CAVE_X, CAVE_Z};
@@ -53,6 +54,8 @@ pub struct Bats {
     t: f64,
     size_pt: [f64; 2],
     swerves: f32,
+    film: toy_kit::film::Film,
+    reduce_motion: bool,
 }
 
 /// The camera: points a radian (focal length), and the pitch up.
@@ -201,43 +204,78 @@ impl Bats {
                     (c[1] + fwd[1] * a * half + across[1] * x * half) * k,
                 ]
             };
-            let col = [0.03, 0.022, 0.02, 0.97 * fade];
+            // a dark hawk, drawn again pale inside: pins pushed flush within a shadowed edge, so it
+            // reads against the deep sky and the lamplit one alike
             let sweep = fold * 0.6;
-            let w = (0.07 * half * k).max(1.0);
-            for sd in [-1.0f32, 1.0] {
-                // the wing, filled: from the body out to its leading edge (bent at the wrist) and
-                // its trailing edge, the hand swept back to a tip
-                let wrist = [0.16 - sweep * 0.3 + beat, sd * (0.5 - fold * 0.15)];
-                let tip = [-0.2 - sweep + beat, sd * (1.0 - fold * 0.35)];
-                for j in 0..=6 {
-                    let u = j as f32 / 6.0;
-                    let root = [0.14 - 0.34 * u, sd * 0.05];
-                    // the leading edge to the wrist and on to the tip; the trailing edge back in
-                    let out = if u < 0.5 {
-                        let v = u / 0.5;
-                        [
-                            wrist[0] + (tip[0] - wrist[0]) * v,
-                            wrist[1] + (tip[1] - wrist[1]) * v,
-                        ]
-                    } else {
-                        let v = (u - 0.5) / 0.5;
-                        [
-                            tip[0] + (-0.22 - tip[0]) * v,
-                            tip[1] + (sd * 0.3 - tip[1]) * v,
-                        ]
-                    };
+            for (col, wk) in [
+                ([0.03, 0.022, 0.02, 0.97 * fade], 2.6),
+                ([0.86, 0.84, 0.8, 0.95 * fade], 1.0),
+            ] {
+                let w = (0.07 * half * k).max(1.0) * wk;
+                for sd in [-1.0f32, 1.0] {
+                    // the wing, filled: from the body out to its leading edge (bent at the wrist) and
+                    // its trailing edge, the hand swept back to a tip
+                    let wrist = [0.16 - sweep * 0.3 + beat, sd * (0.5 - fold * 0.15)];
+                    let tip = [-0.2 - sweep + beat, sd * (1.0 - fold * 0.35)];
+                    for j in 0..=6 {
+                        let u = j as f32 / 6.0;
+                        let root = [0.14 - 0.34 * u, sd * 0.05];
+                        // the leading edge to the wrist and on to the tip; the trailing edge back in
+                        let out = if u < 0.5 {
+                            let v = u / 0.5;
+                            [
+                                wrist[0] + (tip[0] - wrist[0]) * v,
+                                wrist[1] + (tip[1] - wrist[1]) * v,
+                            ]
+                        } else {
+                            let v = (u - 0.5) / 0.5;
+                            [
+                                tip[0] + (-0.22 - tip[0]) * v,
+                                tip[1] + (sd * 0.3 - tip[1]) * v,
+                            ]
+                        };
+                        self.painter
+                            .line(at(root[0], root[1]), at(out[0], out[1]), w, 1.0, col);
+                    }
+                }
+                // the body, the head ahead, the fanned tail behind
+                self.painter
+                    .line(at(0.28, 0.0), at(-0.25, 0.0), w * 1.8, 1.0, col);
+                for x in [-0.12f32, -0.04, 0.04, 0.12] {
                     self.painter
-                        .line(at(root[0], root[1]), at(out[0], out[1]), w, 1.0, col);
+                        .line(at(-0.2, 0.0), at(-0.55, x), w * 1.1, 1.0, col);
                 }
             }
-            // the body, the head ahead, the fanned tail behind
-            self.painter
-                .line(at(0.28, 0.0), at(-0.25, 0.0), w * 1.8, 1.0, col);
-            for x in [-0.12f32, -0.04, 0.04, 0.12] {
-                self.painter
-                    .line(at(-0.2, 0.0), at(-0.55, x), w * 1.1, 1.0, col);
-            }
         }
+    }
+
+    /// The dusk, the bats and the hawks as drawn before the pinscreen, into `target`.
+    fn draw_scene(
+        &mut self,
+        ctx: &Ctx,
+        enc: &mut wgpu::CommandEncoder,
+        target: &wgpu::TextureView,
+    ) {
+        let gpu = &ctx.gpu;
+        let k = ctx.ppp as f32;
+        let size = [ctx.width, ctx.height];
+        let (f, pitch) = camera(self.size_pt);
+        let dusk = self.dusk();
+        self.sky.render(
+            gpu,
+            enc,
+            target,
+            size,
+            &BackdropParams {
+                time: self.t as f32,
+                scale: 1.0,
+                center: [0.0, 0.0],
+                p: [f * k, pitch, dusk, EYE, CAVE_Z, 7.0, CAVE_X, 0.0],
+            },
+        );
+        self.paint_bats(k, f);
+        self.paint_hawks(k, f);
+        self.painter.render(gpu, enc, target, size, None);
     }
 
     /// 0 as the toy opens (the sun just down), 1 at the deepest it goes.
@@ -263,11 +301,14 @@ impl Toy for Bats {
             t: 0.0,
             size_pt: ctx.points(),
             swerves: 0.0,
+            film: pinscreen::new(gpu, [ctx.width, ctx.height]),
+            reduce_motion: ctx.reduce_motion,
         })
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.size_pt = ctx.points();
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
     }
 
     fn pointer(&mut self, _ctx: &mut Ctx, e: PointerEvent) {
@@ -375,28 +416,17 @@ impl Toy for Bats {
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
-        let gpu = &ctx.gpu;
-        let k = ctx.ppp as f32;
-        let size = [ctx.width, ctx.height];
-        let (f, pitch) = camera(self.size_pt);
-        let dusk = self.dusk();
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        self.sky.render(
-            gpu,
-            &mut enc,
-            target,
-            size,
-            &BackdropParams {
-                time: self.t as f32,
-                scale: 1.0,
-                center: [0.0, 0.0],
-                p: [f * k, pitch, dusk, EYE, CAVE_Z, 7.0, CAVE_X, 0.0],
-            },
-        );
-        self.paint_bats(k, f);
-        self.paint_hawks(k, f);
-        self.painter.render(gpu, &mut enc, target, size, None);
-        gpu.queue.submit([enc.finish()]);
+        self.reduce_motion = ctx.reduce_motion;
+        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+        // a new frame of pins twelve times a second, each photographed twice
+        if let Some(d) = self.film.due(self.t) {
+            let scene = self.film.scene.clone();
+            self.draw_scene(ctx, &mut enc, &scene);
+            let v = pinscreen::values(self.dusk(), self.reduce_motion);
+            self.film.read(&ctx.gpu, &mut enc, d, v);
+        }
+        self.film.film(&mut enc, target);
+        ctx.gpu.queue.submit([enc.finish()]);
     }
 
     fn synth(&mut self) -> Option<Box<dyn Synth>> {

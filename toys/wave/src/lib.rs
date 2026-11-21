@@ -395,7 +395,8 @@ impl Toy for Wave {
         if let Some(d) = self.film.due(self.t) {
             let scene = self.film.scene.clone();
             self.draw_scene(ctx, &mut enc, &scene);
-            self.film.read(&ctx.gpu, &mut enc, d, beflix::values(d, self.reduce_motion));
+            self.film
+                .read(&ctx.gpu, &mut enc, d, beflix::values(d, self.reduce_motion));
         }
         self.film.film(&mut enc, target);
         ctx.gpu.queue.submit([enc.finish()]);

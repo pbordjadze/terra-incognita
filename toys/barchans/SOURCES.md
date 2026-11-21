@@ -24,3 +24,20 @@ after a long run from scattered heaps, built by `cargo run --release -p barchans
 
 The pace (years in seconds), the scene's turn (the wind runs down the screen), the sun, the colours, the
 grains blowing. The wind's direction once you drag it is yours.
+
+## The look: ink-wash (after the real films; the details drawn)
+
+- **Ink-wash animation** (水墨动画): *Little Tadpoles Looking for Mama* (小蝌蚪找妈妈), "a short Chinese
+  animated film produced by Shanghai Animation Film Studio in 1960 under the artistic guidance of Te
+  Wei", in "a painterly style influenced by Qi Baishi"; technical guidance Qian Jiajun
+  (https://en.wikipedia.org/wiki/Tadpoles_Searching_for_Mother; the Ink wash page gives 1961). How
+  each frame was made was kept close: "The techniques were even regarded as a 'state secret'"; later
+  films include *The Cowboy's Flute* (1963) and *Feeling from Mountain and Water* (1988), called "the
+  last water-ink animation" (https://en.wikipedia.org/wiki/Ink_wash_animation).
+- **Here** (`src/dunes.wgsl`, `ink_wash`): the same field and sun as before, painted instead of lit. A
+  pale wash on each dune's back deepening toward the crest, a dark wash where the sun does not reach,
+  thickest high on the slip face, a dry-brush stroke along each brink, washes pooling a little where
+  they stop, pigment settling in the paper's tooth, warm mottled paper, a vermilion seal of cut
+  strokes (no characters). All of it drawn: no page found says how the studio's washes were built, so
+  this is a painter's reading of the finished films, not their method.
+

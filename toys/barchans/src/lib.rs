@@ -239,7 +239,7 @@ impl Toy for Barchans {
             ],
             p: [d.wind[0], d.wind[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         };
-        // the grains: short pale streaks, faint, along the wind
+        // the grains: short flicks of ink, faint, along the wind
         let len = 0.9 + 1.6 * self.gust;
         for g in &self.grains {
             let a = (g.age / g.life * std::f32::consts::PI).sin() * (0.10 + 0.18 * self.gust);
@@ -249,7 +249,7 @@ impl Toy for Barchans {
             ];
             let p1 = [p0[0] - d.wind[0] * len * s, p0[1] - d.wind[1] * len * s];
             self.painter
-                .glow(p0, p1, 0.18 * s, 0.25 * s, [1.0, 0.93, 0.78, a]);
+                .glow(p0, p1, 0.10 * s, 0.12 * s, [0.08, 0.08, 0.09, a * 1.6]);
         }
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());

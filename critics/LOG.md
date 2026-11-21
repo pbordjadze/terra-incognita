@@ -92,3 +92,27 @@ Maker's answer: taken: the concourses and every fourth row's step drawn lighter,
 ## The Wave as a BEFLIX film · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
 First: a tinted night bowl built out of typed glyphs; cyan and amber shots feel like Poem Field; the dark pitch reads against the stands | Weakest: the wave a smooth solid slab; near lights like city windows | Change: build the wave from the glyph ramp with a ragged edge; a finer near crowd | Era: partly | Ship: no
 Maker's answer: taken: the scale lowered so only the brightest cells are solid; the wave is now a core of blocks frayed through @ # X + at its edges. Declined: a finer near crowd (each near seat is many cells; the toy's camera) · Conductor: done, three rounds (the cap); the camera's legibility of the bowl, flagged by all three, carried to the owner
+
+## Bats on a pinscreen · Round 1 · 2026-11-21 ET · build first · critic fresh
+First: reads as a grey particle sim behind a canvas filter, drifted from the approved still's dark board and single glow | Weakest: a flat pale sky over three quarters; bats crisp sprites over unchanged pins; a uniform screen-door weave; the hawk hardly there | Change: mostly deep board with one raking glow; bats as darkening of the pins; the hawk a clear silhouette | Ship: no
+Maker's answer: taken: each pin reads a little past its square, so a bat a pixel wide pushes its pin; the pins lean each their own way; a steeper tone curve; a pale ground carved round the hawk. Declined: a new landscape (the toy's own) · Conductor: continue
+
+## Bats on a pinscreen · Round 2 · 2026-11-21 ET · build round 1 fixes · critic fresh
+First: a particle sim on embossed paper | Weakest: a woven texture of equal strength over every flat tone; bats same-size chips; the hawk's bright halo reads as a cursor; cream-sepia, no true blacks | Change: smooth flats with the pins showing at edges; bats merging into velvet; no halo; black and white | Ship: no
+Maker's answer: taken: from the camera's distance the blades run together into a smooth tone, the pins showing where the tone changes; deep blacks and neutral whites; the halo fainter and wider. Declined: the column's shape and the streams (the sim) · Conductor: continue
+
+## Bats on a pinscreen · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
+First: still a silhouette photograph, not light raking across pins | Weakest: a bright sky to the horizon where the approved still is mostly black with light pooled low; bats separate blobs; the halo no pin could make; a hard cave ellipse | Change: the frame deep with one pool of light low by the cave; a softer crowd; the hawk modelled in greys | Ship: no
+Maker's answer: taken: the lamp pooled low over the cave with the rest of the board deep, as the approved still; the crowd read over a wider footprint, softer; the halo gone, the hawk drawn pale inside a dark edge (pins flush within a shadow), which reads against the deep sky and the glow alike. Declined: the land's and cave's shapes (the toy's scene) · Conductor: done, three rounds (the cap); checked by eye after the fixes against the approved still; the land and the crowd's grain carried to the owner
+
+## Barchans in ink-wash · Round 1 · 2026-11-21 ET · build first · critic fresh
+First: grey clay embossed into paper | Weakest: dunes shaded relief with lumpy speckle and a hard outline; the slip face a black blot like a burn; shapes read as tents; paper crosshatched like a screen | Change: one graded wash per dune; the dark a stroke along the crest fading out; real fibre; the seal higher and smaller | Ship: no
+Maker's answer: taken: washes laid by height softened over a few cells, not by light; the dark wash thickest high on the slip face; sparse fibres; the seal moved up clear of the corner mark. Declined: the dunes' shapes (the sim) · Conductor: continue
+
+## Barchans in ink-wash · Round 2 · 2026-11-21 ET · build round 1 fixes · critic fresh
+First: the paper and the restraint are close; airbrushed blobs, not brushwork | Weakest: horns faint, crescents lost; Gaussian washes with no tide line or dry brush; the slip face a hole; every dune the same grey; stray specks | Change: darkest ink on the inner arc; a tide line; dry brush on the backs; tall dunes heavy, small ones ghost-pale; no specks | Ship: no
+Maker's answer: taken: darkness grows with the slip face's height, so tall dunes carry near-black under their brinks and small ones stay pale; the specks gone; a tide line and downwind dry-brush streaks tried · Conductor: continue
+
+## Barchans in ink-wash · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
+First: the paper, the empty space and the seal's place are right; the ink is not | Weakest: a dashed outline round every dune (the tide line); straight streaks like a smudge tool; the slip face a small sharp pocket; mid-greys only; a timid seal | Change: no outline; strokes along the arc; the deepest ink a band along the lee curve; near-black accents and near-vanishing washes; a seal half again as large | Ship: no
+Maker's answer: taken: the tide line and the streaks removed; the back a clear pale wash with its own soft edge; the slip faces deeper toward near-black; the seal larger, stronger, its edges broken. Not taken: strokes following each crescent's arc (needs the dune's own geometry, a further pass) · Conductor: done, three rounds (the cap); checked by eye after the fixes (crescents read as pale washes with dark lee curves); brushwork along the arc carried to the owner

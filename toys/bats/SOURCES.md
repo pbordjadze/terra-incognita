@@ -39,3 +39,24 @@ the bats are worked out from the constants and rules in `src/`.
   too high to hear: short tones of 1.7–4 kHz, more of them the more bats are low in the column, a
   flurry when a ripple runs. Under them, crickets; the air past the hawk when it dives. All synthesised
   in `sound.rs`; no recordings.
+
+## The look: a pinscreen film (after the real method; the details drawn)
+
+- **The pinscreen**, made by Alexandre Alexeieff and Claire Parker, "between 1932 (first tests) and
+  1935" (https://en.wikipedia.org/wiki/Pinscreen_animation); the patents were in Parker's name
+  (https://en.wikipedia.org/wiki/Claire_Parker). Their first pinscreen film was *Une nuit sur le mont
+  chauve* (Night on Bald Mountain, 1933), which "took the couple two years to make"
+  (https://en.wikipedia.org/wiki/Alexandre_Alexeieff).
+- **How a picture is made**: "The screen is lit from the side so that the pins cast shadows", and
+  "The white screen becomes darker the farther the pins are pushed out"; the films "have a monochrome
+  nature, due to the images being created using shadows over a white surface". Frames are made "one at
+  a time, each frame being the incremental modification of the previous one", the pins pressed with
+  tools (Pinscreen_animation, above). Screens have had "between 240,000 and 1 million" pins (Claire_Parker).
+- **Here** (`src/pinscreen.rs`, `pinscreen.wgsl`, on the kit's `film`): the dusk is drawn as before, then
+  read into 360 pins across the screen's short side, each pushed out as far as the picture is dark
+  beneath it; each pin's shadow falls down and to the right, up to 4.6 pins long. Drawn, not sourced:
+  the pin count and spacing (rows offset by half), the shadows' direction and length, the pins' small
+  lean, the lamp pooled low over the cave, the sparkle of pin heads, twelve frames a second (each shown
+  twice), the grain and flicker, the hawk drawn pale inside a dark edge so it reads against both the
+  deep sky and the glow. Pins pushed by a program, not by hand: the toy's picture of the method.
+

@@ -211,8 +211,14 @@ impl Film {
         if size == self.size {
             return;
         }
-        let (scene, surface, a, b, g) =
-            Self::targets(gpu, &self.layout, &self.ubuf, &self.sampler, size, self.cells);
+        let (scene, surface, a, b, g) = Self::targets(
+            gpu,
+            &self.layout,
+            &self.ubuf,
+            &self.sampler,
+            size,
+            self.cells,
+        );
         (self.scene, self.surface, self.to_surface, self.to_film) = (scene, surface, a, b);
         self.size = size;
         self.grid = g;
