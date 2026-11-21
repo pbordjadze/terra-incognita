@@ -241,8 +241,9 @@ impl Catatumbo {
         if !self.opened && self.t >= OPENING_S {
             self.opened = true;
             let s = self.size_pt;
-            self.strike_at(ctx, [s[0] * 0.5, s[1] * 0.6], None, 1.0);
-            if let Some(o) = self.strikes.last_mut() {
+            // (0.9: as bright as a touch's, but no buzz, since nobody touched)
+            self.strike_at(ctx, [s[0] * 0.5, s[1] * 0.6], None, 0.9);
+            if let Some(o) = self.strikes.last_mut().filter(|_| !self.reduce_motion) {
                 // it strikes again down the same channel, as a held finger's does
                 let first = o.strokes[0];
                 o.strokes.extend([first + 0.11, first + 0.27, first + 0.42]);

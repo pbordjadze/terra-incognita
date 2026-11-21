@@ -74,6 +74,13 @@ impl Bubblers {
         (c, zoom)
     }
 
+    /// Where a place on the beach is heard, left (-1) to right (1) of the screen as it is now.
+    fn pan(&self, at: [f32; 2]) -> f32 {
+        let (c, z) = self.view();
+        let half = self.size_pt[0] as f32 / self.k * 0.5;
+        ((at[0] - c[0]) * z / half).clamp(-1.0, 1.0)
+    }
+
     /// A point on screen (points) as a place on the beach (cm).
     fn cm(&self, p: [f64; 2]) -> [f32; 2] {
         let (c, z) = self.view();
@@ -90,7 +97,7 @@ impl Bubblers {
             amp,
             tau: 0.07,
             bright: 0.55,
-            pan: (at[0] / self.beach.w * 2.0 - 1.0) * 0.7,
+            pan: self.pan(at) * 0.7,
         }
     }
 }
@@ -199,7 +206,7 @@ impl Toy for Bubblers {
                 amp: 0.10 + 0.08 * h,
                 tau: 0.0035,
                 bright: 0.75 + 0.25 * h,
-                pan: (p[0] / self.beach.w * 2.0 - 1.0) * 0.8,
+                pan: self.pan(*p) * 0.8,
             });
         }
         let bolted = self.beach.bolted.len();
