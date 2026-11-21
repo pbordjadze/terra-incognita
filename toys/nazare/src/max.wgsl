@@ -47,16 +47,26 @@ fn blocks(q: vec2<f32>) -> array<vec4<f32>, 3> {
 }
 
 // The blocks smoothed (a cubic B-spline from four bilinear taps): the field's cells are 50 m, and a crest's
-// slope read from straight bilinear steps cell by cell, which up close shows as facets.
-fn tap(c: vec2<f32>, block: f32) -> array<vec4<f32>, 3> {
-  let cells = u.grid.xy;
-  let cc = clamp(c, vec2(0.5), cells - vec2(0.5));
-  let ux = cc.x / (3.0 * cells.x);
-  let uy = cc.y / cells.y;
-  let a = textureSampleLevel(field, samp, vec2(ux, uy), 0.0);
-  let b = textureSampleLevel(field, samp, vec2(ux + 1.0 / 3.0, uy), 0.0);
-  let k = textureSampleLevel(field, samp, vec2(ux + 2.0 / 3.0, uy), 0.0);
-  return array<vec4<f32>, 3>(a * block, b * block, k * block);
+// slope read from straight bilinear steps cell by cell, which up close shows as facets. The taps are
+// filtered here, not by the sampler: a sampler's weights are a few bits, so across a wave's face (well under
+// a cell) its phase would step, streaking the face.
+fn texel(x: i32, y: i32, block: i32) -> vec4<f32> {
+  let cells = vec2<i32>(u.grid.xy);
+  let xx = clamp(x, 0, cells.x - 1) + block * cells.x;
+  return textureLoad(field, vec2(xx, clamp(y, 0, cells.y - 1)), 0);
+}
+
+fn tap(c: vec2<f32>, wt: f32) -> array<vec4<f32>, 3> {
+  let p = c - vec2(0.5);
+  let i = vec2<i32>(floor(p));
+  let f = p - floor(p);
+  var out: array<vec4<f32>, 3>;
+  for (var b = 0; b < 3; b++) {
+    let top = mix(texel(i.x, i.y, b), texel(i.x + 1, i.y, b), f.x);
+    let bot = mix(texel(i.x, i.y + 1, b), texel(i.x + 1, i.y + 1, b), f.x);
+    out[b] = mix(top, bot, f.y) * wt;
+  }
+  return out;
 }
 
 fn blocks_smooth(q: vec2<f32>) -> array<vec4<f32>, 3> {
@@ -175,7 +185,8 @@ fn elevation_index(e: f32, base: f32) -> f32 {
       let t = t0 * pow(t1 / t0, f32(j) / f32(n));
       let p = eye + d * t;
       var sz = 0.0;
-      if (t < 300.0) { sz = sea_smooth(p.xy, t).z; } else { sz = sea_at(p.xy, t).z; }
+      // up close, filtered exactly (as the shading is), so a thin lip isn't stepped over
+      if (t < 400.0) { sz = sea_from(tap(p.xy / u.grid.z, 1.0), p.xy, t).z; } else { sz = sea_at(p.xy, t).z; }
       if (p.z < sz) { hi = t; hit = true; break; }
       lo = t;
     }

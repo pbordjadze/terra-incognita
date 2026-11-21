@@ -58,3 +58,6 @@ Found in the build as merged: the drag barely read (sideways and up-and-down axe
 
 ## Round 1 · 2026-11-21 ET · build cc98520 (branch claude/project-thread-6gvwz8) · critic: fresh subagent
 First: the sunset palette at once; swell lines moving in the first two seconds; the drop lands as "something big" | Weakest: the wall reads as a striped blue slab, a cliff, with the surfer perched on top; no land, so nothing says Nazaré | Change: a breaking wave (a sloped face steepening to a lip, white water, the surfer riding the face); second, the headland and lighthouse in view | Couldn't judge: the swipe's feel, frame rate, sound, the camera's motion | Ship: no
+
+## Round 2 · 2026-11-21 ET · build 14a20b1 · critic: fresh subagent
+First: the palette at once; calm swell lines; a lit lighthouse on a dark slab that reads as a marker; the drop still lands | Weakest: the wave still a striped blue slab with a grey cap (round 1's point, partly fixed: the surfer is on the face now) | Change: a giant breaking wave: a face sloping up into a lip, white water, the surfer ahead of it; second, the headland as a cliff with the fort at the frame's edge | Couldn't judge: swipe feel and wait, whether the short flick reads as "nothing stacked", the canyon-off switch, sound | Ship: no

@@ -55,7 +55,7 @@ const STAY_S: f64 = 3.2;
 /// Where a peak can stand: the depths (m) where the big waves break, off the beach.
 const PEAK_DEPTH: (f64, f64) = (10.0, 40.0);
 /// A peak stacks (and the camera goes down for it) once its waves are this near breaking.
-const STACKS: f64 = 0.8;
+const STACKS: f64 = 0.6;
 /// The sun: its bearing, and its height from the start (degrees), going down this fast (degrees a minute)
 /// until it holds at dusk.
 /// The lighthouse's tower on the fort (m).
@@ -63,7 +63,7 @@ const LIGHT_TALL_M: f32 = 9.0;
 /// Where the fort's view is from: back from the lighthouse up the headland (m east, m south).
 const FORT_BACK_M: [f32; 2] = [260.0, 30.0];
 /// Where the fort looks, from the lighthouse (m east, m south).
-const FORT_AIM_M: [f32; 2] = [-300.0, -60.0];
+const FORT_AIM_M: [f32; 2] = [-300.0, -200.0];
 /// Where the camera waits low in the channel: this far ahead of the peak and this far to its side (m).
 const WALL_AHEAD_M: f32 = 75.0;
 const WALL_SIDE_M: f32 = 45.0;
@@ -301,7 +301,7 @@ impl Nazare {
                 let hh = self.field.crossed(i);
                 let near = self.field.nearness(&self.floor, i);
                 if near >= STACKS
-                    && self.field.height_back[i] > 1.0
+                    && self.field.height_back[i] > 0.5
                     && best.is_none_or(|(_, b)| hh > b)
                 {
                     best = Some((i, hh));

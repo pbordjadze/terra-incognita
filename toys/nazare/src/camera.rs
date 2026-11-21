@@ -228,12 +228,12 @@ impl Nazare {
         };
         let k = cam.px_per_m(dist);
         let red = [0.42, 0.08, 0.06, 1.0];
-        let wall = [0.62, 0.58, 0.52, 1.0];
+        let wall = [0.22, 0.2, 0.2, 1.0];
         // the fort's low wall, then the tower on it
         self.painter.line(
             [foot[0] - 14.0 * k, foot[1]],
             [foot[0] + 14.0 * k, foot[1]],
-            (2.0 * k).max(0.6 * ppp),
+            (3.0 * k).max(0.6 * ppp),
             0.5 * ppp,
             wall,
         );

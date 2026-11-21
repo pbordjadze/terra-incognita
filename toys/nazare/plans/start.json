@@ -18,7 +18,7 @@
    "for": 0.6
   },
   {
-   "t": 28.0,
+   "t": 31.0,
    "drag": [
     [
      195,
@@ -74,15 +74,15 @@
    "name": "fort-again"
   },
   {
-   "t": 23.5,
+   "t": 26,
    "name": "second-wall"
   },
   {
-   "t": 35,
+   "t": 37.5,
    "name": "short-swell"
   },
   {
-   "t": 47,
+   "t": 47.5,
    "name": "northwest"
   }
  ],
