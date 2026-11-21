@@ -53,3 +53,8 @@ Found in the build as merged: the drag barely read (sideways and up-and-down axe
 - The one change: one big wave you can follow in, visibly bigger, breaking as a moving white line.
 - Ship as is? No.
 - Done, and called: the lighthouse's flash smaller; the peak kept to where the waves break, so the lip and spray stay in the surf. Three rounds: called, the weakest thing structural three rounds running: a map from above can show where the swell goes but not how tall a wave is. Left for the owner: whether Nazaré should be seen from the fort, low over the water, where people watch it.
+
+# The rebuild (Nov 21): the fort, dropping to the wall, drawn the way Max drew Carla's Island
+
+## Round 1 · 2026-11-21 ET · build cc98520 (branch claude/project-thread-6gvwz8) · critic: fresh subagent
+First: the sunset palette at once; swell lines moving in the first two seconds; the drop lands as "something big" | Weakest: the wall reads as a striped blue slab, a cliff, with the surfer perched on top; no land, so nothing says Nazaré | Change: a breaking wave (a sloped face steepening to a lip, white water, the surfer riding the face); second, the headland and lighthouse in view | Couldn't judge: the swipe's feel, frame rate, sound, the camera's motion | Ship: no

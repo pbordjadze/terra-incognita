@@ -85,12 +85,16 @@ fn blocks_smooth(q: vec2<f32>) -> array<vec4<f32>, 3> {
 // (Stokes' second order).
 fn shape(u0: f32, lean: f32, ka: f32) -> vec3<f32> {
   let v = u0 - TAU * floor((u0 + 3.14159265) / TAU);
-  let wf = 3.14159265 * (1.0 - 0.9 * lean);
-  let front = cos(clamp(-v / wf, 0.0, 1.0) * 3.14159265);
+  let wf = 3.14159265 * (1.0 - 0.8 * lean);
+  // the face concave as a breaking wave's: steepest under the lip, easing into the trough
+  let x = clamp(-v / wf, 0.0, 1.0);
+  let front = mix(cos(x * 3.14159265), 2.0 * pow(1.0 - x, 2.2) - 1.0, lean);
   let e = select(front, cos(v), v >= 0.0);
   let front_face = select(0.0, 1.0 - clamp(-v / wf, 0.0, 1.0), v < 0.0);
   let behind = select(0.0, 1.0 - clamp(v / 1.9, 0.0, 1.0), v >= 0.0);
-  return vec3(e + 0.5 * ka * (2.0 * e * e - 1.0), front_face, behind);
+  // near breaking the crest pitches forward: its top runs a little ahead of the face below it
+  let lip = 0.35 * lean * lean * exp(-pow((v + 0.12 * wf) / (0.08 * wf + 0.02), 2.0));
+  return vec3(e + lip + 0.5 * ka * (2.0 * e * e - 1.0), front_face, behind);
 }
 
 fn sea_at(q: vec2<f32>, far: f32) -> Sea {
@@ -165,13 +169,14 @@ fn elevation_index(e: f32, base: f32) -> f32 {
   var lo = t0;
   var hi = t1;
   var hit = false;
-  let n = 72;
+  let n = 96;
   if (t1 > t0) {
     for (var j = 1; j <= n; j++) {
       let t = t0 * pow(t1 / t0, f32(j) / f32(n));
       let p = eye + d * t;
-      let s = sea_at(p.xy, t);
-      if (p.z < s.z) { hi = t; hit = true; break; }
+      var sz = 0.0;
+      if (t < 300.0) { sz = sea_smooth(p.xy, t).z; } else { sz = sea_at(p.xy, t).z; }
+      if (p.z < sz) { hi = t; hit = true; break; }
       lo = t;
     }
   }
@@ -199,7 +204,9 @@ fn elevation_index(e: f32, base: f32) -> f32 {
     if (s.ground < 6.0) { m = 0.0; } else if (steep > 0.22) { m = 1.0; }
     let to_light = length(p.xy - u.size.zw);
     if (m == 2.0 && p.y > u.size.w + 120.0 && to_light < 1800.0) { m = 3.0; }
-    let lam = clamp(dot(nrm, sun), 0.0, 1.0) * 0.6 + 0.4 * nrm.z;
+    // the floor's 50 m cells are smooth: fields, scrub and rock break the light in patches
+    let patches = sin(p.x * 0.09 + 1.3 * sin(p.y * 0.05)) * sin(p.y * 0.11 + 1.1 * sin(p.x * 0.04));
+    let lam = clamp(dot(nrm, sun), 0.0, 1.0) * 0.6 + 0.4 * nrm.z + 0.12 * patches;
     idx = 128.0 + m * 16.0 + clamp(floor(lam * 15.99), 0.0, 15.0);
     return vec4(idx / 255.0, 0.0, 0.0, 1.0);
   }
@@ -228,8 +235,8 @@ fn elevation_index(e: f32, base: f32) -> f32 {
   let breaking = smoothstep(0.7, 0.95, s.near);
   let churn = 0.5 + 0.5 * sin(p.x * 0.11 + p.y * 0.07 + u.eye.w * 0.8) * sin(p.x * 0.05 - p.y * 0.13);
   // the lip only at the face's top: the face itself stays dark, as a standing wall's does
-  let lip = smoothstep(0.85, 0.97, s.front);
-  let white = breaking * (s.crest * lip * 1.3 + 0.9 * s.behind * churn);
+  let lip = smoothstep(0.9, 0.96, s.front);
+  let white = breaking * (lip * 1.2 + 0.9 * s.behind * churn);
   if (white > 0.55) {
     let lit = clamp(dot(nrm, sun) * 0.5 + 0.5, 0.0, 1.0);
     idx = 208.0 + clamp(floor(lit * 15.99), 0.0, 15.0);

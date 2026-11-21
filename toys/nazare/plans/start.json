@@ -1,22 +1,90 @@
 {
  "_": "Nazaré from the start: from the fort by the lighthouse, a long winter swell from the west-north-west bending in over the shelf; its set stacks off Praia do Norte and the camera drops to the channel to see the wave stand, then climbs back. Then swipes send swells in: a long one (its set stacking again), a short one (crossing the canyon, nothing stacks), a long one from the north-west.",
- "seconds": 44,
+ "seconds": 50,
  "fps": 10,
  "events": [
-  {"t": 12.0, "drag": [[60, 250], [260, 620]], "for": 0.6},
-  {"t": 24.0, "drag": [[195, 370], [200, 410]], "for": 0.25},
-  {"t": 32.0, "drag": [[330, 200], [120, 600]], "for": 0.6}
+  {
+   "t": 12.0,
+   "drag": [
+    [
+     60,
+     250
+    ],
+    [
+     260,
+     620
+    ]
+   ],
+   "for": 0.6
+  },
+  {
+   "t": 28.0,
+   "drag": [
+    [
+     195,
+     370
+    ],
+    [
+     200,
+     410
+    ]
+   ],
+   "for": 0.25
+  },
+  {
+   "t": 38.0,
+   "drag": [
+    [
+     330,
+     200
+    ],
+    [
+     120,
+     600
+    ]
+   ],
+   "for": 0.6
+  }
  ],
- "film": { "from": 0.0, "to": 12.0, "every": 0.1, "fingers": true },
+ "film": {
+  "from": 0.0,
+  "to": 12.0,
+  "every": 0.1,
+  "fingers": true
+ },
  "shots": [
-  {"t": 1, "name": "open"},
-  {"t": 3.5, "name": "dropping"},
-  {"t": 5.5, "name": "wall"},
-  {"t": 7, "name": "wall-passing"},
-  {"t": 11, "name": "fort-again"},
-  {"t": 18.5, "name": "second-wall"},
-  {"t": 29, "name": "short-swell"},
-  {"t": 39, "name": "northwest"}
+  {
+   "t": 1,
+   "name": "open"
+  },
+  {
+   "t": 3.5,
+   "name": "dropping"
+  },
+  {
+   "t": 5.5,
+   "name": "wall"
+  },
+  {
+   "t": 7,
+   "name": "wall-passing"
+  },
+  {
+   "t": 11,
+   "name": "fort-again"
+  },
+  {
+   "t": 23.5,
+   "name": "second-wall"
+  },
+  {
+   "t": 35,
+   "name": "short-swell"
+  },
+  {
+   "t": 47,
+   "name": "northwest"
+  }
  ],
  "audio": true
 }

@@ -51,7 +51,8 @@ pub fn build(w: usize, h: usize, cell_m: f64, mut ground: Vec<f32>, light: [f64;
             let i = y * w + x;
             let z = ground[i] as f64;
             // the edge runs seaward (west): the canyon is on its left, the shelf on its right
-            if side < 0.0 && m < CANYON_SIDE_M {
+            // (the sea only: the headland behind the lighthouse stays land)
+            if side < 0.0 && m < CANYON_SIDE_M && z < 0.0 {
                 // the measured edge itself is the wall's face
                 edge_wall[i] = m < EDGE_WALL_M;
                 ground[i] = z.min(-CANYON_DEPTH - 0.2 * m) as f32;

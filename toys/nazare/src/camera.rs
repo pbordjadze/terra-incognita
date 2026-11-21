@@ -3,8 +3,8 @@
 
 use crate::max::{Cam, Look};
 use crate::{
-    sea, Nazare, DROP_LEAD, DROP_S, FORT_AIM_M, GROUP, RATE_FORT, RATE_WALL, STAY_S, WALL_AHEAD_M,
-    WALL_SIDE_M,
+    sea, Nazare, DROP_LEAD, DROP_S, FORT_AIM_M, FORT_BACK_M, GROUP, LIGHT_TALL_M, RATE_FORT,
+    RATE_WALL, STAY_S, WALL_AHEAD_M, WALL_SIDE_M,
 };
 
 impl Nazare {
@@ -24,12 +24,12 @@ impl Nazare {
         let to = [l[0] - peak[0], l[1] - peak[1]];
         let tl = to[0].hypot(to[1]).max(1.0);
         let dir = [to[0] / tl, to[1] / tl];
-        let cliff = [l[0] + 60.0, l[1]];
+        let cliff = [l[0] + FORT_BACK_M[0], l[1] + FORT_BACK_M[1]];
         let ground = self.ground_m(cliff).max(40.0);
         // aimed over the shelf where the peaks stand, between the headland and Praia do Norte, the same
         // whatever the swell, so the fort's view stays put
         let aim = [l[0] + FORT_AIM_M[0], l[1] + FORT_AIM_M[1], 0.0];
-        let fort = Look::at([cliff[0], cliff[1], ground + 20.0], aim, 56.0, 0.15);
+        let fort = Look::at([cliff[0], cliff[1], ground + 20.0], aim, 60.0, 0.1);
         // in the channel beside the peak, a little ahead of it, where the tow teams wait: the wave seen
         // from its shoulder, its face and lip in profile
         let run = self.running(peak);
@@ -168,14 +168,18 @@ impl Nazare {
         }
         let tall = (f.crossed(i) as f32).min(28.0);
         let p = self.at(i);
-        // ahead of the crest by a little, sliding along it (the turned-back train's way, toward the beach)
+        // sliding along the crest (the turned-back train's way, toward the beach)
         let run = self.running(p);
         let along = [-run[1], run[0]];
         let s = (0.45 * f.period - to) as f32 * 5.0 - 30.0;
+        // on the face with the crest as it comes (behind the peak before it gets there), a third of the way
+        // down from the lip
+        let (c, _) = sea::speeds(f.period, self.floor.depth(i).max(1.0));
+        let ahead = (-to * c) as f32 + 9.0;
         let feet = [
-            p[0] + along[0] * s + run[0] * 6.0,
-            p[1] + along[1] * s + run[1] * 6.0,
-            tall * 0.3,
+            p[0] + along[0] * s + run[0] * ahead,
+            p[1] + along[1] * s + run[1] * ahead,
+            tall * 0.12,
         ];
         let Some((at, dist)) = cam.project(feet) else {
             return;
@@ -204,5 +208,39 @@ impl Nazare {
             soft,
             ink,
         );
+    }
+
+    /// The lighthouse on the fort at the headland's tip: a red tower, its lantern lit, so the fort's view
+    /// says where it is.
+    pub(crate) fn draw_lighthouse(&mut self, cam: &Cam, ppp: f32) {
+        if self.down > 0.3 {
+            return;
+        }
+        // just back from the tip, where the 50 m floor still holds the headland
+        let l = self.light_m();
+        let l = [l[0] + 60.0, l[1]];
+        let base = self.ground_m(l).max(0.0);
+        let (Some((foot, dist)), Some((top, _))) = (
+            cam.project([l[0], l[1], base]),
+            cam.project([l[0], l[1], base + LIGHT_TALL_M]),
+        ) else {
+            return;
+        };
+        let k = cam.px_per_m(dist);
+        let red = [0.42, 0.08, 0.06, 1.0];
+        let wall = [0.62, 0.58, 0.52, 1.0];
+        // the fort's low wall, then the tower on it
+        self.painter.line(
+            [foot[0] - 14.0 * k, foot[1]],
+            [foot[0] + 14.0 * k, foot[1]],
+            (2.0 * k).max(0.6 * ppp),
+            0.5 * ppp,
+            wall,
+        );
+        self.painter
+            .line(foot, top, (1.6 * k).max(0.8 * ppp), 0.5 * ppp, red);
+        let lamp = [1.0, 0.86, 0.55, 0.9];
+        self.painter
+            .glow(top, top, (3.0 * k).max(2.0 * ppp), 6.0 * ppp, lamp);
     }
 }

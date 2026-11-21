@@ -58,6 +58,10 @@ const PEAK_DEPTH: (f64, f64) = (10.0, 40.0);
 const STACKS: f64 = 0.8;
 /// The sun: its bearing, and its height from the start (degrees), going down this fast (degrees a minute)
 /// until it holds at dusk.
+/// The lighthouse's tower on the fort (m).
+const LIGHT_TALL_M: f32 = 9.0;
+/// Where the fort's view is from: back from the lighthouse up the headland (m east, m south).
+const FORT_BACK_M: [f32; 2] = [260.0, 30.0];
 /// Where the fort looks, from the lighthouse (m east, m south).
 const FORT_AIM_M: [f32; 2] = [-300.0, -60.0];
 /// Where the camera waits low in the channel: this far ahead of the peak and this far to its side (m).
@@ -371,7 +375,8 @@ impl Nazare {
             return false;
         }
         let from = (mid + off).clamp(FROMS.0, FROMS.1);
-        let k = ((len - SWIPE_MIN) / (0.6 * wide)).clamp(0.0, 1.0);
+        // (eased, so a short flick sends a swell short enough to cross the canyon)
+        let k = ((len - SWIPE_MIN) / (0.6 * wide)).clamp(0.0, 1.0).powf(1.5);
         let period = PERIODS.0 + (PERIODS.1 - PERIODS.0) * k;
         self.want = (period, from);
         true
@@ -550,6 +555,7 @@ impl Toy for Nazare {
         let table = max::palette(sun_el);
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         self.max.render(&ctx.gpu, &mut enc, target, size, u, &table);
+        self.draw_lighthouse(&cam, ppp);
         self.draw_surfer(&cam, ppp);
         self.painter.render(&ctx.gpu, &mut enc, target, size, None);
         ctx.gpu.queue.submit([enc.finish()]);
