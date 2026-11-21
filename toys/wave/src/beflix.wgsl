@@ -82,7 +82,7 @@ fn value(c: vec2<i32>) -> i32 {
 @fragment fn fs_main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let d = p.drawing;
   // the gate's weave: the whole frame a little off, a different way each drawing
-  let wv = (vec2<f32>(hash(vec2<f32>(d, 1.3)), hash(vec2<f32>(d, 7.1))) - 0.5) * p.cell * 0.45 * p.weave;
+  let wv = (vec2<f32>(hash(vec2<f32>(fract(d * 0.0173) * 61.0, 1.3)), hash(vec2<f32>(fract(d * 0.0291) * 53.0, 7.1))) - 0.5) * p.cell * 0.45 * p.weave;
   let px = fc.xy + wv;
   let cf = px / p.cell;
   let c = vec2<i32>(floor(cf));
@@ -104,7 +104,8 @@ fn value(c: vec2<i32>) -> i32 {
   ink = select(ink, 1.0, g == 7);
   var lum = clamp(ink, 0.0, 1.0) * 0.95 + halo * halo * 0.2;
   // the grain, new each drawing
-  lum += (hash(floor(fc.xy) + vec2<f32>(d * 13.7, d * 3.1)) - 0.5) * 0.07;
+  // (the drawing folded small first: a large argument to sin loses its precision on the phone)
+  lum += (hash(floor(fc.xy) + vec2<f32>(fract(d * 0.1373) * 97.0, fract(d * 0.0311) * 89.0)) - 0.5) * 0.07;
   lum = clamp(lum, 0.0, 1.0);
   var rgb = vec3<f32>(lum) * vec3<f32>(1.0, 0.97, 0.9);
   if (p.shot > 0.5) {
