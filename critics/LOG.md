@@ -55,3 +55,15 @@ Maker's answer: taken: 900 cells, not 1400, and the long-exposure streaks bright
 ## The Delta · Round 3 · 2026-11-17 ET · build round 2 fixes · critic fresh
 First: a pleasant aerial map, dark channels with green fringes, the tilt clearly moves the water | Weakest: water flat navy, no crisp reed margins or hard wet line; a steep hold draws vertical streaks | Change: sky-reflective water in narrow channels, crisp papyrus margins, a hard shoreline | Couldn't judge: motion, the switch panel | Ship: no
 Maker's answer: noted, not taken in this build: the tipped-and-sinking pair reads (the critic's best), the water is now water; crisper margins and papyrus texture are a further pass of the shader, carried to the owner. The streaks under a 30° hold are rills on a steep lean, the physics; the hold is clamped at the steepest that counts · Conductor: done, three rounds (the cap); the look of the water's edge carried to the owner
+
+## Catatumbo, The Wave, The Delta, Bubblers (the weak-toys reworks) · Round 1 · 2026-11-21 ET · build 8c956fa · critic fresh
+Each judged from a strip of its first seconds left alone. Catatumbo: a real hook at 1.2 s; the lake black between strikes, the storm's strokes all far | The Wave: no hook for 3 s, the wave a thin far dash | The Delta: the flood moves at once; its water opaque navy, a stain | Bubblers: legible close, but the pull-back ends on a uniform field of specks
+Maker's answer: taken: strokes now come down out on the water; the opening wave starts 3.5 s further on, at the camera; the water clear and shallow over drowned grass; the pull-back stops at 1.7x, near the crab it began on · Conductor: continue
+
+## The same four · Round 2 · 2026-11-21 ET · build round 1 fixes · critic fresh
+Catatumbo: strong hook; the lake still pure black between flashes | The Wave: the hook works; the stands read flat, no rake or rim | The Delta: fine; no sign of the season | Bubblers: the pattern reads; the beach fills to cross-hatching by 14 s
+Maker's answer: taken: a faint swell on the lake between flashes; the summer rains green the land in the low-flood months (true: they fall while the flood is low); Bubblers opens on a younger beach (25 s, not 45). Tried and reverted: a lower stadium camera (36 m) made the far stands a sliver · Conductor: continue
+
+## The same four · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
+Catatumbo: touch yes; far strokes end at the horizon (they strike the far water) | The Wave: touch yes; still reads as a plane of lights, not tiers round the pitch | The Delta: polish only; tilt not guessable | Bubblers: touch yes; neighbours' starbursts cross by 12 s
+Maker's answer: noted, not taken: three rounds (the cap). Every one now has something happening in its first two seconds. The stadium's geometry (tiers and a rim that read from this camera) is a further pass carried to the owner; crossing starbursts happen on the real beach as it fills · Conductor: done, three rounds
