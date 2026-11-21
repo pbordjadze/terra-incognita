@@ -45,7 +45,7 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   line = max(line, 1.0 - smoothstep(0.0, 0.18, abs(length(w.xz) - 9.15)));
   line = max(line, (1.0 - smoothstep(0.0, 0.18, abs(p.x - 20.16))) * step(36.0, p.y) * step(p.y, 52.5));
   line = max(line, (1.0 - smoothstep(0.0, 0.18, abs(p.y - 36.0))) * step(p.x, 20.16));
-  g = mix(g, vec3<f32>(0.20, 0.24, 0.22), line * 0.6);
+  g = mix(g, vec3<f32>(0.42, 0.46, 0.44), line * 0.8);
   let surround = vec3<f32>(0.035, 0.040, 0.045);
   return mix(surround, g, inside);
 }
@@ -62,7 +62,11 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   // the concrete and the people, dark; a concourse every so many rows
   var c = vec3<f32>(0.040, 0.036, 0.044) + vec3<f32>(0.03, 0.012, 0.010) * s.b;
   let aisle = step(abs(seat.y - 20.0), 0.35) + step(abs(seat.y - 40.0), 0.35);
-  c = mix(c, vec3<f32>(0.012, 0.012, 0.016), clamp(aisle, 0.0, 1.0));
+  // (the concourses and every fourth row's step are drawn lighter, so the film's characters show the
+  // bowl's tiers as rings round the pitch)
+  let step4 = 1.0 - smoothstep(0.0, max(fwidth(seat.y) * 1.5, 0.08), abs(fract(seat.y / 4.0) - 0.02) * 4.0);
+  c = mix(c, vec3<f32>(0.16, 0.16, 0.17), clamp(aisle, 0.0, 1.0));
+  c = c + vec3<f32>(0.08, 0.08, 0.085) * step4;
   // the phone's light: a soft dot, raised and brighter as the person stands
   let px = fwidth(seat);
   let size = max(px.x, px.y);

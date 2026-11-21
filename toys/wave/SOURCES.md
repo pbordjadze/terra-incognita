@@ -50,3 +50,25 @@ crowd and the city are worked out from the constants and rules in `src/`.
   orange street lights, avenues every few blocks) are drawn in `bowl.wgsl` and `city.wgsl`.
 - The crowd's murmur and the roar that follows the standing people round the bowl are synthesised in
   `sound.rs`; no recordings.
+
+## The look: a BEFLIX film (drawn the way it was made)
+
+The toy is drawn as a 1960s Bell Labs computer film made in Ken Knowlton's BEFLIX (`src/beflix.rs`,
+`src/beflix.wgsl`). What the method was, from these pages (read for this toy):
+
+- BEFLIX, "Bell flicks": Knowlton, Bell Labs, 1963; pictures are surfaces of cells, "fine (252x184)
+  and coarse (126x92)", each holding 0 to 7; 26 scanners named A to Z walk and write them; the
+  SC-4020 microfilm recorder draws a cell "by writing characters", characters "selected to create a
+  range of grayscale values" (https://en.wikipedia.org/wiki/BEFLIX).
+- The plotter, the camera on its tube, and identical frames duplicated at an optical lab "to avoid
+  using costly computer time"; the Poem Field films "filmed in black-and-white, with color added later
+  through a special optical process": A. M. Noll, "The VanDerBeek-Knowlton Movies"
+  (https://ethw.org/First-Hand%3AThe_VanDerBeek-Knowlton_Movies) and "Early Digital Art at Bell
+  Telephone Laboratories" (https://ethw.org/First-Hand:Early_Digital_Art_At_Bell_Telephone_Laboratories%2C_Inc).
+- The primary paper, not yet read here: K. C. Knowlton, "A Computer Technique for Producing Animated
+  Movies", AFIPS Spring Joint Computer Conference 25 (1964), 67–87.
+
+What is drawn, not taken from a source: which characters stand for which grey (. : + X # @ and the
+full cell; the real character set is in the 1964 paper), 184 cells across the phone's short side (the
+fine surface's short side), twelve drawings a second each shot twice, the two optical colours, and the
+few points of light in the sky.
