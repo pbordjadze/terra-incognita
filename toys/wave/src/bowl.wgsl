@@ -6,7 +6,7 @@
 struct C {
   eye: vec3<f32>, tilt: f32,
   size: vec2<f32>, f: f32, time: f32,
-  grid: vec2<f32>, ppp: f32, _p: f32,
+  grid: vec2<f32>, ppp: f32, yaw: f32,
 };
 @group(0) @binding(0) var<uniform> cam: C;
 @group(0) @binding(1) var seats: texture_2d<f32>;
@@ -17,10 +17,12 @@ struct VO { @builtin(position) clip: vec4<f32>, @location(0) uv: vec2<f32>, @loc
 @vertex fn vs_main(v: VI) -> VO {
   let s = sin(cam.tilt);
   let c = cos(cam.tilt);
-  let d = v.pos - cam.eye;
-  let x = d.x;
-  let y = d.y * c + d.z * s;
-  let z = -d.y * s + d.z * c;
+  let d0 = v.pos - cam.eye;
+  // turned to the camera's heading, then tilted down
+  let x = d0.x * cos(cam.yaw) - d0.z * sin(cam.yaw);
+  let dz = d0.x * sin(cam.yaw) + d0.z * cos(cam.yaw);
+  let y = d0.y * c + dz * s;
+  let z = -d0.y * s + dz * c;
   var o: VO;
   o.clip = vec4<f32>(cam.f * x * 2.0 / cam.size.x, cam.f * y * 2.0 / cam.size.y, z * 0.5, z);
   o.uv = v.uv;
@@ -89,7 +91,10 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   shirt = select(shirt, vec3<f32>(0.06, 0.30, 0.14), k < 0.35);
   shirt = select(shirt, vec3<f32>(0.42, 0.42, 0.40), k >= 0.35 && k < 0.55);
   shirt = select(shirt, vec3<f32>(0.40, 0.07, 0.07), k >= 0.55 && k < 0.7);
-  c = c + shirt * up * 0.9;
+  // (in the shape of a person, not the whole seat: near the camera a seat is many pixels wide)
+  let body = (fract(seat) - vec2<f32>(0.5, 0.56 - 0.12 * up)) / vec2<f32>(0.30, 0.40);
+  let person = mix(1.0 - smoothstep(0.85 - size * 3.0, 1.0 + size * 3.0, length(body)), 0.4, smoothstep(0.35, 1.2, size));
+  c = c + shirt * up * 0.9 * person;
   c = c + warm * dot * bright;
   // a standing crowd glows: the light of the raised phones on the people round them, along the row
   var halo = 0.0;

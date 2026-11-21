@@ -1,7 +1,7 @@
 // Beyond the stadium: Mexico City at night, its streets a grid of orange lights to the horizon, and
 // the sky over it lit from below. A backdrop (toy-kit backdrop.rs); u.p0 = (focal length in pixels,
-// tilt down in radians, eye height, eye z), u.p1 = (the bowl's outer half-width, half-length,
-// corner radius, 0).
+// tilt down in radians, eye height, eye z), u.p1 = (the bowl's outer half-width, half-length, eye x,
+// the camera's heading in radians).
 
 fn ray(px: vec2<f32>) -> vec3<f32> {
   let f = u.p0.x;
@@ -10,7 +10,10 @@ fn ray(px: vec2<f32>) -> vec3<f32> {
   // camera to world: up = (0, cos, sin), forward = (0, -sin, cos)
   let y = c.y * cos(th) - c.z * sin(th);
   let z = c.y * sin(th) + c.z * cos(th);
-  return normalize(vec3<f32>(c.x, y, z));
+  // then turned to the camera's heading
+  let sy = sin(u.p1.w);
+  let cy = cos(u.p1.w);
+  return normalize(vec3<f32>(c.x * cy + z * sy, y, -c.x * sy + z * cy));
 }
 
 fn rrect(p: vec2<f32>, half: vec2<f32>, r: f32) -> f32 {
@@ -20,7 +23,7 @@ fn rrect(p: vec2<f32>, half: vec2<f32>, r: f32) -> f32 {
 
 fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let d = ray(px);
-  let eye = vec3<f32>(0.0, u.p0.z, u.p0.w);
+  let eye = vec3<f32>(u.p1.z, u.p0.z, u.p0.w);
   // the sky: deep blue-black, warm with the city's light toward the horizon
   let h = max(d.y, 0.0);
   var c = mix(vec3<f32>(0.16, 0.09, 0.07), vec3<f32>(0.010, 0.012, 0.030), smoothstep(0.0, 0.35, h));
@@ -28,7 +31,8 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     let t = eye.y / -d.y;
     let g = eye.xz + d.xz * t;
     // the stadium's own dark roof and walls round the bowl
-    let e = rrect(g, u.p1.xy, u.p1.z);
+    // (its corners' radius: bowl.rs's CORNER pushed out as far as the half-width is past HALF[0], 44 m)
+    let e = rrect(g, u.p1.xy, u.p1.x - 16.0);
     // streets: a grid, a little turned, with avenues every so often
     let q = vec2<f32>(g.x * 0.96 + g.y * 0.28, -g.x * 0.28 + g.y * 0.96);
     let block = 60.0;

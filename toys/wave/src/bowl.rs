@@ -13,9 +13,13 @@ pub const CORNER: f32 = 28.0;
 pub const DEPTH: f32 = 0.85;
 pub const RISE: f32 = 0.52;
 
-/// The camera: over the south end of the pitch, high up, looking north and down.
+/// The camera: high in the night beyond the stands, looking down across the bowl as a broadcast's end
+/// camera does, and going slowly round it, so a wave runs at you down the near side and away round the
+/// far one, and the bowl turns as you watch.
 pub struct Camera {
     pub eye: [f32; 3],
+    /// which way it looks, round from north (radians, clockwise from above: east is a quarter turn)
+    pub yaw: f32,
     /// how far it looks down from level, radians
     pub tilt: f32,
     /// pixels a unit at unit depth, and the screen in pixels
@@ -23,22 +27,38 @@ pub struct Camera {
     pub size: [f32; 2],
 }
 
+/// The orbit: its radius and height (metres), where it starts (the south end) and how fast it goes
+/// round (radians a second: a turn in about six minutes).
+const ORBIT_R: f32 = 112.0;
+const ORBIT_H: f32 = 46.0;
+const ORBIT_SPEED: f32 = 0.017;
+
 impl Camera {
-    pub fn new(size: [f32; 2]) -> Camera {
-        // the whole bowl in the frame, its long axis up the screen
-        // nearly straight down, a little from the south, the bowl's width filling the screen's
-        let f = size[0] * 0.5 / 112.0 * 330.0;
+    /// The camera `t` seconds in (`still`: Reduce Motion, it stays at the south end).
+    pub fn new(size: [f32; 2], t: f64, still: bool) -> Camera {
+        let yaw = if still {
+            0.0
+        } else {
+            (t as f32 * ORBIT_SPEED) % std::f32::consts::TAU
+        };
+        let (sy, cy) = yaw.sin_cos();
+        // looking at the near side of the pitch, so the near stands fill the bottom of the frame and the
+        // far ones sit under a strip of the city
+        let tilt = (ORBIT_H / (ORBIT_R - 45.0)).atan();
         Camera {
-            eye: [0.0, 330.0, -58.0],
-            tilt: 80f32.to_radians(),
-            f,
+            eye: [-ORBIT_R * sy, ORBIT_H, -ORBIT_R * cy],
+            yaw,
+            tilt,
+            f: size[0] * 0.55,
             size,
         }
     }
 
+    /// (right, up, forward)
     pub fn basis(&self) -> ([f32; 3], [f32; 3], [f32; 3]) {
         let (s, c) = self.tilt.sin_cos();
-        ([1.0, 0.0, 0.0], [0.0, c, s], [0.0, -s, c])
+        let (sy, cy) = self.yaw.sin_cos();
+        ([cy, 0.0, -sy], [sy * s, c, cy * s], [sy * c, -s, cy * c])
     }
 
     /// Where a point is on screen (pixels), and its depth.

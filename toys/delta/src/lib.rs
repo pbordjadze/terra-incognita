@@ -2,7 +2,9 @@
 //! fell on the Angolan highlands months before comes down the Panhandle and fans out across land so flat
 //! (about 1 m in 3,400) that a termite mound decides where it goes, and it never reaches the sea: it sinks
 //! into the Kalahari sand (`land.rs`). The phone held flat is that land: its tilt (`Ctx::sensors`) leans
-//! the fan, and the flood follows. A finger pressed on the land leans it toward that side, as a hand pressing a tray's edge; with no
+//! the fan, and the flood follows. The year runs as a time-lapse: the toy opens as the flood arrives at
+//! the top, it spreads down the channels and out over the plain, then shrinks back for the dry season
+//! and comes again. A finger pressed on the land leans it toward that side, as a hand pressing a tray's edge; with no
 //! sense of tilt (a desktop browser) it is the only way to steer.
 
 pub mod land;
@@ -20,8 +22,10 @@ pub const GRID: [usize; 2] = [72, 156];
 pub const SEED: u64 = 0x0CA7_A460;
 /// Flow substeps a second (the flow's speed and its stability both hang on it).
 const RATE: f64 = 1440.0;
-/// Seconds of flood run before the first frame, so the toy opens in flood.
-const SETTLE: f64 = 2.0;
+/// The year as a time-lapse: seconds of the toy's a year, and how many seconds of the flood's run each
+/// second shows (the real pulse takes four months to cross the fan).
+const YEAR_S: f64 = 50.0;
+const SPEED: f64 = 3.0;
 /// How quickly the land's lean follows the phone's (seconds): a hand trembles.
 const EASE: f32 = 0.25;
 /// The low sun's way across the screen (from the upper left).
@@ -72,6 +76,22 @@ impl Delta {
         ]
     }
 
+    /// How much flood is coming down the Panhandle at `t` seconds in: the year's pulse arrives as the
+    /// toy opens, swells, then falls away to a trickle for the dry season, and comes again.
+    fn pulse(t: f64) -> f32 {
+        let p = (t / YEAR_S).fract();
+        let rise = smoothstep(0.0, 0.04, p);
+        let fall = 1.0 - smoothstep(0.32, 0.55, p);
+        (0.08 + 2.0 * rise * fall) as f32
+    }
+
+    /// The summer rains (0..1): they fall on the delta itself in the months the flood is low, and green
+    /// the whole land; the flood arrives in the dry winter, long after, from Angola's rain.
+    fn rains(t: f64) -> f32 {
+        let p = (t / YEAR_S).fract();
+        (smoothstep(0.55, 0.68, p) * (1.0 - smoothstep(0.9, 1.0, p))) as f32
+    }
+
     /// Runs the flood `secs` seconds.
     fn run(&mut self, secs: f64) {
         self.land.tilt = [self.lean[0] * TILT, self.lean[1] * TILT];
@@ -95,7 +115,7 @@ impl Toy for Delta {
             include_str!("land.wgsl"),
             None,
         );
-        let mut d = Delta {
+        let d = Delta {
             land: Land::new(GRID[0], GRID[1], SEED),
             field,
             cells: vec![[0.0; 4]; GRID[0] * GRID[1]],
@@ -106,10 +126,6 @@ impl Toy for Delta {
             size_pt,
             cell_pt,
         };
-        // the flood already down the fan, in coarse steps of a second
-        for _ in 0..SETTLE as usize {
-            d.run(1.0);
-        }
         Ok(d)
     }
 
@@ -143,7 +159,8 @@ impl Toy for Delta {
             self.lean[0] + (want[0] - self.lean[0]) * k,
             self.lean[1] + (want[1] - self.lean[1]) * k,
         ];
-        self.run(dt.min(0.1));
+        self.land.pulse = Self::pulse(t);
+        self.run(dt.min(0.1) * SPEED);
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
@@ -170,7 +187,7 @@ impl Toy for Delta {
                 SUN[0],
                 SUN[1],
                 if l.on[1] { 1.0 } else { 0.0 },
-                0.0,
+                Self::rains(self.t),
                 0.0,
                 0.0,
                 0.0,
@@ -212,6 +229,11 @@ impl Toy for Delta {
             *o = on;
         }
     }
+}
+
+fn smoothstep(a: f64, b: f64, x: f64) -> f64 {
+    let k = ((x - a) / (b - a)).clamp(0.0, 1.0);
+    k * k * (3.0 - 2.0 * k)
 }
 
 toy_kit::ios_shell!(Delta);

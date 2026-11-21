@@ -1110,7 +1110,6 @@ dependencies = [
  "catatumbo",
  "delta",
  "elkmont",
- "fairy",
  "frost",
  "hoh",
  "huddle",
