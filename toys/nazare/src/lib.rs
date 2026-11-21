@@ -168,6 +168,23 @@ fn load_floor(bytes: &[u8], b: &Bounds) -> anyhow::Result<Floor> {
     ))
 }
 
+/// How much of a train of wavenumber `k` (rad/m) the field's cells can draw: none under two cells a
+/// wavelength (its crests would alias, even march backward), all of it over three.
+fn drawn_share(k: f64, cell_m: f64) -> f64 {
+    let cells = std::f64::consts::TAU / k / cell_m;
+    ((cells - 2.0) / 1.0).clamp(0.0, 1.0)
+}
+
+/// The short swell the field can't draw (its share of the open sea's height, m) and its wavenumber vector
+/// (rad/m, x east, y south): straight crests at the open sea's spacing, the shader's to draw. A short swell
+/// barely feels this floor, so it crosses the canyon much as it is.
+fn short_train(f: &Field, cell_m: f64) -> (f32, [f32; 2]) {
+    let k = sea::wavenumber_of(f.period, 4000.0);
+    let h = sea::H0 * (1.0 - drawn_share(k, cell_m));
+    let a = (f.from_deg + 180.0).to_radians();
+    (h as f32, [(a.sin() * k) as f32, (-a.cos() * k) as f32])
+}
+
 /// The field into the texture's three blocks (max.wgsl says what each holds).
 fn texels(floor: &Floor, f: &Field) -> Vec<u8> {
     let (w, h) = (floor.w, floor.h);
@@ -194,9 +211,13 @@ fn texels(floor: &Floor, f: &Field) -> Vec<u8> {
             let depth = floor.depth(i).min(800.0);
             data[a + 3] = (110.0 * (depth / 800.0).sqrt()) as u8;
             data[b + 3] = ((depth / 60.0).min(1.0) * 255.0) as u8;
+            // a train whose crests are closer than the field's cells can carry is left to the shader's
+            // short train (`short_train`)
+            let felt = if f.rules[0] { depth.max(0.5) } else { 4000.0 };
+            let resolved = drawn_share(sea::wavenumber_of(f.period, felt), floor.cell_m);
             for (k, tau, hh) in [
-                (a, f.tau[i], f.height[i]),
-                (b, f.tau_back[i], f.height_back[i]),
+                (a, f.tau[i], f.height[i] * resolved as f32),
+                (b, f.tau_back[i], f.height_back[i] * resolved as f32),
             ] {
                 if tau.is_finite() {
                     let ph = angle(tau, f.period);
@@ -496,7 +517,10 @@ impl Toy for Nazare {
             // drawing flat out can starve the solve's thread)
             .is_some_and(|(job, at)| {
                 self.clock >= *at && (job.is_finished() || self.clock >= *at + 1.0)
-            });
+            })
+            // and not while the camera is down by a peak: its view is built on it, so the new sea waits
+            // for the camera to be back on the headland
+            && self.down < 0.05;
         if due {
             if let Some((job, _)) = self.pending.take() {
                 if let Ok((field, data)) = job.join() {
@@ -537,11 +561,12 @@ impl Toy for Nazare {
         let (sun_el, sun) = self.sun();
         let l = self.light_m();
         let k_deep = sea::wavenumber_of(period, 4000.0) as f32;
+        let short = short_train(&self.field, self.cell_m());
         let u = TraceU {
             eye: [cam.eye[0], cam.eye[1], cam.eye[2], self.clock as f32],
             fwd: [cam.fwd[0], cam.fwd[1], cam.fwd[2], cam.ty],
             right: [cam.right[0], cam.right[1], cam.right[2], cam.tx],
-            up: [cam.up[0], cam.up[1], cam.up[2], 0.0],
+            up: [cam.up[0], cam.up[1], cam.up[2], short.0],
             sun: [sun[0], sun[1], sun[2], 4.0f32.to_radians().cos()],
             phase: [phase, sets, k_deep, 0.0],
             grid: [
@@ -550,7 +575,7 @@ impl Toy for Nazare {
                 self.cell_m() as f32,
                 max::H_FULL,
             ],
-            size: [0.0, 0.0, l[0], l[1]],
+            size: [short.1[0], short.1[1], l[0], l[1]],
         };
         let table = max::palette(sun_el);
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());

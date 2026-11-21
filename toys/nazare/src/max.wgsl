@@ -7,6 +7,7 @@
 //                                                                             land 0.5 + 0.5 × height / LAND_M
 //   B [cos, sin of the turned-back train's phase, its height / H_FULL, depth / 60]
 //   C [cos, sin of the sets' phase, 0, 0]
+// u.up.w and u.size.xy: the short swell's height (m) and wavenumber vector (rad/m), drawn here
 struct U {
   eye: vec4<f32>, fwd: vec4<f32>, right: vec4<f32>, up: vec4<f32>, sun: vec4<f32>,
   phase: vec4<f32>, grid: vec4<f32>, size: vec4<f32>,
@@ -137,6 +138,10 @@ fn sea_from(k: array<vec4<f32>, 3>, q: vec2<f32>, far: f32) -> Sea {
   let w1 = shape(TAU * u.phase.x - ph1, lean, min(kk * h1 * 0.5, 0.4));
   let w2 = shape(TAU * u.phase.x - ph2, lean, min(kk * h2 * 0.5, 0.4));
   var z = 0.5 * h1 * w1.x + 0.5 * h2 * w2.x;
+  // the short swell the field can't carry: straight crests at the open sea's spacing, faded with distance
+  // before they alias
+  let short_fade = clamp(1.0 - far * length(u.size.xy) / 60.0, 0.0, 1.0);
+  z += 0.5 * u.up.w * sets * short_fade * cos(TAU * u.phase.x - dot(u.size.xy, q));
   // Max's own texture: a few long-crested sinusoids of the wind's chop, fading with distance
   // (smoothed off a standing face, where it would only streak it)
   let chop_fade = (1.0 - 0.85 * lean * max(w1.y, w2.y)) / (1.0 + far / 400.0);

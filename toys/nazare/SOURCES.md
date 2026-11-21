@@ -28,8 +28,8 @@ What is measured, what is modelled, what is drawn, and from where. The floor is 
   longer than about 7 s is mostly turned back rather than carried across; the turned-back swell crosses the
   arriving swell off Praia do Norte, and where their crests meet they stand into peaks. Here the canyon's
   incised upper part (deeper than 45 m and 1.6 times the shelf around it, within 6 km of the lighthouse, and
-  the measured edge) is a wall to swell of 8.5 s or longer, crossed by swell of 5.5 s or shorter, turning
-  back a share in between.
+  the measured edge) is a wall to swell of 7 s or longer and crossed by anything shorter, a clean step at
+  the cut-off the paper gives.
 - **The arriving swell's crests**: lines of equal travel time, |∇τ| = 1/c (fast sweeping, Zhao 2005), from a
   plane swell arriving over the open sea's edges; the sets travel at the group speed.
 - **Its height**: rays at right angles to the crests, turning toward slower water (Snell's law), from the
@@ -54,6 +54,9 @@ What is measured, what is modelled, what is drawn, and from where. The floor is 
   loop repeats so the same bytes go down into sunset (Shoup's colour-table animation); Stokes' sharpened
   crests. Here the same: each pixel's byte from `src/max.wgsl`, the table from `max::palette`, rebuilt as the
   sun goes down.
+- **The short swell**: a swell whose crests are closer than about two of the floor's 50 m cells can't be
+  carried by the field (it would alias); it is drawn in the shader as straight crests at the open sea's
+  spacing, crossing the canyon as it is, fading with distance before it shimmers.
 - **What Max didn't do**: the sea surface is this floor's two trains, not his long-crested sum of
   sinusoids (a few of those remain, fading with distance, as the wind's chop); the front face is steepened
   toward breaking (Stokes alone gives gentle humps); the white water, the sun's glitter band and the surfer

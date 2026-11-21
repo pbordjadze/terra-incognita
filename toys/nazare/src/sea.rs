@@ -44,10 +44,9 @@ const STEP: f64 = 0.5;
 /// The fast sweep's rounds, and the passes of the crests' smoothing (a 3 × 3 box each).
 const ROUNDS: usize = 4;
 const SMOOTH: usize = 3;
-/// Swell this long or longer is turned back by the canyon's edge; this short or shorter crosses it (s): the
-/// reflection's cut-off is near 7 s at Nazaré (Hope et al. 2026), as at La Jolla's canyons (7 to 9 s).
-pub const CROSSES: f64 = 5.5;
-pub const TURNS: f64 = 8.5;
+/// Swell this long or longer is turned back by the canyon's edge, shorter crosses it (s): the reflection's
+/// cut-off is near 7 s at Nazaré (Hope et al. 2026), as at La Jolla's canyons (7 to 9 s). A clean step here.
+pub const TURNS: f64 = 7.0;
 
 /// The floor: the ground's height a cell (m, negative under the sea), w × h, a cell `cell_m` a side, and
 /// which cells are the canyon's wall (the incised canyon within a few km of its head).
@@ -115,9 +114,9 @@ pub fn speeds(period: f64, h: f64) -> (f64, f64) {
     (c, c * n)
 }
 
-/// How much of a swell of `period` the canyon's edge turns back (0 to 1).
-pub fn reflects(period: f64) -> f64 {
-    ((period - CROSSES) / (TURNS - CROSSES)).clamp(0.0, 1.0)
+/// Whether the canyon's edge turns a swell of `period` back.
+pub fn reflects(period: f64) -> bool {
+    period >= TURNS
 }
 
 impl Field {
@@ -129,8 +128,8 @@ impl Field {
     pub fn with_rules(floor: &Floor, period: f64, from_deg: f64, rules: [bool; 2]) -> Field {
         // the depth the swell feels: with the shallows not slowing it, the open ocean's everywhere
         let felt = |i: usize| if rules[0] { floor.depth(i) } else { 4000.0 };
-        let back = if rules[1] { reflects(period) } else { 0.0 };
-        let wall = |i: usize| back >= 0.5 && floor.canyon[i];
+        let back = rules[1] && reflects(period);
+        let wall = |i: usize| back && floor.canyon[i];
         let n = floor.w * floor.h;
         let mut phase = vec![f64::INFINITY; n];
         let mut group = vec![f64::INFINITY; n];
@@ -187,14 +186,13 @@ impl Field {
                 height[i] = (H0 * shoal(i) * grow) as f32;
             }
         }
-        let (mut tau_back, mut height_back) = if back > 0.0 {
+        let (mut tau_back, mut height_back) = if back {
             turned_back(floor, &walls, &slow, &phase, &height, &shoal)
         } else {
             (vec![f64::INFINITY; n], vec![0.0; n])
         };
         smooth_sea(floor, &mut tau_back, SMOOTH);
         for i in 0..n {
-            height_back[i] *= back.sqrt() as f32;
             // inside where they break the waves are broken: what is left of them is held to the depth
             let most = (SPENT * felt(i).min(floor.depth(i))) as f32;
             let both = height[i] + height_back[i];
