@@ -3,7 +3,8 @@
 //! leaving the sifted sand behind them as little balls, and the beach fills with starbursts nobody
 //! drew (`beach.rs`). A tap is a footstep: the near crabs bolt, their neighbours see them go and bolt
 //! too, and a while later the eyes come up again. A finger drawn through the sand leaves a furrow they
-//! work around. Shaken, or now and then on its own, the tide comes in and takes it all.
+//! work around. Shaken, or now and then on its own, the tide comes in and takes it all. It opens close on
+//! one crab rolling its balls, and the eye lifts to the whole beach covered in starbursts.
 //! painting-company row 327.
 
 pub mod beach;
@@ -21,8 +22,14 @@ pub const PLACE: (f64, f64) = (98.30, 7.90);
 
 /// The screen is this many centimetres across.
 const WIDTH_CM: f32 = 30.0;
-/// The tide went out this long before the toy opens (seconds): the crabs are about to dig out.
-const OPENING_S: f32 = 1.0;
+/// The tide went out this long before the toy opens (seconds): the crabs are out and their starbursts
+/// begun.
+const OPENING_S: f32 = 45.0;
+/// The opening: close in on one crab at work, this many times nearer, held this long, then the eye
+/// pulls back over this long to the whole beach full of starbursts (seconds).
+const CLOSE: f32 = 4.0;
+const HOLD_S: f32 = 2.5;
+const PULL_S: f32 = 9.0;
 /// The tide comes on its own after this long untouched by one (seconds).
 const TIDE_EVERY_S: f32 = 210.0;
 
@@ -37,11 +44,41 @@ pub struct Bubblers {
     last_tide: f32,
     fingers: Vec<(u64, [f32; 2], f64)>,
     size_pt: [f64; 2],
+    /// the crab the opening looks at (cm), and whether to pull back at all (not with Reduce Motion)
+    focus: [f32; 2],
+    pull: bool,
 }
 
 impl Bubblers {
+    /// Where the eye is (its centre, cm) and how near (1 the whole width of the beach).
+    fn view(&self) -> ([f32; 2], f32) {
+        let mid = [
+            self.size_pt[0] as f32 / self.k * 0.5,
+            self.size_pt[1] as f32 / self.k * 0.5,
+        ];
+        let a = if self.pull {
+            ((self.t as f32 - HOLD_S) / PULL_S).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+        // eased both ends, the eye rising like a head lifted from the sand
+        let e = a * a * (3.0 - 2.0 * a);
+        let zoom = CLOSE.powf(1.0 - e);
+        let c = [
+            self.focus[0] + (mid[0] - self.focus[0]) * e,
+            self.focus[1] + (mid[1] - self.focus[1]) * e,
+        ];
+        (c, zoom)
+    }
+
+    /// A point on screen (points) as a place on the beach (cm).
     fn cm(&self, p: [f64; 2]) -> [f32; 2] {
-        [p[0] as f32 / self.k, p[1] as f32 / self.k]
+        let (c, z) = self.view();
+        let k = self.k * z;
+        [
+            c[0] + (p[0] as f32 - self.size_pt[0] as f32 * 0.5) / k,
+            c[1] + (p[1] as f32 - self.size_pt[1] as f32 * 0.5) / k,
+        ]
     }
 
     fn rustle(&self, at: [f32; 2], amp: f32) -> Tick {
@@ -74,6 +111,15 @@ impl Toy for Bubblers {
             None,
         );
         let n = beach.gw * beach.gh;
+        // the opening looks at the crab nearest the middle that is out feeding
+        let mid = [WIDTH_CM * 0.5, h * 0.45];
+        let d2 = |c: &beach::Crab| (c.home[0] - mid[0]).powi(2) + (c.home[1] - mid[1]).powi(2);
+        let focus = beach
+            .crabs
+            .iter()
+            .filter(|c| c.dug)
+            .min_by(|a, b| d2(a).total_cmp(&d2(b)))
+            .map_or(mid, |c| c.home);
         Ok(Bubblers {
             last_tide: beach.t,
             beach,
@@ -85,6 +131,8 @@ impl Toy for Bubblers {
             t: 0.0,
             fingers: Vec::new(),
             size_pt,
+            focus,
+            pull: !ctx.reduce_motion,
         })
     }
 
@@ -178,15 +226,14 @@ impl Toy for Bubblers {
         }
         let b = &self.beach;
         let ppp = ctx.ppp as f32;
-        let s = self.k * ppp;
-        let px = |p: [f32; 2]| [p[0] * s, p[1] * s];
+        let (eye, zoom) = self.view();
+        let s = self.k * ppp * zoom;
+        let half = [ctx.width as f32 * 0.5, ctx.height as f32 * 0.5];
+        let px = |p: [f32; 2]| [(p[0] - eye[0]) * s + half[0], (p[1] - eye[1]) * s + half[1]];
         let params = BackdropParams {
             time: b.t,
             scale: s,
-            center: [
-                self.size_pt[0] as f32 / self.k * 0.5,
-                self.size_pt[1] as f32 / self.k * 0.5,
-            ],
+            center: eye,
             p: [
                 b.front().unwrap_or(-100.0),
                 b.h,
@@ -198,7 +245,7 @@ impl Toy for Bubblers {
                 0.0,
             ],
         };
-        paint_burrows(&mut self.painter, b, s);
+        paint_burrows(&mut self.painter, b, s, eye, half);
         // the balls: a shadow, the ball, its light
         for p in &b.pellets {
             let grow = ((b.t - p.born) / 0.18).clamp(0.0, 1.0);
@@ -236,7 +283,7 @@ impl Toy for Bubblers {
         }
         // the crabs
         for c in &b.crabs {
-            paint_crab(&mut self.painter, c, s, b.t);
+            paint_crab(&mut self.painter, c, [s, b.t], eye, half);
         }
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
@@ -278,8 +325,8 @@ impl Toy for Bubblers {
 }
 
 /// The open burrows (not those under the water): a collar of dug-out sand, a soft hollow, the hole.
-fn paint_burrows(painter: &mut Painter, b: &Beach, s: f32) {
-    let px = |p: [f32; 2]| [p[0] * s, p[1] * s];
+fn paint_burrows(painter: &mut Painter, b: &Beach, s: f32, eye: [f32; 2], half: [f32; 2]) {
+    let px = |p: [f32; 2]| [(p[0] - eye[0]) * s + half[0], (p[1] - eye[1]) * s + half[1]];
     let front = b.front().unwrap_or(f32::MAX);
     for c in &b.crabs {
         if c.home[1] > front || !c.dug {
@@ -308,8 +355,9 @@ fn paint_burrows(painter: &mut Painter, b: &Beach, s: f32) {
     }
 }
 
-fn paint_crab(p: &mut Painter, c: &beach::Crab, s: f32, t: f32) {
-    let px = |q: [f32; 2]| [q[0] * s, q[1] * s];
+fn paint_crab(p: &mut Painter, c: &beach::Crab, st: [f32; 2], eye: [f32; 2], half: [f32; 2]) {
+    let [s, t] = st;
+    let px = |q: [f32; 2]| [(q[0] - eye[0]) * s + half[0], (q[1] - eye[1]) * s + half[1]];
     let body = 0.48 * c.size;
     let f = c.facing;
     let (fx, fy) = (f.cos(), f.sin());

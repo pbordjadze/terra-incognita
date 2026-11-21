@@ -37,7 +37,7 @@ struct Uniform {
     time: f32,
     grid: [f32; 2],
     ppp: f32,
-    _p: f32,
+    yaw: f32,
 }
 
 pub struct Wave {
@@ -61,14 +61,19 @@ pub struct Wave {
     /// a finger's last seat, so a drag stands up everyone along its path
     last: Vec<(u64, [f32; 2])>,
     sound: sound::Sound,
+    reduce_motion: bool,
 }
 
 impl Wave {
     fn camera(&self) -> bowl::Camera {
-        bowl::Camera::new([
-            (self.size_pt[0] * self.ppp) as f32,
-            (self.size_pt[1] * self.ppp) as f32,
-        ])
+        bowl::Camera::new(
+            [
+                (self.size_pt[0] * self.ppp) as f32,
+                (self.size_pt[1] * self.ppp) as f32,
+            ],
+            self.t,
+            self.reduce_motion,
+        )
     }
 
     /// The seat under a point on screen (points), if it is on the stands.
@@ -251,12 +256,17 @@ impl Toy for Wave {
             ppp: ctx.ppp,
             last: Vec::new(),
             sound: sound::Sound::default(),
+            reduce_motion: ctx.reduce_motion,
         })
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.size_pt = ctx.points();
         self.ppp = ctx.ppp;
+    }
+
+    fn settings(&mut self, ctx: &mut Ctx) {
+        self.reduce_motion = ctx.reduce_motion;
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -318,7 +328,7 @@ impl Toy for Wave {
             time: self.t as f32,
             grid: [U as f32, V as f32],
             ppp: ctx.ppp as f32,
-            _p: 0.0,
+            yaw: cam.yaw,
         };
         gpu.queue
             .write_buffer(&self.ubuf, 0, bytemuck::bytes_of(&u));
@@ -340,8 +350,8 @@ impl Toy for Wave {
                     cam.eye[2],
                     bowl::HALF[0] + out,
                     bowl::HALF[1] + out,
-                    bowl::CORNER + out,
-                    0.0,
+                    cam.eye[0],
+                    cam.yaw,
                 ],
             },
         );

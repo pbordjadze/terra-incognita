@@ -3,7 +3,8 @@
 //! stroke grows down to it, forking by the rule real lightning follows (`bolt.rs`), and flashes on the
 //! water; hold and it strikes again down the same channel. The thunder is the bolt's own (`sound.rs`):
 //! every piece of the channel cracks, and each crack reaches you after sound has crossed the distance.
-//! Touch the sky and a crawler spreads under the cloud. Left alone, the storm keeps flickering.
+//! Touch the sky and a crawler spreads under the cloud. Left alone, it opens on a near stroke that lights
+//! the lake, then a storm cell wanders along the shore, striking and flickering inside its deck.
 //! painting-company row 327.
 
 pub mod bolt;
@@ -31,6 +32,8 @@ const RESTRIKE_S: (f64, f64) = (0.09, 0.26);
 const MAX_STROKES: usize = 9;
 /// A stroke's light dies in this long.
 const STROKE_S: f64 = 0.16;
+/// When the storm's opening stroke comes down (seconds).
+const OPENING_S: f64 = 0.5;
 
 /// The rules the sheet can switch off.
 pub const RULES: [&str; 3] = [
@@ -74,6 +77,8 @@ pub struct Catatumbo {
     flicker: (f64, [f64; 2], f64),
     reduce_motion: bool,
     brewer: Brewer,
+    /// whether the opening stroke has come
+    opened: bool,
     /// which of `RULES` hold
     on: [bool; 3],
 }
@@ -134,7 +139,9 @@ impl Catatumbo {
                 thundered: 0,
                 seed,
             });
-            ctx.haptic();
+            if finger.is_some() {
+                ctx.haptic();
+            }
         }
     }
 
@@ -226,24 +233,59 @@ impl Catatumbo {
         sound::gather(out, 140)
     }
 
-    /// The storm on its own: far strokes and flickers in the deck now and then.
+    /// The storm on its own. It opens with a near stroke that lights the lake and the deck, so the first
+    /// thing seen is what a touch does; then a storm cell that wanders along the lake: strokes to the
+    /// water, far and middling, crawlers spreading under the deck, and the deck flickering from inside
+    /// (most of Catatumbo's flashes never leave the cloud).
     fn storm(&mut self, ctx: &mut Ctx) {
+        if !self.opened && self.t >= OPENING_S {
+            self.opened = true;
+            let s = self.size_pt;
+            self.strike_at(ctx, [s[0] * 0.5, s[1] * 0.6], None, 1.0);
+            if let Some(o) = self.strikes.last_mut() {
+                // it strikes again down the same channel, as a held finger's does
+                let first = o.strokes[0];
+                o.strokes.extend([first + 0.11, first + 0.27, first + 0.42]);
+            }
+            self.next_storm = self.t + 1.6;
+            return;
+        }
         if self.t < self.next_storm {
             return;
         }
-        self.next_storm = self.t + self.rng.range(0.6, 2.0);
+        self.next_storm = self.t + self.rng.range(0.35, 1.5);
         let w = self.size_pt[0];
         let hy = self.horizon();
-        if self.rng.f() < 0.5 || self.t < 1.0 {
-            // a far ground stroke (the first thing the storm does), just below the horizon
+        // where the cell is: it wanders along the lake, so the storm has a place and moves
+        let cell = w * (0.5 + 0.34 * (self.t * 0.045).sin() + 0.08 * (self.t * 0.13).cos());
+        let near = |rng: &mut Rng, spread: f64| {
+            (cell + rng.range(-spread, spread)).clamp(w * 0.05, w * 0.95)
+        };
+        let roll = self.rng.f();
+        if roll < 0.30 {
+            // a far ground stroke, just below the horizon
+            let p = [near(&mut self.rng, w * 0.3), hy + self.rng.range(4.0, 26.0)];
+            self.strike_at(ctx, p, None, 0.6);
+        } else if roll < 0.42 {
+            // a middling one, nearer the eye
             let p = [
-                self.rng.range(w * 0.1, w * 0.9),
-                hy + self.rng.range(4.0, 22.0),
+                near(&mut self.rng, w * 0.2),
+                hy + self.rng.range(40.0, 140.0),
             ];
-            self.strike_at(ctx, p, None, 0.55);
+            self.strike_at(ctx, p, None, 0.85);
+        } else if roll < 0.60 {
+            // a crawler spreading under the deck
+            let p = [
+                near(&mut self.rng, w * 0.25),
+                self.rng.range(hy * 0.35, hy * 0.85),
+            ];
+            self.strike_at(ctx, p, None, 0.75);
         } else {
-            let p = [self.rng.range(0.0, w), self.rng.range(hy * 0.25, hy * 0.92)];
-            self.flicker = (self.t, p, self.rng.range(0.6, 1.3));
+            let p = [
+                near(&mut self.rng, w * 0.35),
+                self.rng.range(hy * 0.2, hy * 0.9),
+            ];
+            self.flicker = (self.t, p, self.rng.range(0.9, 1.8));
         }
     }
 
@@ -301,10 +343,11 @@ impl Toy for Catatumbo {
             rng: Rng(0xCA7A_7B00),
             t: 0.0,
             size_pt: ctx.points(),
-            next_storm: 0.3,
+            next_storm: 2.0,
             flicker: (-10.0, [0.0, 0.0], 0.0),
             reduce_motion: ctx.reduce_motion,
             brewer: Brewer::new(0xCA7A_7B30),
+            opened: false,
             on: [true; 3],
         })
     }
