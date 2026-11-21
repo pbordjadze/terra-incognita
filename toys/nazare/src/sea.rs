@@ -1,39 +1,61 @@
 //! The swell over Nazaré's floor: where its crests are and how tall, for one swell (a period and the
-//! direction it comes from).
+//! direction it comes from), as two trains of waves that cross off Praia do Norte.
 //!
 //! A swell's speed depends on the depth under it and on its period (the linear dispersion relation,
-//! ω² = g k tanh(k h)): over deep water a 16 s swell runs at about 25 m/s whatever the depth, but once the
-//! water is shallower than about half its wavelength it feels the bottom and slows. A long swell feels it
-//! deeper, so it bends more. Over the canyon the water stays deep almost to the beach; on the shelf
-//! beside it the swell slows. A crest bends toward the slow water (refraction), so it bends away from the
-//! canyon on both sides, and the two halves converge north of the canyon's head, off Praia do Norte.
+//! ω² = g k tanh(k h)): over deep water a 17 s swell runs at about 26 m/s whatever the depth, but once the
+//! water is shallower than about half its wavelength it feels the bottom and slows, so a crest bends toward
+//! the shallower water (refraction).
 //!
-//! Here: the crests are lines of equal travel time (the eikonal |∇τ| = 1/c, solved by fast sweeping); the
-//! energy follows rays at right angles to them, and where rays crowd together the waves grow (refraction)
-//! as they do where they slow (shoaling, Green's law through the group speed); a wave breaks once it is
-//! 0.78 of the depth (the McCowan limit). The groups of bigger waves (sets) travel at the group speed.
+//! The canyon's last kilometres are a wall to a long swell: where the shelf, 15 to 20 m deep, drops into the
+//! canyon over a few tens of metres, a swell longer than about 7 s is mostly turned back rather than carried
+//! across (Hope et al. 2026, measured from buoys over the canyon and cameras on the cliff). So the swell on the
+//! shelf north of the canyon runs along its edge to the headland, and what meets the edge is thrown back
+//! north toward the beach. The two trains, the swell arriving and the swell the edge turned back, cross off
+//! Praia do Norte; where their crests meet they stand up into peaks, the pyramids the surfers ride.
+//!
+//! Here: the arriving swell's crests are lines of equal travel time (the eikonal |∇τ| = 1/c, solved by fast
+//! sweeping), the canyon a wall to it when it reflects. Its energy follows rays that turn toward slower water
+//! (Snell's law made continuous): where the rays crowd, the waves grow. The turned-back train leaves the
+//! wall's face where the arriving crests meet it, at the times they meet it (Huygens: each point of the face a
+//! source, their envelope the reflected crest), so its crests are a second eikonal from the face; its height
+//! is the arriving wave's at the face, spreading as it goes. Both grow as they slow (shoaling, through the
+//! group speed). The groups of bigger waves (sets) travel at the group speed.
 
 /// Gravity (m/s²).
 const G: f64 = 9.81;
-/// The swell's height in open water (m): a big winter swell.
-pub const H0: f64 = 6.0;
-/// A wave breaks when its height passes this share of the depth (McCowan).
-pub const BREAK: f64 = 0.78;
-/// The most the rays' crowding may raise a wave (a caustic's height is bounded by diffraction).
-pub const REFRACT_MAX: f64 = 2.5;
+/// The swell's height in open water (m), crest to trough: a big winter swell (the buoys off Portugal see a
+/// significant height near 10 m about yearly, Hope et al. 2026).
+pub const H0: f64 = 7.0;
+/// A wave breaks when its height passes this share of the depth. A sea crossed by two trains stands steeper
+/// before it breaks than one train alone (McAllister et al. 2024, in Hope et al. 2026): the McCowan 0.78 of
+/// a single train, raised.
+pub const BREAK: f64 = 1.0;
+/// The depth at the canyon's rim (m): the shelf's at its edge (Hope et al. 2026: 15 to 20 m).
+const RIM_M: f64 = 20.0;
+/// Inside the break, the broken waves' height over the depth.
+const SPENT: f64 = 1.2;
+/// How far the turned-back train spreads before its height halves (m): it leaves the edge as a fan.
+const SPREAD_M: f64 = 1200.0;
+/// The most the rays' crowding may raise a train (a caustic's height is bounded by diffraction).
+pub const REFRACT_MAX: f64 = 2.6;
 /// How far apart the rays start, in cells across the swell, and how far each steps.
-const RAY: f64 = 1.0;
+const RAY: f64 = 0.5;
 const STEP: f64 = 0.5;
 /// The fast sweep's rounds, and the passes of the crests' smoothing (a 3 × 3 box each).
 const ROUNDS: usize = 4;
 const SMOOTH: usize = 3;
+/// Swell this long or longer is turned back by the canyon's edge, shorter crosses it (s): the reflection's
+/// cut-off is near 7 s at Nazaré (Hope et al. 2026), as at La Jolla's canyons (7 to 9 s). A clean step here.
+pub const TURNS: f64 = 7.0;
 
-/// The floor: the ground's height a cell (m, negative under the sea), w × h, a cell `cell_m` a side.
+/// The floor: the ground's height a cell (m, negative under the sea), w × h, a cell `cell_m` a side, and
+/// which cells are the canyon's wall (the incised canyon within a few km of its head).
 pub struct Floor {
     pub w: usize,
     pub h: usize,
     pub cell_m: f64,
     pub ground: Vec<f32>,
+    pub canyon: Vec<bool>,
 }
 
 impl Floor {
@@ -45,24 +67,28 @@ impl Floor {
     }
 }
 
-/// One swell's field over the floor: a cell's travel times (s) at the phase and group speeds, the waves'
-/// height (m) and whether they break there.
+/// One swell's field over the floor: a cell's travel times (s) for the arriving train and for the one the
+/// canyon turned back, at the group speed for the sets, and each train's height (m, crest to trough).
 pub struct Field {
     pub period: f64,
     /// where the swell comes from, degrees clockwise from north (as a surf forecast gives it)
     pub from_deg: f64,
     pub tau: Vec<f64>,
+    pub tau_back: Vec<f64>,
     pub tau_group: Vec<f64>,
     pub height: Vec<f32>,
-    /// how much the rays' crowding has raised the waves there (1 in the open sea; up to REFRACT_MAX)
-    pub focus: Vec<f32>,
+    pub height_back: Vec<f32>,
     /// which of `RULES` held when it was solved
     pub rules: [bool; 2],
 }
 
-/// The rules the sheet can switch off: the shallows slowing the swell (off, it runs at its deep-water
-/// speed over every depth, so nothing bends or grows), and its rays crowding together raising it.
-pub const RULES: [&str; 2] = ["Shallow water slows the swell", "Bent together, it grows"];
+/// The rules the sheet can switch off: the shallows slowing the swell (off, it runs at its deep-water speed
+/// over every depth, so nothing bends or grows), and the canyon's edge turning the long swell back (off, it
+/// crosses the canyon as a short swell does, and no second train meets the first).
+pub const RULES: [&str; 2] = [
+    "Shallow water slows the swell",
+    "The canyon's edge turns it back",
+];
 
 /// The wavenumber (1/m) of a wave of angular frequency `omega` over depth `h`: Fenton and McKee's
 /// explicit form of the dispersion relation (within about 1.5%).
@@ -71,6 +97,11 @@ fn wavenumber(omega: f64, h: f64) -> f64 {
     let x = k0 * h.max(0.05);
     let kh = x / x.powf(0.75).tanh().powf(2.0 / 3.0);
     kh / h.max(0.05)
+}
+
+/// The wavenumber (1/m) of a swell of `period` over depth `h`.
+pub fn wavenumber_of(period: f64, h: f64) -> f64 {
+    wavenumber(std::f64::consts::TAU / period, h)
 }
 
 /// The phase and group speeds (m/s) of a swell of `period` over depth `h`.
@@ -83,6 +114,11 @@ pub fn speeds(period: f64, h: f64) -> (f64, f64) {
     (c, c * n)
 }
 
+/// Whether the canyon's edge turns a swell of `period` back.
+pub fn reflects(period: f64) -> bool {
+    period >= TURNS
+}
+
 impl Field {
     pub fn new(floor: &Floor, period: f64, from_deg: f64) -> Field {
         Field::with_rules(floor, period, from_deg, [true; 2])
@@ -92,6 +128,8 @@ impl Field {
     pub fn with_rules(floor: &Floor, period: f64, from_deg: f64, rules: [bool; 2]) -> Field {
         // the depth the swell feels: with the shallows not slowing it, the open ocean's everywhere
         let felt = |i: usize| if rules[0] { floor.depth(i) } else { 4000.0 };
+        let back = rules[1] && reflects(period);
+        let wall = |i: usize| back && floor.canyon[i];
         let n = floor.w * floor.h;
         let mut phase = vec![f64::INFINITY; n];
         let mut group = vec![f64::INFINITY; n];
@@ -102,8 +140,15 @@ impl Field {
             if floor.sea(i) {
                 let (c, cg) = speeds(period, felt(i));
                 speed[i] = c / floor.cell_m;
-                slow[i] = floor.cell_m / c;
-                slow_g[i] = floor.cell_m / cg;
+                if wall(i) {
+                    // the rays meet the wall as a wall, not as deep water to bend away from before they
+                    // reach it: they see it as the shelf at its rim
+                    speed[i] =
+                        speeds(period, if rules[0] { RIM_M } else { felt(i) }).0 / floor.cell_m;
+                } else {
+                    slow[i] = floor.cell_m / c;
+                    slow_g[i] = floor.cell_m / cg;
+                }
             }
         }
         let d = heading(from_deg);
@@ -113,46 +158,69 @@ impl Field {
         sweep(floor, &slow, &mut phase, ROUNDS);
         // the sets' timing needs less care than the crests'
         sweep(floor, &slow_g, &mut group, 1);
-        // the first arrival kinks where a faster path overtakes (the canyon's head waves): a real crest
-        // there is a blend of both arrivals, diffraction rounding the corner over about a wavelength
+        // the first arrival kinks where a faster path overtakes: a real crest there is a blend of both
+        // arrivals, diffraction rounding the corner over about a wavelength
         smooth_sea(floor, &mut phase, SMOOTH);
         smooth_sea(floor, &mut group, SMOOTH);
         // the rays see the floor smoothed over about a wavelength: a swell does not feel a single rock
         let mut smooth = speed.clone();
         blur(&mut smooth, floor.w, floor.h);
         blur(&mut smooth, floor.w, floor.h);
-        for (s, &c) in smooth.iter_mut().zip(&speed) {
-            if c <= 0.0 {
+        for (i, s) in smooth.iter_mut().enumerate() {
+            if !floor.sea(i) {
                 *s = 0.0;
             }
         }
-        let crowd = rays(floor, d, &smooth);
+        let walls: Vec<bool> = (0..n).map(wall).collect();
+        let crowd = rays(floor, d, &smooth, &walls);
+        let shoal = |i: usize| (cg0 / speeds(period, felt(i)).1).sqrt();
         let mut height = vec![0.0f32; n];
-        let mut focus = vec![0.0f32; n];
         for i in 0..n {
-            if !floor.sea(i) || !phase[i].is_finite() {
-                continue;
+            if floor.sea(i) && phase[i].is_finite() {
+                let grow = if rules[0] {
+                    (crowd[i] * RAY * STEP).sqrt().min(REFRACT_MAX)
+                } else {
+                    // nothing bends: the train keeps its own height
+                    (crowd[i] * RAY * STEP).min(1.0)
+                };
+                height[i] = (H0 * shoal(i) * grow) as f32;
             }
-            let h = floor.depth(i);
-            let (_, cg) = speeds(period, felt(i));
-            let shoal = (cg0 / cg).sqrt();
-            let refract = if rules[1] {
-                (crowd[i] * RAY * STEP).sqrt().min(REFRACT_MAX)
-            } else {
-                1.0
-            };
-            height[i] = (H0 * shoal * refract).min(BREAK * h) as f32;
-            focus[i] = refract as f32;
+        }
+        let (mut tau_back, mut height_back) = if back {
+            turned_back(floor, &walls, &slow, &phase, &height, &shoal)
+        } else {
+            (vec![f64::INFINITY; n], vec![0.0; n])
+        };
+        smooth_sea(floor, &mut tau_back, SMOOTH);
+        for i in 0..n {
+            // inside where they break the waves are broken: what is left of them is held to the depth
+            let most = (SPENT * felt(i).min(floor.depth(i))) as f32;
+            let both = height[i] + height_back[i];
+            if both > most {
+                height[i] *= most / both;
+                height_back[i] *= most / both;
+            }
         }
         Field {
             period,
             from_deg,
             tau: phase,
+            tau_back,
             tau_group: group,
             height,
-            focus,
+            height_back,
             rules,
         }
+    }
+
+    /// The highest the two trains stand at a cell where their crests meet (m).
+    pub fn crossed(&self, i: usize) -> f64 {
+        (self.height[i] + self.height_back[i]) as f64
+    }
+
+    /// How near the waves at a cell are to breaking: their height together over what the depth allows.
+    pub fn nearness(&self, floor: &Floor, i: usize) -> f64 {
+        self.crossed(i) / (BREAK * floor.depth(i)).max(0.01)
     }
 }
 
@@ -182,8 +250,9 @@ fn edges(floor: &Floor, d: [f64; 2]) -> Vec<(Vec<usize>, [f64; 2])> {
     out
 }
 
-/// The swell arriving over the entry edges as a plane wave (travel time p·d / c at open-sea speed).
-fn seed(floor: &Floor, d: [f64; 2], slowness: f64, tau: &mut [f64]) {
+/// The swell arriving over the entry edges as a plane wave (travel time p·d / c at open-sea speed), from
+/// zero at the first crest in. Returns the time taken off, so the rays can keep the same clock.
+fn seed(floor: &Floor, d: [f64; 2], slowness: f64, tau: &mut [f64]) -> f64 {
     for (cells, _) in edges(floor, d) {
         for i in cells {
             if floor.sea(i) {
@@ -192,23 +261,24 @@ fn seed(floor: &Floor, d: [f64; 2], slowness: f64, tau: &mut [f64]) {
             }
         }
     }
-    // from zero at the first crest in
     let lo = tau.iter().copied().fold(f64::INFINITY, f64::min);
     if lo.is_finite() {
         tau.iter_mut()
             .filter(|t| t.is_finite())
             .for_each(|t| *t -= lo);
     }
+    lo
 }
 
 /// Fast sweeping (Zhao 2005): Godunov's upwind update of |∇τ| = s, in the four diagonal orders, `rounds`
-/// times.
+/// times. A cell of slowness 0 (land, or the canyon's wall) holds nothing.
 fn sweep(floor: &Floor, slowness: &[f64], tau: &mut [f64], rounds: usize) {
     let (w, h) = (floor.w, floor.h);
     let update = |tau: &mut [f64], x: usize, y: usize| {
         let i = y * w + x;
         let s = slowness[i];
         if s <= 0.0 {
+            tau[i] = f64::INFINITY;
             return;
         }
         let a = (if x > 0 { tau[i - 1] } else { f64::INFINITY }).min(if x + 1 < w {
@@ -254,8 +324,72 @@ fn sweep(floor: &Floor, slowness: &[f64], tau: &mut [f64], rounds: usize) {
     }
 }
 
-/// The phase speed at a point (cells), bilinear; None off the grid or over land.
-fn speed_at(floor: &Floor, speed: &[f64], p: [f64; 2]) -> Option<f64> {
+/// Whether a cell has the wall beside it (its four neighbours).
+fn on_face(wall: &[bool], w: usize, h: usize, i: usize) -> bool {
+    let (x, y) = (i % w, i / w);
+    (x > 0 && wall[i - 1])
+        || (x + 1 < w && wall[i + 1])
+        || (y > 0 && wall[i - w])
+        || (y + 1 < h && wall[i + w])
+}
+
+/// Each sea cell's nearest source over the sea (Dijkstra on the eight neighbours): how far it is (cells),
+/// and which it is (usize::MAX where none reaches).
+fn nearest_source(floor: &Floor, slow: &[f64], sources: &[usize]) -> (Vec<f64>, Vec<usize>) {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+    let (w, h) = (floor.w as i64, floor.h as i64);
+    let n = floor.w * floor.h;
+    let mut dist = vec![f64::INFINITY; n];
+    let mut from = vec![usize::MAX; n];
+    let mut heap = BinaryHeap::new();
+    for &i in sources {
+        dist[i] = 0.0;
+        from[i] = i;
+        heap.push(Reverse((0u64, i)));
+    }
+    while let Some(Reverse((dk, i))) = heap.pop() {
+        let di = f64::from_bits(dk);
+        if di > dist[i] {
+            continue;
+        }
+        let (x, y) = ((i % floor.w) as i64, (i / floor.w) as i64);
+        for (dx, dy) in [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+            (1, 1),
+        ] {
+            let (nx, ny) = (x + dx, y + dy);
+            if nx < 0 || ny < 0 || nx >= w || ny >= h {
+                continue;
+            }
+            let j = (ny * w + nx) as usize;
+            if slow[j] <= 0.0 {
+                continue;
+            }
+            let nd = di
+                + if dx * dy != 0 {
+                    std::f64::consts::SQRT_2
+                } else {
+                    1.0
+                };
+            if nd < dist[j] {
+                dist[j] = nd;
+                from[j] = from[i];
+                heap.push(Reverse((nd.to_bits(), j)));
+            }
+        }
+    }
+    (dist, from)
+}
+
+/// A grid's value at a point (cells), bilinear; None off the grid or where any corner is 0 or less.
+fn at(floor: &Floor, v: &[f64], p: [f64; 2]) -> Option<f64> {
     let (w, h) = (floor.w, floor.h);
     if p[0] < 0.0 || p[1] < 0.0 || p[0] >= (w - 1) as f64 || p[1] >= (h - 1) as f64 {
         return None;
@@ -263,20 +397,20 @@ fn speed_at(floor: &Floor, speed: &[f64], p: [f64; 2]) -> Option<f64> {
     let (x0, y0) = (p[0] as usize, p[1] as usize);
     let (fx, fy) = (p[0] - x0 as f64, p[1] - y0 as f64);
     let i = y0 * w + x0;
-    let c = [speed[i], speed[i + 1], speed[i + w], speed[i + w + 1]];
+    let c = [v[i], v[i + 1], v[i + w], v[i + w + 1]];
     if c.iter().any(|&v| v <= 0.0) {
         return None;
     }
     Some((c[0] * (1.0 - fx) + c[1] * fx) * (1.0 - fy) + (c[2] * (1.0 - fx) + c[3] * fx) * fy)
 }
 
-/// How the rays crowd. Each ray is the swell's own: it starts in the open sea, RAY apart across the
-/// swell, and turns toward the slower water as it goes (dv/ds = −(∇c − (∇c·v) v) / c, Snell's law made
-/// continuous), depositing once a STEP, so open water holds 1 / (RAY · STEP) a cell; more where rays
-/// converge. Blurred a little (the rays are few, and a real caustic is softened by diffraction).
-fn rays(floor: &Floor, d: [f64; 2], speed: &[f64]) -> Vec<f64> {
+/// How the rays crowd. Each ray is the swell's own: it starts upstream of the floor, RAY apart across the
+/// swell, and turns toward the slower water as it goes (dv/ds = −(∇c − (∇c·v) v) / c), depositing once a
+/// STEP, so open water holds 1 / (RAY · STEP) a cell; more where rays converge. The wall ends it.
+fn rays(floor: &Floor, d: [f64; 2], speed: &[f64], wall: &[bool]) -> Vec<f64> {
+    let n = floor.w * floor.h;
+    let mut crowd = vec![0.0; n];
     let (w, h) = (floor.w as f64, floor.h as f64);
-    let mut crowd = vec![0.0f64; floor.w * floor.h];
     let across = [-d[1], d[0]];
     let centre = [0.5 * w, 0.5 * h];
     let reach = 0.5 * w.hypot(h) + 2.0;
@@ -287,37 +421,45 @@ fn rays(floor: &Floor, d: [f64; 2], speed: &[f64]) -> Vec<f64> {
             centre[0] + across[0] * s - d[0] * reach,
             centre[1] + across[1] * s - d[1] * reach,
         ];
-        let mut entered = false;
         for _ in 0..(4.0 * reach / STEP) as usize {
-            if speed_at(floor, speed, p).is_some() {
-                entered = true;
+            if at(floor, speed, p).is_some() {
+                trace(floor, speed, wall, &mut crowd, p, d);
                 break;
             }
             p = [p[0] + d[0] * STEP, p[1] + d[1] * STEP];
         }
-        if entered {
-            trace(floor, speed, p, d, &mut crowd);
-        }
         s += RAY;
     }
-    blur(&mut crowd, floor.w, floor.h);
     blur(&mut crowd, floor.w, floor.h);
     crowd
 }
 
-fn trace(floor: &Floor, speed: &[f64], mut p: [f64; 2], mut v: [f64; 2], crowd: &mut [f64]) {
+/// One ray, from `p` heading `v`, until it leaves the sea or meets the wall.
+fn trace(
+    floor: &Floor,
+    speed: &[f64],
+    wall: &[bool],
+    crowd: &mut [f64],
+    mut p: [f64; 2],
+    mut v: [f64; 2],
+) {
     let w = floor.w;
+    let e = 0.5;
     for _ in 0..(4 * (floor.w + floor.h)) {
-        let Some(c) = speed_at(floor, speed, p) else {
+        let Some(c) = at(floor, speed, p) else {
             return;
         };
-        let e = 0.5;
-        let gx = speed_at(floor, speed, [p[0] + e, p[1]])
-            .zip(speed_at(floor, speed, [p[0] - e, p[1]]))
-            .map_or(0.0, |(a, b)| (a - b) / (2.0 * e));
-        let gy = speed_at(floor, speed, [p[0], p[1] + e])
-            .zip(speed_at(floor, speed, [p[0], p[1] - e]))
-            .map_or(0.0, |(a, b)| (a - b) / (2.0 * e));
+        let (x0, y0) = (p[0] as usize, p[1] as usize);
+        if wall[y0 * w + x0] {
+            return;
+        }
+        let grad = |q: [f64; 2], r: [f64; 2]| {
+            at(floor, speed, q)
+                .zip(at(floor, speed, r))
+                .map_or(0.0, |(a, b)| (a - b) / (2.0 * e))
+        };
+        let gx = grad([p[0] + e, p[1]], [p[0] - e, p[1]]);
+        let gy = grad([p[0], p[1] + e], [p[0], p[1] - e]);
         let along = gx * v[0] + gy * v[1];
         v = [
             v[0] - (gx - along * v[0]) / c * STEP,
@@ -325,14 +467,62 @@ fn trace(floor: &Floor, speed: &[f64], mut p: [f64; 2], mut v: [f64; 2], crowd: 
         ];
         let m = v[0].hypot(v[1]);
         v = [v[0] / m, v[1] / m];
-        let (x0, y0) = (p[0] as usize, p[1] as usize);
         let (fx, fy) = (p[0] - x0 as f64, p[1] - y0 as f64);
-        crowd[y0 * w + x0] += (1.0 - fx) * (1.0 - fy);
-        crowd[y0 * w + x0 + 1] += fx * (1.0 - fy);
-        crowd[(y0 + 1) * w + x0] += (1.0 - fx) * fy;
-        crowd[(y0 + 1) * w + x0 + 1] += fx * fy;
+        for (j, wt) in [
+            (y0 * w + x0, (1.0 - fx) * (1.0 - fy)),
+            (y0 * w + x0 + 1, fx * (1.0 - fy)),
+            ((y0 + 1) * w + x0, (1.0 - fx) * fy),
+            ((y0 + 1) * w + x0 + 1, fx * fy),
+        ] {
+            crowd[j] += wt;
+        }
         p = [p[0] + v[0] * STEP, p[1] + v[1] * STEP];
     }
+}
+
+/// The train the wall turns back: its crests (travel times) and height. Its sources are the sea's cells on
+/// the wall's face, each starting when the arriving crest reaches it and as tall as the arriving wave there;
+/// from them the crests are a second eikonal over the sea, and each cell takes its nearest source's height
+/// (as the arriving wave there grew to it, shoaling on from the face), halving over SPREAD_M.
+fn turned_back(
+    floor: &Floor,
+    wall: &[bool],
+    slow: &[f64],
+    phase: &[f64],
+    height: &[f32],
+    shoal: &dyn Fn(usize) -> f64,
+) -> (Vec<f64>, Vec<f32>) {
+    let (w, h) = (floor.w, floor.h);
+    let n = w * h;
+    let sources: Vec<usize> = (0..n)
+        .filter(|&i| !wall[i] && slow[i] > 0.0 && phase[i].is_finite() && height[i] > 0.0)
+        .filter(|&i| on_face(wall, w, h, i))
+        .collect();
+    let mut tau = vec![f64::INFINITY; n];
+    for &i in &sources {
+        tau[i] = phase[i];
+    }
+    sweep(floor, slow, &mut tau, ROUNDS);
+    let (dist, from) = nearest_source(floor, slow, &sources);
+    let mut out = vec![0.0f32; n];
+    for i in 0..n {
+        let src = from[i];
+        if src == usize::MAX || !tau[i].is_finite() {
+            continue;
+        }
+        let spread = (1.0 + dist[i] * floor.cell_m / SPREAD_M).sqrt().recip();
+        out[i] = (height[src] as f64 * spread * shoal(i) / shoal(src)) as f32;
+    }
+    let mut hb: Vec<f64> = out.iter().map(|&v| v as f64).collect();
+    blur(&mut hb, w, h);
+    for i in 0..n {
+        out[i] = if floor.sea(i) && !wall[i] {
+            hb[i] as f32
+        } else {
+            0.0
+        };
+    }
+    (tau, out)
 }
 
 /// Times smoothed over the sea alone (a box `passes` times, land cells left out of each mean): a ramp is
@@ -409,6 +599,16 @@ fn blur(v: &mut [f64], w: usize, h: usize) {
 mod tests {
     use super::*;
 
+    fn flat(depth: f32) -> Floor {
+        Floor {
+            w: 60,
+            h: 60,
+            cell_m: 50.0,
+            ground: vec![-depth; 3600],
+            canyon: vec![false; 3600],
+        }
+    }
+
     #[test]
     fn deep_and_shallow_speeds() {
         // deep water: c = gT/2π, cg = c/2
@@ -423,21 +623,38 @@ mod tests {
 
     #[test]
     fn a_flat_sea_is_a_plane_wave() {
-        let floor = Floor {
-            w: 60,
-            h: 60,
-            cell_m: 50.0,
-            ground: vec![-500.0; 3600],
-        };
+        let floor = flat(500.0);
         let f = Field::new(&floor, 12.0, 270.0);
         let (c, _) = speeds(12.0, 500.0);
         // from the west: τ grows with x at 1/c a metre, the same down a column
         let t = |x: usize, y: usize| f.tau[y * 60 + x];
         assert!(((t(40, 30) - t(10, 30)) - 30.0 * 50.0 / c).abs() < 0.5);
         assert!((t(40, 10) - t(40, 50)).abs() < 0.5);
-        // and its height stays the open sea's
+        // its height stays the open sea's, and nothing is turned back
         let hh = f.height[30 * 60 + 30] as f64;
-        assert!((hh - H0).abs() < 0.6, "{hh}");
+        assert!((hh - H0).abs() < 0.8, "{hh}");
+        assert!(f.height_back[30 * 60 + 30] < 0.1);
+    }
+
+    #[test]
+    fn a_wall_turns_a_long_swell_back_and_lets_a_short_one_across() {
+        // a canyon across the east half of the floor, running west to east, the swell from the north-west
+        let mut floor = flat(20.0);
+        for y in 34..44 {
+            for x in 20..60 {
+                floor.ground[y * 60 + x] = -150.0;
+                floor.canyon[y * 60 + x] = true;
+            }
+        }
+        let long = Field::new(&floor, 17.0, 315.0);
+        let short = Field::new(&floor, 5.0, 315.0);
+        let north = 28 * 60 + 40;
+        assert!(long.height_back[north] > 1.0, "{}", long.height_back[north]);
+        assert!(long.tau_back[north].is_finite());
+        assert!(short.height_back[north] < 0.1);
+        // the long swell does not cross: nothing arrives inside the canyon
+        assert!(!long.tau[38 * 60 + 50].is_finite());
+        assert!(short.tau[38 * 60 + 50].is_finite());
     }
 }
 
@@ -445,11 +662,12 @@ mod tests {
 mod probe {
     use super::*;
 
-    /// The field's heights as a picture, for looking at: `cargo test --release -p nazare -- --ignored
-    /// --nocapture heights` (writes NAZARE_OUT or /tmp/nazare-heights.pgm; NAZARE_FROM, NAZARE_T set the swell).
+    /// The field near the headland, for looking at: `cargo test --release -p nazare -- --ignored --nocapture
+    /// near_the_headland` (NAZARE_T, NAZARE_FROM set the swell, NAZARE_BACK=0 turns the canyon rule off;
+    /// NAZARE_OUT a PPM of the two trains near the headland).
     #[test]
     #[ignore]
-    fn heights() {
+    fn near_the_headland() {
         let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/data/");
         let b: serde_json::Value =
             serde_json::from_slice(&std::fs::read(format!("{dir}floor.json")).unwrap()).unwrap();
@@ -464,12 +682,9 @@ mod probe {
             .iter()
             .map(|c| i16::from_le_bytes(*c) as f32 / 10.0)
             .collect();
-        let floor = Floor {
-            w,
-            h,
-            cell_m: 50.0,
-            ground,
-        };
+        let l = &b["places"]["headland"]["cell"];
+        let light = [l[0].as_f64().unwrap(), l[1].as_f64().unwrap()];
+        let floor = crate::floor::build(w, h, 50.0, ground, light);
         let var = |k: &str, d: f64| {
             std::env::var(k)
                 .ok()
@@ -477,47 +692,67 @@ mod probe {
                 .unwrap_or(d)
         };
         let t0 = std::time::Instant::now();
-        let f = Field::new(&floor, var("NAZARE_T", 17.0), var("NAZARE_FROM", 290.0));
-        println!("solved in {:.0} ms", t0.elapsed().as_secs_f64() * 1000.0);
-        let hmax = f.height.iter().copied().fold(0.0f32, f32::max);
-        println!("highest {hmax:.1} m");
-        let surf: Vec<f32> = (0..w * h)
-            .filter(|&i| floor.sea(i) && f.height[i] as f64 >= 0.99 * BREAK * floor.depth(i))
-            .map(|i| f.focus[i])
-            .collect();
-        let mean = surf.iter().sum::<f32>() / surf.len().max(1) as f32;
-        println!("surf cells {} mean focus {mean:.2}", surf.len());
-        // along the coast, north to south: the most focus within 10 cells of the shore, by 20-row bands
-        for band in (300..700).step_by(20) {
-            let mut best = (0.0f32, 0usize);
-            for y in band..band + 20 {
-                let row = y * w;
-                let shore = (0..w).rev().find(|&x| floor.sea(row + x)).unwrap_or(0);
-                for x in shore.saturating_sub(10)..=shore {
-                    if f.focus[row + x] > best.0 {
-                        best = (f.focus[row + x], x);
+        let back = var("NAZARE_BACK", 1.0) > 0.5;
+        let f = Field::with_rules(
+            &floor,
+            var("NAZARE_T", 17.0),
+            var("NAZARE_FROM", 295.0),
+            [true, back],
+        );
+        println!(
+            "solved in {:.0} ms; canyon cells {}",
+            t0.elapsed().as_secs_f64() * 1000.0,
+            floor.canyon.iter().filter(|&&c| c).count()
+        );
+        let (cx, cy) = (light[0] as usize, light[1] as usize);
+        for y in (cy - 30..cy + 4).step_by(3) {
+            let row: Vec<String> = (cx - 36..cx + 3)
+                .step_by(3)
+                .map(|x| {
+                    let i = y * w + x;
+                    if !floor.sea(i) {
+                        "  ##".into()
+                    } else if floor.canyon[i] {
+                        "  ..".into()
+                    } else {
+                        format!("{:2.0}/{:1.0}", f.height[i], f.height_back[i].min(9.0))
                     }
+                })
+                .collect();
+            println!("{y:4} {}", row.join(""));
+        }
+        let near: Vec<(usize, f64)> = (0..w * h)
+            .filter(|&i| floor.sea(i) && !floor.canyon[i])
+            .map(|i| (i, f.nearness(&floor, i)))
+            .filter(|&(i, n)| n > 0.8 && f.height_back[i] > 1.0)
+            .collect();
+        println!("stacking cells {}", near.len());
+        if let Ok(out) = std::env::var("NAZARE_OUT") {
+            // red the arriving train, green the turned-back, blue the wall, grey the land (window 200 cells)
+            let (x0, y0) = (cx.saturating_sub(140), cy.saturating_sub(100));
+            let mut img = b"P6 200 200 255\n".to_vec();
+            for y in y0..y0 + 200 {
+                for x in x0..x0 + 200 {
+                    let i = y.min(h - 1) * w + x.min(w - 1);
+                    let px = if !floor.sea(i) {
+                        [90, 90, 90]
+                    } else {
+                        let r = (f.height[i] * 12.0).min(255.0) as u8;
+                        let g = (f.height_back[i] * 25.0).min(255.0) as u8;
+                        [
+                            r,
+                            g,
+                            if floor.canyon[i] {
+                                200
+                            } else {
+                                (floor.depth(i) * 0.6).min(120.0) as u8
+                            },
+                        ]
+                    };
+                    img.extend_from_slice(&px);
                 }
             }
-            println!("rows {band}: focus {:.2} at x {}", best.0, best.1);
+            std::fs::write(out, img).unwrap();
         }
-        let mut out = format!("P5 {w} {h} 255\n").into_bytes();
-        out.extend(
-            f.height
-                .iter()
-                .map(|&x| (x / 24.0 * 255.0).min(255.0) as u8),
-        );
-        let path = std::env::var("NAZARE_OUT").unwrap_or("/tmp/nazare-heights.pgm".into());
-        std::fs::write(&path, out).unwrap();
-        // and the crests: where each one is at one moment
-        let mut out = format!("P5 {w} {h} 255\n").into_bytes();
-        out.extend(f.tau.iter().map(|&t| {
-            if t.is_finite() {
-                (127.5 + 127.0 * (std::f64::consts::TAU * t / f.period).cos()) as u8
-            } else {
-                0
-            }
-        }));
-        std::fs::write(format!("{path}.crests.pgm"), out).unwrap();
     }
 }
