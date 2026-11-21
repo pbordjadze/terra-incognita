@@ -16,13 +16,13 @@ fn sky(px: vec2<f32>) -> vec3<f32> {
   // perspective: the deck overhead is near and large, toward the horizon far and thin
   let depth = 1.0 / max(1.08 - v, 0.06);
   let q = vec2<f32>((px.x - u.size.x * 0.5) / u.size.x * 2.2 * depth, depth * 1.6);
-  let drift = vec2<f32>(u.time * 0.012, 0.0);
+  let drift = vec2<f32>(u.time * 0.03, u.time * 0.004);
   let dens = smoothstep(0.32, 0.78, fbm(q * 1.3 + drift)) * (1.0 - smoothstep(0.86, 1.0, v) * 0.6);
   let base = mix(vec3<f32>(0.026, 0.026, 0.064), vec3<f32>(0.085, 0.064, 0.122), v);
   var col = base + dens * vec3<f32>(0.046, 0.040, 0.074);
   // the flash: lit from inside, the thick of the cloud lit most
   let fl = u.p0.x * 1.6 * exp(-length(px - u.p0.yz) / (u.size.y * 0.32));
-  let fk = u.p1.x * exp(-length(px - u.p1.yz) / (u.size.y * 0.16));
+  let fk = u.p1.x * exp(-length(px - u.p1.yz) / (u.size.y * 0.24));
   let light = fl + fk;
   let tint = vec3<f32>(0.78, 0.66, 1.0);
   col = col + tint * light * (0.12 + 1.15 * dens);
@@ -75,6 +75,9 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let mx = px.x + wob * u.scale * (3.0 + 30.0 * near);
   let my = hy - below * (1.0 + 0.25 * wob);
   var col = sky(vec2<f32>(mx, my)) * (0.30 + 0.25 * (1.0 - near));
+  // between flashes the water keeps a faint surface: the town's glow and the deck's on the swell
+  let swell = noise2(vec2<f32>(px.x / u.scale * 0.03 + t * 0.05, below / u.scale * 0.12 * freq * 0.05 - t * 0.3));
+  col = col + vec3<f32>(0.020, 0.017, 0.032) * (0.4 + 0.9 * swell) * (1.0 - 0.6 * near);
   let sh = shore(vec2<f32>(mx, hy - (below * 1.0)), hy);
   col = mix(col, sh.rgb * 0.7, sh.a * 0.8);
   // fine glints of the flash on the wavelets

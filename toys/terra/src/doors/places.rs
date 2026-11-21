@@ -212,16 +212,6 @@ fn far_places() -> Vec<Door> {
             degree: 2,
             open: rooms::open::<redcrabs::RedCrabs>,
         },
-        Door {
-            id: "fairy",
-            name: "Fairy Circles",
-            place: "NamibRand, Namibia",
-            line: "Bare circles in the grass, spaced like a honeycomb.",
-            at: [fairy::PLACE.0, fairy::PLACE.1],
-            tint: [0.80, 0.42, 0.24],
-            degree: 9,
-            open: rooms::open::<fairy::FairyCircles>,
-        },
     ]
 }
 

@@ -68,6 +68,8 @@ pub struct Land {
     /// The phone's tilt as the land's extra fall a cell, across and down the screen.
     pub tilt: [f32; 2],
     pub on: [bool; 2],
+    /// How much of the year's flood is coming down the Panhandle now (a share of `INFLOW`).
+    pub pulse: f32,
     flux: Vec<f32>,
     level: Vec<f32>,
     /// The surface without its water, worked out once a `run` (ground, islands, tilt, finger).
@@ -119,6 +121,7 @@ impl Land {
             green: vec![0.0; w * h],
             tilt: [0.0, 0.0],
             on: [true, true],
+            pulse: 1.0,
             flux: vec![0.0; w * h],
             level: vec![0.0; w * h],
             base: vec![0.0; w * h],
@@ -166,13 +169,13 @@ impl Land {
         for (g, c) in self.ground.iter_mut().zip(&cut) {
             *g -= c;
         }
-        // the flood already in the channels' upper reaches, and the grass green beside them, so the
-        // toy needs only a few seconds' run before it opens
+        // the year's flood just come down the Panhandle into the head of the channels; the plain still
+        // dry from the last, its grass greener only along the old channels
         for (i, c) in cut.iter().enumerate() {
-            if i / self.w < self.h * 2 / 3 {
+            if i / self.w < self.h / 8 {
                 self.water[i] = 0.8 * c;
-                self.green[i] = (c * 2.0).min(1.0);
             }
+            self.green[i] = (c * 0.6).min(0.5);
         }
     }
 
@@ -246,7 +249,7 @@ impl Land {
             // the flood coming down the Panhandle
             for k in 0..=2 * MOUTH.1 {
                 let x = (c as usize + k).saturating_sub(MOUTH.1).min(w - 1);
-                self.water[x] += INFLOW * dt / n as f32 / (2 * MOUTH.1 + 1) as f32;
+                self.water[x] += INFLOW * self.pulse * dt / n as f32 / (2 * MOUTH.1 + 1) as f32;
             }
             for i in 0..w * h {
                 self.level[i] = self.base[i] + self.water[i];
@@ -289,7 +292,7 @@ impl Land {
             *g = if wet {
                 (*g + dt * 0.5).min(1.0)
             } else {
-                (*g - dt * 0.02).max(0.0)
+                (*g - dt * 0.035).max(0.0)
             };
         }
     }
