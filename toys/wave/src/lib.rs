@@ -6,8 +6,9 @@
 //!
 //! `crowd.rs` is the people (Farkas, Helbing & Vicsek's excitable-medium model), `bowl.rs` the
 //! stadium and the camera, `bowl.wgsl` the stands and pitch, `city.wgsl` the city round it,
-//! `sound.rs` the crowd.
+//! `sound.rs` the crowd; `beflix.rs` draws it all as a 1963 Bell Labs film.
 
+pub mod beflix;
 pub mod bowl;
 pub mod crowd;
 pub mod sound;
@@ -62,9 +63,102 @@ pub struct Wave {
     last: Vec<(u64, [f32; 2])>,
     sound: sound::Sound,
     reduce_motion: bool,
+    film: beflix::Beflix,
 }
 
 impl Wave {
+    /// The stadium as it was drawn before the film: the city, the stands and the pitch, into `target`.
+    fn draw_scene(
+        &mut self,
+        ctx: &Ctx,
+        enc: &mut wgpu::CommandEncoder,
+        target: &wgpu::TextureView,
+    ) {
+        let gpu = &ctx.gpu;
+        let frac = self.acc as f32;
+        for (i, l) in self.lights.iter().enumerate() {
+            let up = self.crowd.height(i, frac);
+            self.texels[i * 4..i * 4 + 4].copy_from_slice(&[(up * 255.0) as u8, l[0], l[1], 255]);
+        }
+        gpu.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &self.texels,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(U as u32 * 4),
+                rows_per_image: Some(V as u32),
+            },
+            wgpu::Extent3d {
+                width: U as u32,
+                height: V as u32,
+                depth_or_array_layers: 1,
+            },
+        );
+        let cam = self.camera();
+        let u = Uniform {
+            eye: cam.eye,
+            tilt: cam.tilt,
+            size: cam.size,
+            f: cam.f,
+            time: self.t as f32,
+            grid: [U as f32, V as f32],
+            ppp: ctx.ppp as f32,
+            yaw: cam.yaw,
+        };
+        gpu.queue
+            .write_buffer(&self.ubuf, 0, bytemuck::bytes_of(&u));
+        let out = bowl::DEPTH * V as f32 + 12.0;
+        self.city.render(
+            gpu,
+            enc,
+            target,
+            [ctx.width, ctx.height],
+            &BackdropParams {
+                time: self.t as f32,
+                scale: 1.0,
+                center: [0.0, 0.0],
+                p: [
+                    cam.f,
+                    cam.tilt,
+                    cam.eye[1],
+                    cam.eye[2],
+                    bowl::HALF[0] + out,
+                    bowl::HALF[1] + out,
+                    cam.eye[0],
+                    cam.yaw,
+                ],
+            },
+        );
+        {
+            let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("bowl"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: target,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+                multiview_mask: None,
+            });
+            rp.set_pipeline(&self.pipeline);
+            rp.set_bind_group(0, &self.bind, &[]);
+            rp.set_vertex_buffer(0, self.vbuf.slice(..));
+            rp.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint32);
+            rp.draw_indexed(0..self.count, 0, 0..1);
+        }
+    }
+
     fn camera(&self) -> bowl::Camera {
         bowl::Camera::new(
             [
@@ -257,12 +351,14 @@ impl Toy for Wave {
             last: Vec::new(),
             sound: sound::Sound::default(),
             reduce_motion: ctx.reduce_motion,
+            film: beflix::Beflix::new(gpu, [ctx.width, ctx.height]),
         })
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.size_pt = ctx.points();
         self.ppp = ctx.ppp;
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {
@@ -294,91 +390,15 @@ impl Toy for Wave {
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
-        let gpu = &ctx.gpu;
-        let frac = self.acc as f32;
-        for (i, l) in self.lights.iter().enumerate() {
-            let up = self.crowd.height(i, frac);
-            self.texels[i * 4..i * 4 + 4].copy_from_slice(&[(up * 255.0) as u8, l[0], l[1], 255]);
+        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+        // a new drawing twelve times a second, each shot twice, as the films were
+        if let Some(d) = self.film.due(self.t) {
+            let scene = self.film.scene.clone();
+            self.draw_scene(ctx, &mut enc, &scene);
+            self.film.read(&ctx.gpu, &mut enc, d, self.reduce_motion);
         }
-        gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &self.tex,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &self.texels,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(U as u32 * 4),
-                rows_per_image: Some(V as u32),
-            },
-            wgpu::Extent3d {
-                width: U as u32,
-                height: V as u32,
-                depth_or_array_layers: 1,
-            },
-        );
-        let cam = self.camera();
-        let u = Uniform {
-            eye: cam.eye,
-            tilt: cam.tilt,
-            size: cam.size,
-            f: cam.f,
-            time: self.t as f32,
-            grid: [U as f32, V as f32],
-            ppp: ctx.ppp as f32,
-            yaw: cam.yaw,
-        };
-        gpu.queue
-            .write_buffer(&self.ubuf, 0, bytemuck::bytes_of(&u));
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        let out = bowl::DEPTH * V as f32 + 12.0;
-        self.city.render(
-            gpu,
-            &mut enc,
-            target,
-            [ctx.width, ctx.height],
-            &BackdropParams {
-                time: self.t as f32,
-                scale: 1.0,
-                center: [0.0, 0.0],
-                p: [
-                    cam.f,
-                    cam.tilt,
-                    cam.eye[1],
-                    cam.eye[2],
-                    bowl::HALF[0] + out,
-                    bowl::HALF[1] + out,
-                    cam.eye[0],
-                    cam.yaw,
-                ],
-            },
-        );
-        {
-            let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("bowl"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: target,
-                    resolve_target: None,
-                    depth_slice: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-                multiview_mask: None,
-            });
-            rp.set_pipeline(&self.pipeline);
-            rp.set_bind_group(0, &self.bind, &[]);
-            rp.set_vertex_buffer(0, self.vbuf.slice(..));
-            rp.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint32);
-            rp.draw_indexed(0..self.count, 0, 0..1);
-        }
-        gpu.queue.submit([enc.finish()]);
+        self.film.film(&mut enc, target);
+        ctx.gpu.queue.submit([enc.finish()]);
     }
 
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
