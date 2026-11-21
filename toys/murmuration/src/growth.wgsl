@@ -26,11 +26,12 @@ fn field_of(t: texture_2d<f32>, uv: vec2f) -> vec4f {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// The two fields as one: wherever the near birds' is the stronger, theirs.
+// The two fields as one: wherever the near birds' is the stronger, theirs, crossing over smoothly
+// so the height (and the normals taken from it) has no step where they meet.
 fn field(uv: vec2f) -> vec4f {
     let a = field_of(dens, uv);
     let b = field_of(solid, uv);
-    return select(a, b, b.x > a.x);
+    return mix(a, b, smoothstep(-0.15, 0.15, b.x - a.x));
 }
 
 fn height(uv: vec2f) -> f32 {

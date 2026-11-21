@@ -22,6 +22,8 @@ use toy_kit::Ctx;
 pub const ON: bool = true;
 const REEDS: usize = 90;
 const SEGS: usize = 12;
+/// A near bird's parts (growth_density.wgsl's PARTS): body, head, tail, and two blades a wing.
+const PARTS: u32 = 7;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -72,6 +74,7 @@ pub struct Growth {
     cap: usize,
     dens_pipe: wgpu::RenderPipeline,
     solid_pipe: wgpu::RenderPipeline,
+    dens_layout: wgpu::BindGroupLayout,
     dens_bind: wgpu::BindGroup,
     shade_pipe: wgpu::RenderPipeline,
     shade_layout: wgpu::BindGroupLayout,
@@ -149,6 +152,30 @@ fn shade_bind(
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(solid),
+                },
+            ],
+        })
+}
+
+fn dens_bind(
+    ctx: &Ctx,
+    layout: &wgpu::BindGroupLayout,
+    u: &wgpu::Buffer,
+    parts: &wgpu::Buffer,
+) -> wgpu::BindGroup {
+    ctx.gpu
+        .device
+        .create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("growth field"),
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: u.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: parts.as_entire_binding(),
                 },
             ],
         })
@@ -244,9 +271,9 @@ fn pipelines(
         "growth near birds",
         &[Some(dens_layout)],
         dens_shader,
-        "vs_main",
-        "fs_main",
-        true,
+        "vs_bird",
+        "fs_bird",
+        false,
         wgpu::TextureFormat::Rgba16Float,
         Some(wgpu::BlendState {
             color: max,
@@ -284,26 +311,23 @@ impl Growth {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let buffer = |binding, ty| wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        };
+        let parts = wgpu::BufferBindingType::Storage { read_only: true };
         let dens_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("growth field"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
-        let dens_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("growth field"),
-            layout: &dens_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buf.as_entire_binding(),
-            }],
+            entries: &[
+                buffer(0, wgpu::BufferBindingType::Uniform),
+                buffer(1, parts),
+            ],
         });
         let tex = |binding| wgpu::BindGroupLayoutEntry {
             binding,
@@ -330,6 +354,7 @@ impl Growth {
         let shade_bind = shade_bind(ctx, &shade_layout, &dens, &solid_dens);
         let cap = 16_384;
         let inst = Self::instances(ctx, cap);
+        let dens_bind = dens_bind(ctx, &dens_layout, &buf, &inst);
         Growth {
             reeds: grow_reeds(),
             balls: Vec::with_capacity(cap),
@@ -340,6 +365,7 @@ impl Growth {
             cap,
             dens_pipe,
             solid_pipe,
+            dens_layout,
             dens_bind,
             shade_pipe,
             shade_layout,
@@ -354,7 +380,9 @@ impl Growth {
         ctx.gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("growth parts"),
             size: (n * std::mem::size_of::<Ball>()) as u64,
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         })
     }
@@ -568,11 +596,15 @@ impl Growth {
         self.near.clear();
         self.birds(scene.flock, e, w, h);
         self.reeds(e, scene.t, scene.reeds);
-        let n_add = self.balls.len() as u32;
-        self.balls.append(&mut self.near);
+        // One buffer: the near birds' parts first (read by bird, PARTS each), then the rest.
+        let n_near = self.near.len() as u32;
+        let birds = n_near / PARTS;
+        self.near.append(&mut self.balls);
+        std::mem::swap(&mut self.near, &mut self.balls);
         if self.balls.len() > self.cap {
             self.cap = self.balls.len().next_power_of_two();
             self.inst = Self::instances(ctx, self.cap);
+            self.dens_bind = dens_bind(ctx, &self.dens_layout, &self.buf, &self.inst);
         }
         ctx.gpu
             .queue
@@ -583,14 +615,13 @@ impl Growth {
             rp.set_pipeline(&self.dens_pipe);
             rp.set_bind_group(0, &self.dens_bind, &[]);
             rp.set_vertex_buffer(0, self.inst.slice(..));
-            rp.draw(0..6, 0..n_add);
+            rp.draw(0..6, n_near..self.balls.len() as u32);
         }
         {
             let mut rp = pass(&mut enc, &self.solid_dens, "growth near birds");
             rp.set_pipeline(&self.solid_pipe);
             rp.set_bind_group(0, &self.dens_bind, &[]);
-            rp.set_vertex_buffer(0, self.inst.slice(..));
-            rp.draw(0..6, n_add..self.balls.len() as u32);
+            rp.draw(0..6, 0..birds);
         }
         {
             let mut rp = pass(&mut enc, target, "growth shade");
