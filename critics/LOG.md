@@ -55,3 +55,15 @@ Maker's answer: taken: 900 cells, not 1400, and the long-exposure streaks bright
 ## The Delta · Round 3 · 2026-11-17 ET · build round 2 fixes · critic fresh
 First: a pleasant aerial map, dark channels with green fringes, the tilt clearly moves the water | Weakest: water flat navy, no crisp reed margins or hard wet line; a steep hold draws vertical streaks | Change: sky-reflective water in narrow channels, crisp papyrus margins, a hard shoreline | Couldn't judge: motion, the switch panel | Ship: no
 Maker's answer: noted, not taken in this build: the tipped-and-sinking pair reads (the critic's best), the water is now water; crisper margins and papyrus texture are a further pass of the shader, carried to the owner. The streaks under a 30° hold are rills on a steep lean, the physics; the hold is clamped at the steepest that counts · Conductor: done, three rounds (the cap); the look of the water's edge carried to the owner
+
+## Murmuration, Growth look · Round 1 · 2026-11-21 ET · build 5dafccf-pre · critic fresh
+First: the wheeling sheet reads as a murmuration | Weakest: near birds melt into one another (spilled lace); colour monotone indigo; your bird a seed pod | Change: keep birds apart, show the banded reflection, give your bird head and tail | Couldn't judge: motion | Ship: no
+Maker's answer: taken: birds got heads, tails and wings; the reflected ball painted from the dusk on the sun's side; a lower threshold so neighbours melt only when touching · Conductor: continue
+
+## Murmuration, Growth look · Round 2 · 2026-11-21 ET · build round 1 fixes · critic fresh
+First: from the reeds, Kawaguchi and a murmuration | Weakest: inside the flock, glossy squiggles; dead black under the horizon | Change: fewer, clearer near birds; fill the ground | Couldn't judge: motion | Ship: no
+Maker's answer: taken: banded water under the horizon; far birds finer · Conductor: continue
+
+## Murmuration, Growth look · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
+First: the view from the reeds is showable | Weakest: near birds still crosses or dragonflies, neighbours fusing into chains | Change: a starling's silhouette (plump body, triangular swept wings, square tail), melt only within one bird | Couldn't judge: motion | Ship: no (inside the flock)
+Maker's answer: taken: near birds now drawn into their own field, each bird's parts summed and birds kept apart (max), so none fuse; flat meta-ellipsoids (three axes) give a plump body, triangular wings of two blades swept from the wrist, a square tail; water stripes blur to their mean where finer than pixels; the hole round your bird narrowed. Declined: the far flock melting into one skin is the look · Conductor: done, three rounds (the cap); checked by eye after the fixes (near birds separate and bird-shaped), the rest for the owner on the phone

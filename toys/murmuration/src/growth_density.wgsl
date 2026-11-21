@@ -17,9 +17,10 @@ struct U {
 @group(0) @binding(0) var<uniform> u: U;
 
 struct In {
-    @location(0) c: vec4f,    // centre (world), .w: the minor radius (m)
-    @location(1) ax: vec4f,   // the major half-axis (world, m), .w: weight
-    @location(2) m: vec4f,    // .x material, .y you (0..1)
+    @location(0) c: vec4f,    // centre (world), .w: the third half-axis's length (m)
+    @location(1) a: vec4f,    // a half-axis (world, m), .w: weight
+    @location(2) b: vec4f,    // a second half-axis, .w: material
+    @location(3) t: vec4f,    // .x you (0..1)
 };
 
 struct VOut {
@@ -45,20 +46,30 @@ fn project(p: vec3f) -> vec3f {
 fn vs_main(@builtin(vertex_index) vi: u32, b: In) -> VOut {
     var o: VOut;
     let s = project(b.c.xyz);
-    if (s.z < 0.3 || b.ax.w <= 0.0) {
+    if (s.z < 0.3 || b.a.w <= 0.0) {
         o.pos = vec4f(2.0, 2.0, 2.0, 1.0);
         return o;
     }
-    let f = u.right.w;
-    var minor = b.c.w * f / s.z;
-    let e = project(b.c.xyz + b.ax.xyz);
-    var major_v = select(vec2f(0.0), e.xy - s.xy, e.z > 0.05);
-    let major_len = length(major_v);
-    let dir = select(vec2f(1.0, 0.0), major_v / max(major_len, 1e-5), major_len > 1e-4);
-    var major = max(major_len, minor);
+    // The ellipsoid's outline on the screen: its three half-axes projected about its centre, and
+    // the ellipse they span (the sum of their outer products), by its two principal axes.
+    let tz = normalize(cross(b.a.xyz, b.b.xyz) + vec3f(0.0, 1e-7, 0.0)) * b.c.w;
+    let ea = project(b.c.xyz + b.a.xyz).xy - s.xy;
+    let eb = project(b.c.xyz + b.b.xyz).xy - s.xy;
+    let et = project(b.c.xyz + tz).xy - s.xy;
+    let xx = ea.x * ea.x + eb.x * eb.x + et.x * et.x;
+    let yy = ea.y * ea.y + eb.y * eb.y + et.y * et.y;
+    let xy = ea.x * ea.y + eb.x * eb.y + et.x * et.y;
+    let half_tr = 0.5 * (xx + yy);
+    let disc = sqrt(max(0.25 * (xx - yy) * (xx - yy) + xy * xy, 0.0));
+    var major = sqrt(max(half_tr + disc, 0.0));
+    var minor = sqrt(max(half_tr - disc, 0.0));
+    // A round outline has no principal direction (and atan2(0, 0) is undefined): any will do.
+    let round = abs(xy) + abs(xx - yy) < 1e-9;
+    let ang = select(0.5 * atan2(2.0 * xy, xx - yy), 0.0, round);
+    let dir = vec2f(cos(ang), sin(ang));
     // Too thin to draw: drawn at the smallest size, weighted by how much of that it really covers,
     // never so little that a lone far bird drops below the surface.
-    var w = b.ax.w;
+    var w = b.a.w;
     let m0 = u.eye.w;
     if (minor < m0) {
         let area = major * minor;
@@ -75,7 +86,7 @@ fn vs_main(@builtin(vertex_index) vi: u32, b: In) -> VOut {
     let p = s.xy + dir * l.x * REACH * major + side * l.y * REACH * minor;
     o.pos = vec4f(p.x / (0.5 * u.up.w), p.y / (0.5 * u.fwd.w), 0.5, 1.0);
     o.l = l;
-    o.k = vec4f(w, minor, b.m.x, b.m.y);
+    o.k = vec4f(w, minor, b.b.w, b.t.x);
     return o;
 }
 

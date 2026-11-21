@@ -192,8 +192,8 @@ fn msaa_view(ctx: &Ctx) -> wgpu::TextureView {
         .create_texture(&wgpu::TextureDescriptor {
             label: Some("murmuration msaa"),
             size: wgpu::Extent3d {
-                width: ctx.width,
-                height: ctx.height,
+                width: if growth::ON { 1 } else { ctx.width }, // unused in the Growth look
+                height: if growth::ON { 1 } else { ctx.height },
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -922,6 +922,9 @@ impl Toy for Murmuration {
         ctx.gpu
             .queue
             .write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
+        if std::env::var_os("MURMURATION_COUNT").is_some() {
+            self.count(ctx);
+        }
         if let Some(g) = &mut self.growth {
             let reeds = 1.0 - self.near.min(1.0) * 2.0;
             let t = self.t as f32;
@@ -972,9 +975,6 @@ impl Toy for Murmuration {
         ctx.gpu
             .queue
             .write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
-        if std::env::var_os("MURMURATION_COUNT").is_some() {
-            self.count(ctx);
-        }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {

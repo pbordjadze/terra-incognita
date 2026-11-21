@@ -14,7 +14,7 @@
 //! Real time instead of minutes a frame: the field is summed on the screen (growth_density.wgsl),
 //! at half resolution on high-density screens (his coarse "screen step"), and shaded per pixel.
 
-use crate::flock::{addv, cross, dot, norm, scale, sub, Flock, Rng, V3};
+use crate::flock::{addv, cross, dot, length, norm, scale, sub, Flock, Rng, V3};
 use crate::Eye;
 use toy_kit::Ctx;
 
@@ -32,13 +32,15 @@ struct DensU {
     eye: [f32; 4],
 }
 
-/// One meta-ellipsoid: centre and minor radius, the major half-axis and weight, the material.
+/// One meta-ellipsoid: its centre, two of its half-axes (with its weight and material), and the
+/// third axis's length (square to both) with "you".
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct Ball {
     c: [f32; 4],
-    ax: [f32; 4],
-    m: [f32; 4],
+    a: [f32; 4],
+    b: [f32; 4],
+    t: [f32; 4],
 }
 
 const BIRD: f32 = 0.0;
@@ -62,15 +64,20 @@ struct Reed {
 pub struct Growth {
     reeds: Vec<Reed>,
     balls: Vec<Ball>,
+    /// The near birds' parts: summed within a bird but kept apart from other birds (max).
+    near: Vec<Ball>,
+    solid: bool,
     buf: wgpu::Buffer,
     inst: wgpu::Buffer,
     cap: usize,
     dens_pipe: wgpu::RenderPipeline,
+    solid_pipe: wgpu::RenderPipeline,
     dens_bind: wgpu::BindGroup,
     shade_pipe: wgpu::RenderPipeline,
     shade_layout: wgpu::BindGroupLayout,
     shade_bind: wgpu::BindGroup,
     dens: wgpu::TextureView,
+    solid_dens: wgpu::TextureView,
     /// Field pixels per screen pixel.
     res: f32,
 }
@@ -123,24 +130,147 @@ fn field(ctx: &Ctx, res: f32) -> wgpu::TextureView {
         .create_view(&Default::default())
 }
 
-fn shade_bind(ctx: &Ctx, layout: &wgpu::BindGroupLayout, v: &wgpu::TextureView) -> wgpu::BindGroup {
+fn shade_bind(
+    ctx: &Ctx,
+    layout: &wgpu::BindGroupLayout,
+    v: &wgpu::TextureView,
+    solid: &wgpu::TextureView,
+) -> wgpu::BindGroup {
     ctx.gpu
         .device
         .create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("growth shade"),
             layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(v),
-            }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(v),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(solid),
+                },
+            ],
         })
+}
+
+/// Field pixels per screen pixel: half on high-density screens (his coarse screen step).
+fn field_res(ctx: &Ctx) -> f32 {
+    if ctx.ppp >= 1.5 {
+        0.5
+    } else {
+        1.0
+    }
+}
+
+/// The three pipelines: the field summed (far birds, reeds), the near birds' field (each bird
+/// apart), and the shading of the skin.
+fn pipelines(
+    ctx: &Ctx,
+    [dens_layout, sky_layout, shade_layout]: [&wgpu::BindGroupLayout; 3],
+    dens_shader: &wgpu::ShaderModule,
+    shade_shader: &wgpu::ShaderModule,
+) -> [wgpu::RenderPipeline; 3] {
+    let dev = &ctx.gpu.device;
+    let add = wgpu::BlendComponent {
+        src_factor: wgpu::BlendFactor::One,
+        dst_factor: wgpu::BlendFactor::One,
+        operation: wgpu::BlendOperation::Add,
+    };
+    let max = wgpu::BlendComponent {
+        operation: wgpu::BlendOperation::Max,
+        ..add
+    };
+    let attrs =
+        wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4, 3 => Float32x4];
+    let pipe = |label: &str,
+                layouts: &[Option<&wgpu::BindGroupLayout>],
+                module: &wgpu::ShaderModule,
+                vs: &str,
+                fs: &str,
+                inst: bool,
+                format: wgpu::TextureFormat,
+                blend: Option<wgpu::BlendState>| {
+        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some(label),
+            bind_group_layouts: layouts,
+            immediate_size: 0,
+        });
+        let vb = [Some(wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Ball>() as u64,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &attrs,
+        })];
+        dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(label),
+            layout: Some(&pl),
+            vertex: wgpu::VertexState {
+                module,
+                entry_point: Some(vs),
+                buffers: if inst { &vb } else { &[] },
+                compilation_options: Default::default(),
+            },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module,
+                entry_point: Some(fs),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            multiview_mask: None,
+            cache: None,
+        })
+    };
+    let dens_pipe = pipe(
+        "growth field",
+        &[Some(dens_layout)],
+        dens_shader,
+        "vs_main",
+        "fs_main",
+        true,
+        wgpu::TextureFormat::Rgba16Float,
+        Some(wgpu::BlendState {
+            color: add,
+            alpha: add,
+        }),
+    );
+    let solid_pipe = pipe(
+        "growth near birds",
+        &[Some(dens_layout)],
+        dens_shader,
+        "vs_main",
+        "fs_main",
+        true,
+        wgpu::TextureFormat::Rgba16Float,
+        Some(wgpu::BlendState {
+            color: max,
+            alpha: max,
+        }),
+    );
+    let shade_pipe = pipe(
+        "growth shade",
+        &[Some(sky_layout), Some(shade_layout)],
+        shade_shader,
+        "vs_main",
+        "fs_growth",
+        false,
+        ctx.gpu.format,
+        None,
+    );
+    [dens_pipe, solid_pipe, shade_pipe]
 }
 
 impl Growth {
     pub fn new(ctx: &Ctx, sky_layout: &wgpu::BindGroupLayout) -> Growth {
         let gpu = &ctx.gpu;
         let dev = &gpu.device;
-        let res = if ctx.ppp >= 1.5 { 0.5 } else { 1.0 };
+        let res = field_res(ctx);
         let dens_shader = gpu.shader("growth field", include_str!("growth_density.wgsl"));
         let shade_src = format!(
             "{}\n{}",
@@ -175,108 +305,47 @@ impl Growth {
                 resource: buf.as_entire_binding(),
             }],
         });
+        let tex = |binding| wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            },
+            count: None,
+        };
         let shade_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("growth shade"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
-                },
-                count: None,
-            }],
+            entries: &[tex(0), tex(1)],
         });
-        let add = wgpu::BlendComponent {
-            src_factor: wgpu::BlendFactor::One,
-            dst_factor: wgpu::BlendFactor::One,
-            operation: wgpu::BlendOperation::Add,
-        };
-        let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4];
-        let pipe = |label: &str,
-                    layouts: &[Option<&wgpu::BindGroupLayout>],
-                    module: &wgpu::ShaderModule,
-                    vs: &str,
-                    fs: &str,
-                    inst: bool,
-                    format: wgpu::TextureFormat,
-                    blend: Option<wgpu::BlendState>| {
-            let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some(label),
-                bind_group_layouts: layouts,
-                immediate_size: 0,
-            });
-            let vb = [Some(wgpu::VertexBufferLayout {
-                array_stride: std::mem::size_of::<Ball>() as u64,
-                step_mode: wgpu::VertexStepMode::Instance,
-                attributes: &attrs,
-            })];
-            dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some(label),
-                layout: Some(&pl),
-                vertex: wgpu::VertexState {
-                    module,
-                    entry_point: Some(vs),
-                    buffers: if inst { &vb } else { &[] },
-                    compilation_options: Default::default(),
-                },
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                fragment: Some(wgpu::FragmentState {
-                    module,
-                    entry_point: Some(fs),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format,
-                        blend,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: Default::default(),
-                }),
-                multiview_mask: None,
-                cache: None,
-            })
-        };
-        let dens_pipe = pipe(
-            "growth field",
-            &[Some(&dens_layout)],
+        let [dens_pipe, solid_pipe, shade_pipe] = pipelines(
+            ctx,
+            [&dens_layout, sky_layout, &shade_layout],
             &dens_shader,
-            "vs_main",
-            "fs_main",
-            true,
-            wgpu::TextureFormat::Rgba16Float,
-            Some(wgpu::BlendState {
-                color: add,
-                alpha: add,
-            }),
-        );
-        let shade_pipe = pipe(
-            "growth shade",
-            &[Some(sky_layout), Some(&shade_layout)],
             &shade_shader,
-            "vs_main",
-            "fs_growth",
-            false,
-            gpu.format,
-            None,
         );
         let dens = field(ctx, res);
-        let shade_bind = shade_bind(ctx, &shade_layout, &dens);
+        let solid_dens = field(ctx, res);
+        let shade_bind = shade_bind(ctx, &shade_layout, &dens, &solid_dens);
         let cap = 16_384;
         let inst = Self::instances(ctx, cap);
         Growth {
             reeds: grow_reeds(),
             balls: Vec::with_capacity(cap),
+            near: Vec::with_capacity(cap),
+            solid: false,
             buf,
             inst,
             cap,
             dens_pipe,
+            solid_pipe,
             dens_bind,
             shade_pipe,
             shade_layout,
             shade_bind,
             dens,
+            solid_dens,
             res,
         }
     }
@@ -291,16 +360,45 @@ impl Growth {
     }
 
     pub fn resize(&mut self, ctx: &Ctx) {
+        self.res = field_res(ctx);
         self.dens = field(ctx, self.res);
-        self.shade_bind = shade_bind(ctx, &self.shade_layout, &self.dens);
+        self.solid_dens = field(ctx, self.res);
+        self.shade_bind = shade_bind(ctx, &self.shade_layout, &self.dens, &self.solid_dens);
     }
 
+    /// A round part: a ball, or a tube's segment along `ax` (its half-length) of radius `r`.
     fn part(&mut self, c: V3, r: f32, ax: V3, w: f32, m: f32, you: f32) {
-        self.balls.push(Ball {
-            c: [c[0], c[1], c[2], r],
-            ax: [ax[0], ax[1], ax[2], w],
-            m: [m, you, 0.0, 0.0],
-        });
+        let l = length(ax);
+        let d = if l > 1e-6 {
+            scale(ax, 1.0 / l)
+        } else {
+            [0.0, 1.0, 0.0]
+        };
+        let side = norm(cross(
+            d,
+            if d[1].abs() < 0.9 {
+                [0.0, 1.0, 0.0]
+            } else {
+                [1.0, 0.0, 0.0]
+            },
+        ));
+        self.flat(c, scale(d, l.max(r)), scale(side, r), r, w, m, you);
+    }
+
+    /// A meta-ellipsoid with half-axes `a` and `b` and a thickness `t` square to both.
+    #[allow(clippy::too_many_arguments)] // Osaka's primitive: centre, three axes, weight, attributes
+    fn flat(&mut self, c: V3, a: V3, b: V3, t: f32, w: f32, m: f32, you: f32) {
+        let part = Ball {
+            c: [c[0], c[1], c[2], t],
+            a: [a[0], a[1], a[2], w],
+            b: [b[0], b[1], b[2], m],
+            t: [you, 0.0, 0.0, 0.0],
+        };
+        if self.solid {
+            self.near.push(part);
+        } else {
+            self.balls.push(part);
+        }
     }
 
     /// The birds: a body along the heading and two wings out from the shoulders, raised and
@@ -309,7 +407,8 @@ impl Growth {
         // Your bird, near the eye, hides the birds behind it: drop them, or their skins melt into yours.
         let y = &flock.birds[flock.you];
         let yr = sub(y.pos, e.pos);
-        let yz = dot(yr, e.fwd).max(0.3);
+        let yz0 = dot(yr, e.fwd);
+        let yz = yz0.max(0.3);
         let ys = [
             dot(yr, e.right) * e.focal / yz,
             dot(yr, e.up) * e.focal / yz,
@@ -330,7 +429,8 @@ impl Growth {
                 continue;
             }
             let (dx, dy) = (x - ys[0], y - ys[1]);
-            if !me && z > yz && (dx * dx + dy * dy).sqrt() < 0.8 * yspan + 0.5 * span {
+            if !me && yz0 >= 0.3 && z > yz && (dx * dx + dy * dy).sqrt() < 0.6 * yspan + 0.3 * span
+            {
                 continue;
             }
             let fwd = norm(b.vel);
@@ -338,25 +438,45 @@ impl Growth {
             let up = cross(fwd, side);
             let s = b.size;
             let you = if me { 1.0 } else { 0.0 };
-            if span < 7.0 {
+            self.solid = span >= 7.0;
+            if !self.solid {
                 self.part(b.pos, 0.03 * s, scale(side, 0.15 * s), 1.0, BIRD, you);
                 continue;
             }
-            // A starling: body, round head, short tail; each wing an arm and a pointed hand swept
-            // back from the wrist, the hand beating more than the arm.
-            let beat = b.phase.sin() * b.flap;
-            let at = |k: f32| addv(b.pos, scale(fwd, k * s));
-            self.part(at(0.01), 0.021 * s, scale(fwd, 0.065 * s), 1.0, BIRD, you);
-            self.part(at(0.085), 0.017 * s, [0.0; 3], 1.0, BIRD, you);
-            self.part(at(-0.085), 0.011 * s, scale(fwd, 0.03 * s), 1.0, BIRD, you);
-            for k in [-1.0f32, 1.0] {
-                let out = norm(addv(scale(side, k), scale(up, 0.35 * beat)));
-                let c = addv(at(0.01), scale(out, 0.055 * s));
-                self.part(c, 0.025 * s, scale(out, 0.05 * s), 1.0, BIRD, you);
-                let hand = norm(addv(addv(out, scale(fwd, -0.35)), scale(up, 0.4 * beat)));
-                let c = addv(addv(at(0.01), scale(out, 0.11 * s)), scale(hand, 0.045 * s));
-                self.part(c, 0.016 * s, scale(hand, 0.05 * s), 1.0, BIRD, you);
-            }
+            self.starling(b.pos, fwd, side, up, s, b.phase.sin() * b.flap, you);
+        }
+        self.solid = false;
+    }
+
+    /// A starling as meta-ellipsoids: a short plump body with the head melted into it, a stubby
+    /// square tail, and each wing a triangle of two flat blades, broad at the shoulder, swept back
+    /// from the wrist to a point, the hand beating more than the arm.
+    #[allow(clippy::too_many_arguments)] // a bird's place, frame, size and beat
+    fn starling(&mut self, pos: V3, fwd: V3, side: V3, up: V3, s: f32, beat: f32, you: f32) {
+        let at = |k: f32| addv(pos, scale(fwd, k * s));
+        let body = (scale(fwd, 0.06 * s), scale(side, 0.028 * s));
+        self.flat(at(0.005), body.0, body.1, 0.026 * s, 1.0, BIRD, you);
+        self.part(at(0.065), 0.02 * s, [0.0; 3], 1.0, BIRD, you);
+        let tail = (scale(fwd, 0.03 * s), scale(side, 0.024 * s));
+        self.flat(at(-0.075), tail.0, tail.1, 0.005 * s, 1.0, BIRD, you);
+        for k in [-1.0f32, 1.0] {
+            let out = norm(addv(scale(side, k), scale(up, 0.35 * beat)));
+            let n = norm(cross(out, fwd));
+            let arm = addv(at(0.0), scale(out, 0.05 * s));
+            let chord = scale(fwd, 0.045 * s);
+            self.flat(arm, scale(out, 0.055 * s), chord, 0.008 * s, 1.0, BIRD, you);
+            let hand = norm(addv(addv(out, scale(fwd, -0.5)), scale(n, -0.3 * beat * k)));
+            let back = norm(cross(n, hand));
+            let c = addv(addv(at(-0.01), scale(out, 0.1 * s)), scale(hand, 0.045 * s));
+            self.flat(
+                c,
+                scale(hand, 0.055 * s),
+                scale(back, 0.026 * s),
+                0.006 * s,
+                1.0,
+                BIRD,
+                you,
+            );
         }
     }
 
@@ -433,7 +553,8 @@ impl Growth {
     ) {
         let e = &scene.eye;
         let [w, h] = [ctx.width as f32, ctx.height as f32];
-        let min_px = (0.8 * ctx.ppp as f32).max(1.3);
+        // Never thinner than a texel of the field, or far birds would shimmer between texels.
+        let min_px = (0.8 * ctx.ppp as f32).max(1.3).max(1.0 / self.res);
         let u = DensU {
             right: [e.right[0], e.right[1], e.right[2], e.focal],
             up: [e.up[0], e.up[1], e.up[2], w],
@@ -444,8 +565,11 @@ impl Growth {
             .queue
             .write_buffer(&self.buf, 0, bytemuck::bytes_of(&u));
         self.balls.clear();
+        self.near.clear();
         self.birds(scene.flock, e, w, h);
         self.reeds(e, scene.t, scene.reeds);
+        let n_add = self.balls.len() as u32;
+        self.balls.append(&mut self.near);
         if self.balls.len() > self.cap {
             self.cap = self.balls.len().next_power_of_two();
             self.inst = Self::instances(ctx, self.cap);
@@ -459,7 +583,14 @@ impl Growth {
             rp.set_pipeline(&self.dens_pipe);
             rp.set_bind_group(0, &self.dens_bind, &[]);
             rp.set_vertex_buffer(0, self.inst.slice(..));
-            rp.draw(0..6, 0..self.balls.len() as u32);
+            rp.draw(0..6, 0..n_add);
+        }
+        {
+            let mut rp = pass(&mut enc, &self.solid_dens, "growth near birds");
+            rp.set_pipeline(&self.solid_pipe);
+            rp.set_bind_group(0, &self.dens_bind, &[]);
+            rp.set_vertex_buffer(0, self.inst.slice(..));
+            rp.draw(0..6, n_add..self.balls.len() as u32);
         }
         {
             let mut rp = pass(&mut enc, target, "growth shade");

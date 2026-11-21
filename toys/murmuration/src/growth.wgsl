@@ -5,23 +5,32 @@
 // painted on it in bands of elevation, so the forms carry the sunset in stripes. On black.
 
 @group(1) @binding(0) var dens: texture_2d<f32>;
+// The near birds' field: each bird summed within itself, birds kept apart from each other (max).
+@group(1) @binding(1) var solid: texture_2d<f32>;
 
 const T = 0.2;
 
 // The skin's height above the screen (px): a dome over each part, as a ball's would be.
 // The field between its texels, weighted exactly (a sampler's filter weights are too coarse for
 // the slopes taken from it: they draw rings on the skins).
-fn field(uv: vec2f) -> vec4f {
-    let ts = vec2f(textureDimensions(dens));
+fn field_of(t: texture_2d<f32>, uv: vec2f) -> vec4f {
+    let ts = vec2f(textureDimensions(t));
     let p = uv * ts - 0.5;
     let i = vec2i(floor(p));
     let f = p - floor(p);
     let m = vec2i(ts) - 1;
-    let a = textureLoad(dens, clamp(i, vec2i(0), m), 0);
-    let b = textureLoad(dens, clamp(i + vec2i(1, 0), vec2i(0), m), 0);
-    let c = textureLoad(dens, clamp(i + vec2i(0, 1), vec2i(0), m), 0);
-    let d = textureLoad(dens, clamp(i + vec2i(1, 1), vec2i(0), m), 0);
+    let a = textureLoad(t, clamp(i, vec2i(0), m), 0);
+    let b = textureLoad(t, clamp(i + vec2i(1, 0), vec2i(0), m), 0);
+    let c = textureLoad(t, clamp(i + vec2i(0, 1), vec2i(0), m), 0);
+    let d = textureLoad(t, clamp(i + vec2i(1, 1), vec2i(0), m), 0);
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// The two fields as one: wherever the near birds' is the stronger, theirs.
+fn field(uv: vec2f) -> vec4f {
+    let a = field_of(dens, uv);
+    let b = field_of(solid, uv);
+    return select(a, b, b.x > a.x);
 }
 
 fn height(uv: vec2f) -> f32 {
@@ -84,10 +93,13 @@ fn backdrop(dir0: vec3f) -> vec3f {
     let below = dir0.y < 0.0;
     let dir = vec3f(dir0.x, abs(dir0.y), dir0.z);
     let el = degrees(asin(clamp(dir.y, -1.0, 1.0)));
+    // Stripes finer than a couple of pixels blur to their mean, or they would shimmer (the slope
+    // is taken outside the branch, where every pixel takes it).
+    let x = 0.12 / max(dir.y, 1e-3);
+    let fine = smoothstep(0.15, 0.45, fwidth(x));
     var water = 1.0;
     if (below) {
-        let depth = 1.0 / max(dir.y, 1e-3);
-        water = 0.45 * step(0.45, fract(depth * 0.12)) * (1.0 - smoothstep(0.0, 6.0, el));
+        water = 0.45 * mix(step(0.45, fract(x)), 0.55, fine) * (1.0 - smoothstep(0.0, 6.0, el));
     }
     let side = max(dot(normalize(vec2f(dir.x, dir.z) + vec2f(1e-5, 0.0)), normalize(vec2f(u.sun.x, u.sun.z) + vec2f(1e-5, 0.0))), 0.0);
     let q = (floor(max(el, 0.0) / 2.0) + 0.5) * 2.0;
@@ -143,8 +155,11 @@ fn fs_growth(in: VOut) -> @location(0) vec4f {
     let gloss = select(30.0, 70.0, m > 2.5);
     let spec = pow(max(dot(r, key), 0.0), gloss) + 0.6 * pow(max(dot(r, sun), 0.0), gloss) * step(0.0, sun.y + 0.05);
     var lit = base * zl * (u.sun_col.rgb * lamb * 6.0 + vec3f(5.0) * klamb + 1.5);
-    lit += ball(r) * fres * mix(2.2, 1.0, step(2.5, m));
-    lit += vec3f(1.0, 0.97, 0.9) * spec * zl * 40.0;
+    // Small forms (a far or edge-on bird, a few pixels thick) keep their colour and lose their
+    // glints, which at that size would only sparkle; the shine is for forms big enough to hold it.
+    let big = smoothstep(2.0, 9.0, d.y / max(d.x, 1e-4));
+    lit += ball(r) * fres * mix(2.2, 1.0, step(2.5, m)) * mix(0.55, 1.0, big);
+    lit += vec3f(1.0, 0.97, 0.9) * spec * zl * 40.0 * big;
     let col = tone(lit);
     return vec4f(mix(back, col, a), 1.0);
 }
