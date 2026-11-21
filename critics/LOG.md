@@ -67,3 +67,16 @@ Maker's answer: taken: a faint swell on the lake between flashes; the summer rai
 ## The same four · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
 Catatumbo: touch yes; far strokes end at the horizon (they strike the far water) | The Wave: touch yes; still reads as a plane of lights, not tiers round the pitch | The Delta: polish only; tilt not guessable | Bubblers: touch yes; neighbours' starbursts cross by 12 s
 Maker's answer: noted, not taken: three rounds (the cap). Every one now has something happening in its first two seconds. The stadium's geometry (tiers and a rim that read from this camera) is a further pass carried to the owner; crossing starbursts happen on the real beach as it fills · Conductor: done, three rounds
+
+## Murmuration, Growth look · Round 1 · 2026-11-21 ET · build 5dafccf-pre · critic fresh
+First: the wheeling sheet reads as a murmuration | Weakest: near birds melt into one another (spilled lace); colour monotone indigo; your bird a seed pod | Change: keep birds apart, show the banded reflection, give your bird head and tail | Couldn't judge: motion | Ship: no
+Maker's answer: taken: birds got heads, tails and wings; the reflected ball painted from the dusk on the sun's side; a lower threshold so neighbours melt only when touching · Conductor: continue
+
+## Murmuration, Growth look · Round 2 · 2026-11-21 ET · build round 1 fixes · critic fresh
+First: from the reeds, Kawaguchi and a murmuration | Weakest: inside the flock, glossy squiggles; dead black under the horizon | Change: fewer, clearer near birds; fill the ground | Couldn't judge: motion | Ship: no
+Maker's answer: taken: banded water under the horizon; far birds finer · Conductor: continue
+
+## Murmuration, Growth look · Round 3 · 2026-11-21 ET · build round 2 fixes · critic fresh
+First: the view from the reeds is showable | Weakest: near birds still crosses or dragonflies, neighbours fusing into chains | Change: a starling's silhouette (plump body, triangular swept wings, square tail), melt only within one bird | Couldn't judge: motion | Ship: no (inside the flock)
+Maker's answer: taken: near birds now drawn into their own field, each bird's parts summed and birds kept apart (max), so none fuse; flat meta-ellipsoids (three axes) give a plump body, triangular wings of two blades swept from the wrist, a square tail; water stripes blur to their mean where finer than pixels; the hole round your bird narrowed. Declined: the far flock melting into one skin is the look · Conductor: done, three rounds (the cap); checked by eye after the fixes (near birds separate and bird-shaped), the rest for the owner on the phone
+Review after round 3 (fresh reviewer): max blending was keeping a bird's own parts apart too. Each near bird is now one quad whose fragment sums its seven parts, and birds meet by max; the two fields cross over smoothly. Checked by eye: one smooth body a bird, birds still apart.

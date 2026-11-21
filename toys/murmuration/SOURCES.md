@@ -47,3 +47,11 @@ flock are worked out from the constants and rules below (src/sun.rs, src/sky.rs,
 
 Filtered noise: the far hush of the whole flock, the rush of wings passing near the eye, and your own
 bird's wingbeats while you fly it. No recording is used.
+
+## The Growth look (drawn, `src/growth.rs`)
+
+A restyle in the manner of Yoichiro Kawaguchi's Growth films (1983–85), built from his own account of
+the method: Y. Kawaguchi, "Organic surface generation with the morphogenesis model", Ars Electronica
+1986 (meta-balls and meta-ellipsoids melted into one surface, the GROWTH recursion's growth ratios,
+step and joints, per-part surface attributes, colour from a reflected texture-mapped ball). The ball
+here is the real dusk from the sky table above, in bands; the flock is the same simulation.
