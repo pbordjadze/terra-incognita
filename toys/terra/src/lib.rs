@@ -391,6 +391,8 @@ impl Toy for Terra {
         // (no rivers: their ink over the whole Earth read as a little creepy, Nov 13; the kit's
         // `with_rivers` brings them back)
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
+        // Kawaguchi's Growth look, not the paper (painting-company old-3d, Nov 21 2026)
+        globe.growth = 1.0;
         globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
         globe.set_home();
         let mut life = Life::new();
@@ -637,7 +639,7 @@ impl Toy for Terra {
                 s.words[3] - s.words[1],
             ],
             alpha: (1.0 - ease(g / 0.25)) * ease((rise - 0.5) / 0.5),
-            dark: true,
+            dark: false,
             lines: vec![d.name.into(), d.place.into(), d.line.into()],
         })
     }

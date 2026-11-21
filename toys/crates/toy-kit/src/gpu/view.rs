@@ -25,6 +25,9 @@ pub struct View {
     /// 1 when the frame goes into an exported clip (R22: the sea and ground passes tune it for the
     /// platform's re-encode), 0 live. The uniform's `pad.y`.
     pub export: f32,
+    /// 1 in the Growth look (Kawaguchi's glossy forms on black, painting-company old-3d), 0 the
+    /// paper. The uniform's `pad.z`.
+    pub growth: f32,
 }
 
 impl View {
@@ -66,7 +69,7 @@ impl View {
                 self.seconds as f32,
                 self.rest,
             ],
-            _pad: [self.night, self.export, 0.0, 0.0],
+            _pad: [self.night, self.export, self.growth, 0.0],
         }
     }
 }
@@ -88,7 +91,7 @@ pub struct ViewUniform {
     /// x how much shows; y 1 while the date runs, 0 held; z the drawn motion's seconds; w how far
     /// the sea has settled to rest (eased)
     pub tone: [f32; 4],
-    /// x 1 by night
+    /// x 1 by night, y 1 in an exported clip, z 1 in the Growth look
     pub _pad: [f32; 4],
 }
 
@@ -101,6 +104,6 @@ struct View {
     rot2: vec4f,
     time: vec4f,    // seconds; this month (0 = January), the next, how far between
     tone: vec4f,    // x how much shows; y 1 while the date runs; z the drawn motion's seconds; w the sea's rest
-    pad: vec4f,     // x 1 by night, y 1 in an exported clip (R22)
+    pad: vec4f,     // x 1 by night, y 1 in an exported clip (R22), z 1 in the Growth look
 };
 "#;

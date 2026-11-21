@@ -293,7 +293,8 @@ impl Life {
         }
     }
 
-    /// One plain light: a soft pale halo so it reads from across the Earth, its colour, a white rim.
+    /// One light, as a glossy bead in the Growth look (Kawaguchi's forms): its colour shaded as a
+    /// ball lit from the upper left, with a hard white highlight, in a faint glow of its own colour.
     fn paint_light(
         p: &mut Painter,
         c: [f32; 2],
@@ -303,37 +304,29 @@ impl Life {
         a: f32,
         night: f32,
     ) {
-        let kf = k as f32;
+        let s = |f: f64| (r * f * k) as f32;
+        let at = |dx: f64, dy: f64| [c[0] + s(dx), c[1] + s(dy)];
+        let dim = |f: f32| [tint[0] * f, tint[1] * f, tint[2] * f];
+        let glow = dim(1.0);
         p.disc(
             c,
-            (r * 1.2 * k) as f32,
-            (r * 1.1 * k) as f32,
-            [1.0, 0.99, 0.95, 0.5 * a * (1.0 - night)],
+            s(1.15),
+            s(0.8),
+            [glow[0], glow[1], glow[2], (0.3 + 0.15 * night) * a],
         );
+        let shade = dim(0.4);
+        p.disc(c, s(0.6), 1.0, [shade[0], shade[1], shade[2], a]);
         p.disc(
-            c,
-            (r * 1.0 * k) as f32,
-            (r * 0.9 * k) as f32,
-            [tint[0], tint[1], tint[2], 0.35 * a],
-        );
-        p.disc(
-            c,
-            (r * 0.55 * k) as f32,
-            1.0,
+            at(-0.12, -0.12),
+            s(0.46),
+            s(0.22),
             [tint[0], tint[1], tint[2], a],
         );
-        p.ring(
-            c,
-            (r * 0.55 * k) as f32,
-            1.3 * kf,
-            0.8,
-            [1.0, 1.0, 1.0, 0.9 * a],
-        );
+        p.disc(at(-0.2, -0.22), s(0.12), s(0.07), [1.0, 1.0, 1.0, 0.9 * a]);
     }
 
     /// A gathering: a pale light a little larger than one, with a small dot of each toy's colour round it.
     fn paint_many(&self, p: &mut Painter, doors: &[usize], c: [f32; 2], r: f64, k: f64, a: f32) {
-        let kf = k as f32;
         // the core in its members' colours mixed, so it reads as their light, not an empty pin
         let n = doors.len().max(1) as f32;
         let mut m = [0.0f32; 3];
@@ -342,20 +335,7 @@ impl Life {
                 *c += t / n;
             }
         }
-        p.disc(
-            c,
-            (r * 1.5 * k) as f32,
-            (r * 1.2 * k) as f32,
-            [m[0], m[1], m[2], 0.4 * a],
-        );
-        p.disc(c, (r * 0.7 * k) as f32, 1.0, [m[0], m[1], m[2], a]);
-        p.ring(
-            c,
-            (r * 0.7 * k) as f32,
-            1.2 * kf,
-            0.8,
-            [1.0, 1.0, 1.0, 0.9 * a],
-        );
+        Self::paint_light(p, c, r * 1.15, k, m, a, 0.0);
         let n = doors.len();
         for (j, &i) in doors.iter().enumerate() {
             // (in an arc over the top, a crown of its toys, closing to a ring as they grow many)
@@ -365,15 +345,7 @@ impl Life {
                 c[0] + (ang.cos() * r * 1.15 * k) as f32,
                 c[1] + (ang.sin() * r * 1.15 * k) as f32,
             ];
-            let t = self.doors[i].tint;
-            p.disc(q, (r * 0.32 * k) as f32, 1.0, [t[0], t[1], t[2], a]);
-            p.ring(
-                q,
-                (r * 0.32 * k) as f32,
-                0.9 * kf,
-                0.8,
-                [1.0, 1.0, 1.0, 0.85 * a],
-            );
+            Self::paint_light(p, q, r * 0.55, k, self.doors[i].tint, a, 0.0);
         }
     }
 

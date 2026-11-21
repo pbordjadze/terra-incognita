@@ -51,6 +51,8 @@ pub struct Globe {
     pub clock: Clock,
     /// 1 by night (the lights), 0 by day; a toy may ease it.
     pub night: f32,
+    /// 1 in the Growth look (glossy forms on black), 0 the paper; a toy may ease it.
+    pub growth: f32,
     /// The drawn motion's seconds (the shimmer of the lights by night).
     pub seconds: f64,
     /// The hand: on by default; a toy that reads fingers itself turns it off.
@@ -108,6 +110,7 @@ impl Globe {
                 rate: 0.0,
             },
             night: 0.0,
+            growth: 0.0,
             seconds: 0.0,
             hand: Hand::default(),
             rivers: None,
@@ -188,6 +191,7 @@ impl Globe {
             rest: 1.0,
             night: self.night,
             export: 0.0,
+            growth: self.growth,
         }
     }
 

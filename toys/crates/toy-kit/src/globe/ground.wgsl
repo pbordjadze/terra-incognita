@@ -48,6 +48,9 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     var page = mix(PAPER * (0.985 + 0.03 * grain), N_PAGE * (0.97 + 0.06 * grain), night);
     let ringpx = (rr - 1.0) * R;
     page = mix(page, mix(G_ATMOS, N_ATMOS, night), mix(0.85, 0.7, night) * exp(-max(ringpx, 0.0) / mix(3.5, 5.0, night)) * select(0.0, 1.0, rr >= 1.0));
+    // the Growth look (U.pad.z): black, and a thin glow of the ball's own colour at the limb
+    let growth = U.pad.z;
+    page = mix(page, growth_page(ringpx), growth);
     let fwRing = fwidth(ringpx);
     // (every derivative at the top level, before any pixel leaves)
     let gr = uv_grad(G.uv);
@@ -159,6 +162,9 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
         ncol = mix(ncol, N_ATMOS, 0.45 * pow(1.0 - z, 5.0));
         col = mix(col, ncol, night);
     }
+    if (growth > 0.0) {
+        col = mix(col, growth_globe(G.v, landa, landCol, height, ice, hill, lightsRaw, night), growth);
+    }
     // the rim, against the page
     let edge = smoothstep(-0.5, 0.5, -ringpx / max(fwRing, 1e-5));
     var out = mix(page, col, edge);
@@ -174,4 +180,67 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
         out = out + vec3f(tri * 1.2 / 255.0);
     }
     return vec4f(out, 1.0);
+}
+
+// ---- the Growth look (painting-company old-3d; Kawaguchi's Growth films, 1983-85, as his 1986
+// Ars Electronica paper describes their making): a glossy ball on black, each part its own colour in
+// stepped bands, shaded by a key light with a hard highlight, and coloured by the reflection of a
+// striped, texture-mapped ball round the scene.
+
+// The striped ball round the scene, by the elevation of a reflected ray (view space, y up): warm
+// below the horizon, gold at it, cyan and a deep blue above, in bands of twelve degrees, alternately
+// lighter and darker as the ball's paint was.
+fn growth_ball(r: vec3f) -> vec3f {
+    // the ball's pole leans toward the eye and the key light, so its bands bend round the Earth as
+    // reflections do (upright, its horizon is a straight line across the middle of the globe)
+    let el = degrees(asin(clamp(dot(r, normalize(vec3f(-0.3, 0.75, 0.6))), -1.0, 1.0)));
+    let q = (floor(el / 12.0) + 0.5) * 12.0;
+    let t = (q + 90.0) / 180.0;
+    var c = mix(vec3f(0.16, 0.02, 0.26), vec3f(0.72, 0.10, 0.46), smoothstep(0.0, 0.33, t));
+    c = mix(c, vec3f(1.0, 0.46, 0.10), smoothstep(0.33, 0.5, t));
+    c = mix(c, vec3f(1.0, 0.82, 0.36), smoothstep(0.5, 0.58, t));
+    c = mix(c, vec3f(0.22, 0.72, 0.92), smoothstep(0.58, 0.78, t));
+    c = mix(c, vec3f(0.06, 0.16, 0.62), smoothstep(0.78, 1.0, t));
+    return c * (0.62 + 0.38 * step(0.5, fract(q / 24.0 + 0.25)));
+}
+
+fn growth_page(ringpx: f32) -> vec3f {
+    return vec3f(0.22, 0.34, 0.95) * 0.55 * exp(-max(ringpx, 0.0) / 5.0) * select(0.0, 1.0, ringpx >= 0.0);
+}
+
+// The Earth as one glossy form: the sea in steps of depth, the land in steps of height, the ice white; by night, darker, and the measured
+// lights as gold beads in it.
+fn growth_globe(n: vec3f, landa: f32, landCol: vec3f, height: f32, ice: f32, hill: f32,
+                lightsRaw: f32, night: f32) -> vec3f {
+    let depthM = -min(height, 0.0) * 87.0;
+    var sea = vec3f(0.10, 0.46, 0.72);
+    sea = mix(sea, vec3f(0.04, 0.22, 0.56), step(200.0, depthM));
+    sea = mix(sea, vec3f(0.03, 0.13, 0.42), step(2000.0, depthM));
+    sea = mix(sea, vec3f(0.02, 0.07, 0.30), step(4500.0, depthM));
+    // the land in steps of height (each step its own colour, as his parts each had theirs), the
+    // lowlands green where the month's picture is green and sand where it is dry
+    let up = max(height, 0.0) * 50.0;
+    let dry = smoothstep(0.0, 0.08, landCol.r - landCol.g + 0.02);
+    var land = mix(vec3f(0.10, 0.52, 0.24), vec3f(0.86, 0.66, 0.30), dry);
+    land = mix(land, mix(vec3f(0.42, 0.60, 0.16), vec3f(0.80, 0.52, 0.22), dry), step(250.0, up));
+    land = mix(land, vec3f(0.74, 0.40, 0.16), step(800.0, up));
+    land = mix(land, vec3f(0.70, 0.24, 0.34), step(1800.0, up));
+    land = mix(land, vec3f(0.92, 0.88, 0.96), step(3200.0, up));
+    land *= 1.0 + 0.08 * hill;
+    // snow and the ice sheets, where the month's picture is white
+    land = mix(land, vec3f(0.94, 0.96, 1.0), smoothstep(0.7, 0.82, dot(landCol, vec3f(0.30, 0.59, 0.11))));
+    var albedo = mix(sea, land, landa);
+    albedo = mix(albedo, vec3f(0.9, 0.94, 1.0), smoothstep(0.35, 0.5, ice));
+    let gloss = mix(1.0, 0.35, landa);
+    let key = normalize(vec3f(-0.5, 0.6, 0.65));
+    let r = reflect(vec3f(0.0, 0.0, -1.0), n);
+    let diff = max(dot(n, key), 0.0);
+    let spec = pow(max(dot(r, key), 0.0), 40.0);
+    let fres = 0.15 + 0.85 * pow(1.0 - n.z, 3.0);
+    var col = albedo * (0.25 + 0.85 * diff) + growth_ball(r) * fres * 0.6 * gloss + vec3f(spec) * 0.85 * gloss;
+    col *= mix(1.0, 0.28, night);
+    let lights = pow(lightsRaw, 0.75) * smoothstep(0.45, 1.0, night);
+    col = mix(col, vec3f(1.0, 0.78, 0.34), smoothstep(0.08, 0.6, lights));
+    col = mix(col, vec3f(1.0, 0.96, 0.86), 0.7 * smoothstep(0.7, 1.0, lights));
+    return col;
 }
