@@ -227,20 +227,13 @@ impl Nazare {
             return;
         };
         let k = cam.px_per_m(dist);
-        let red = [0.42, 0.08, 0.06, 1.0];
-        let wall = [0.22, 0.2, 0.2, 1.0];
-        // the fort's low wall, then the tower on it
-        self.painter.line(
-            [foot[0] - 14.0 * k, foot[1]],
-            [foot[0] + 14.0 * k, foot[1]],
-            (3.0 * k).max(0.6 * ppp),
-            0.5 * ppp,
-            wall,
-        );
+        let red = [0.3, 0.04, 0.03, 1.0];
+        // the tower (the fort under it is the headland's own tip)
         self.painter
             .line(foot, top, (1.6 * k).max(0.8 * ppp), 0.5 * ppp, red);
-        let lamp = [1.0, 0.86, 0.55, 0.9];
+        // its lantern a lit point, not a halo
+        let lamp = [1.0, 0.9, 0.7, 1.0];
         self.painter
-            .glow(top, top, (3.0 * k).max(2.0 * ppp), 6.0 * ppp, lamp);
+            .disc(top, (0.6 * k).max(0.7 * ppp), 0.3 * ppp, lamp);
     }
 }

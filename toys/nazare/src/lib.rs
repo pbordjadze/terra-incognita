@@ -581,8 +581,8 @@ impl Toy for Nazare {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
             "Shallow water slows a long swell and bends it toward the shallows.",
-            "A canyon runs almost to Nazaré's beach. Its edge turns long swell back to cross the arriving waves, stacking peaks over 20 m.",
-            "Swipe toward the coast: a longer swipe sends a longer swell. Short swell crosses the canyon, and nothing stacks.",
+            "A canyon runs almost to Nazaré's beach. Its edge throws long swell back out across the arriving waves, stacking peaks over 20 m.",
+            "A longer swipe sends a longer swell. Short swell is too short to feel the canyon's edge, so nothing stacks.",
         ]))
     }
 
