@@ -24,10 +24,12 @@ pub const PLACE: (f64, f64) = (98.30, 7.90);
 const WIDTH_CM: f32 = 30.0;
 /// The tide went out this long before the toy opens (seconds): the crabs are out and their starbursts
 /// begun.
-const OPENING_S: f32 = 45.0;
+const OPENING_S: f32 = 25.0;
 /// The opening: close in on one crab at work, this many times nearer, held this long, then the eye
-/// pulls back over this long to the whole beach full of starbursts (seconds).
-const CLOSE: f32 = 4.0;
+/// pulls back over this long to see its neighbours' starbursts round it, still near enough to see a crab
+/// run (seconds).
+const CLOSE: f32 = 4.5;
+const FAR: f32 = 1.7;
 const HOLD_S: f32 = 2.5;
 const PULL_S: f32 = 9.0;
 /// The tide comes on its own after this long untouched by one (seconds).
@@ -63,10 +65,11 @@ impl Bubblers {
         };
         // eased both ends, the eye rising like a head lifted from the sand
         let e = a * a * (3.0 - 2.0 * a);
-        let zoom = CLOSE.powf(1.0 - e);
+        let zoom = CLOSE.powf(1.0 - e) * FAR.powf(e);
+        // (drifting halfway toward the middle, so the view never leaves the beach)
         let c = [
-            self.focus[0] + (mid[0] - self.focus[0]) * e,
-            self.focus[1] + (mid[1] - self.focus[1]) * e,
+            self.focus[0] + (mid[0] - self.focus[0]) * e * 0.5,
+            self.focus[1] + (mid[1] - self.focus[1]) * e * 0.5,
         ];
         (c, zoom)
     }

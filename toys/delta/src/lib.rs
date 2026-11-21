@@ -85,6 +85,13 @@ impl Delta {
         (0.08 + 2.0 * rise * fall) as f32
     }
 
+    /// The summer rains (0..1): they fall on the delta itself in the months the flood is low, and green
+    /// the whole land; the flood arrives in the dry winter, long after, from Angola's rain.
+    fn rains(t: f64) -> f32 {
+        let p = (t / YEAR_S).fract();
+        (smoothstep(0.55, 0.68, p) * (1.0 - smoothstep(0.9, 1.0, p))) as f32
+    }
+
     /// Runs the flood `secs` seconds.
     fn run(&mut self, secs: f64) {
         self.land.tilt = [self.lean[0] * TILT, self.lean[1] * TILT];
@@ -180,7 +187,7 @@ impl Toy for Delta {
                 SUN[0],
                 SUN[1],
                 if l.on[1] { 1.0 } else { 0.0 },
-                0.0,
+                Self::rains(self.t),
                 0.0,
                 0.0,
                 0.0,

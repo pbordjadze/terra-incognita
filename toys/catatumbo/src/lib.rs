@@ -262,15 +262,16 @@ impl Catatumbo {
             (cell + rng.range(-spread, spread)).clamp(w * 0.05, w * 0.95)
         };
         let roll = self.rng.f();
-        if roll < 0.30 {
+        let lake = self.size_pt[1] - hy;
+        if roll < 0.22 {
             // a far ground stroke, just below the horizon
             let p = [near(&mut self.rng, w * 0.3), hy + self.rng.range(4.0, 26.0)];
             self.strike_at(ctx, p, None, 0.6);
-        } else if roll < 0.42 {
-            // a middling one, nearer the eye
+        } else if roll < 0.44 {
+            // a middling one, out on the water toward the eye
             let p = [
                 near(&mut self.rng, w * 0.2),
-                hy + self.rng.range(40.0, 140.0),
+                hy + self.rng.range(0.06, 0.4) * lake,
             ];
             self.strike_at(ctx, p, None, 0.85);
         } else if roll < 0.60 {

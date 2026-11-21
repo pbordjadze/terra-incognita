@@ -194,11 +194,11 @@ impl Toy for Wave {
                 [l as u8, (col * col * 255.0) as u8]
             })
             .collect();
-        // a wave already on its way, coming round toward the near end (a swipe there starts one ahead
+        // a wave already on its way, about to come down the near side at the camera (a swipe there starts one ahead
         // of it; one behind it would meet a crowd that has only just sat down, and fizzle)
         crowd.new_group();
         crowd.stand(U as f32 * 0.10, V as f32 * 0.5, 6.0);
-        for _ in 0..(TICK_HZ * 6.0) as usize {
+        for _ in 0..(TICK_HZ * 9.5) as usize {
             crowd.tick();
         }
         let (verts, idx) = bowl::mesh();

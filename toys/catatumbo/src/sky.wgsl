@@ -75,6 +75,9 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let mx = px.x + wob * u.scale * (3.0 + 30.0 * near);
   let my = hy - below * (1.0 + 0.25 * wob);
   var col = sky(vec2<f32>(mx, my)) * (0.30 + 0.25 * (1.0 - near));
+  // between flashes the water keeps a faint surface: the town's glow and the deck's on the swell
+  let swell = noise2(vec2<f32>(px.x / u.scale * 0.03 + t * 0.05, below / u.scale * 0.12 * freq * 0.05 - t * 0.3));
+  col = col + vec3<f32>(0.020, 0.017, 0.032) * (0.4 + 0.9 * swell) * (1.0 - 0.6 * near);
   let sh = shore(vec2<f32>(mx, hy - (below * 1.0)), hy);
   col = mix(col, sh.rgb * 0.7, sh.a * 0.8);
   // fine glints of the flash on the wavelets
