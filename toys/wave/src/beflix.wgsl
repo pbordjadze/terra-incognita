@@ -8,25 +8,8 @@
 // took more light than it could hold, grain, the gate's weave, and in some shots the colour the
 // optical printer dyed in afterwards.
 
-struct P {
-  size: vec2<f32>,      // the screen (px)
-  cell: f32,            // a cell's side (px)
-  drawing: f32,         // which drawing this is (each one is shot twice)
-  grid: vec2<f32>,      // cells across and down
-  shot: f32,            // 0 black and white, 1 and 2 the optical printer's colours
-  weave: f32,           // 1, or 0 with Reduce Motion
-};
-@group(0) @binding(0) var<uniform> p: P;
-@group(0) @binding(1) var src: texture_2d<f32>;
-@group(0) @binding(2) var lin: sampler;
-
-@vertex fn vs_main(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
-  let x = f32((i << 1u) & 2u);
-  let y = f32(i & 2u);
-  return vec4<f32>(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
-}
-
-fn hash(q: vec2<f32>) -> f32 { return fract(sin(dot(q, vec2<f32>(127.1, 311.7))) * 43758.5453); }
+// The prelude (toy-kit film.rs) declares p, src, lin, vs_main and hash; p.a = (shot: 0 black and white,
+// 1 and 2 the optical printer's colours; weave: 1, or 0 with Reduce Motion).
 
 // ---- the surface ----
 @fragment fn fs_surface(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
@@ -82,7 +65,7 @@ fn value(c: vec2<i32>) -> i32 {
 @fragment fn fs_main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let d = p.drawing;
   // the gate's weave: the whole frame a little off, a different way each drawing
-  let wv = (vec2<f32>(hash(vec2<f32>(fract(d * 0.0173) * 61.0, 1.3)), hash(vec2<f32>(fract(d * 0.0291) * 53.0, 7.1))) - 0.5) * p.cell * 0.45 * p.weave;
+  let wv = (vec2<f32>(hash(vec2<f32>(fract(d * 0.0173) * 61.0, 1.3)), hash(vec2<f32>(fract(d * 0.0291) * 53.0, 7.1))) - 0.5) * p.cell * 0.45 * p.a.y;
   let px = fc.xy + wv;
   let cf = px / p.cell;
   let c = vec2<i32>(floor(cf));
@@ -108,11 +91,11 @@ fn value(c: vec2<i32>) -> i32 {
   lum += (hash(floor(fc.xy) + vec2<f32>(fract(d * 0.1373) * 97.0, fract(d * 0.0311) * 89.0)) - 0.5) * 0.07;
   lum = clamp(lum, 0.0, 1.0);
   var rgb = vec3<f32>(lum) * vec3<f32>(1.0, 0.97, 0.9);
-  if (p.shot > 0.5) {
+  if (p.a.x > 0.5) {
     // dyed in afterwards, one colour for the dim and another for the bright
     let k = clamp(lum * 1.4, 0.0, 1.0);
-    let a = select(vec3<f32>(0.95, 0.15, 0.55), vec3<f32>(1.0, 0.30, 0.08), p.shot > 1.5);
-    let b = select(vec3<f32>(0.30, 0.95, 1.00), vec3<f32>(1.0, 0.92, 0.35), p.shot > 1.5);
+    let a = select(vec3<f32>(0.95, 0.15, 0.55), vec3<f32>(1.0, 0.30, 0.08), p.a.x > 1.5);
+    let b = select(vec3<f32>(0.30, 0.95, 1.00), vec3<f32>(1.0, 0.92, 0.35), p.a.x > 1.5);
     rgb = lum * mix(a, b, k) * 1.2 + vec3<f32>(0.025, 0.0, 0.04);
   }
   return vec4<f32>(rgb + vec3<f32>(0.018, 0.016, 0.016), 1.0);

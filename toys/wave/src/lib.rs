@@ -63,7 +63,7 @@ pub struct Wave {
     last: Vec<(u64, [f32; 2])>,
     sound: sound::Sound,
     reduce_motion: bool,
-    film: beflix::Beflix,
+    film: toy_kit::film::Film,
 }
 
 impl Wave {
@@ -351,7 +351,7 @@ impl Toy for Wave {
             last: Vec::new(),
             sound: sound::Sound::default(),
             reduce_motion: ctx.reduce_motion,
-            film: beflix::Beflix::new(gpu, [ctx.width, ctx.height]),
+            film: beflix::new(gpu, [ctx.width, ctx.height]),
         })
     }
 
@@ -395,7 +395,8 @@ impl Toy for Wave {
         if let Some(d) = self.film.due(self.t) {
             let scene = self.film.scene.clone();
             self.draw_scene(ctx, &mut enc, &scene);
-            self.film.read(&ctx.gpu, &mut enc, d, self.reduce_motion);
+            self.film
+                .read(&ctx.gpu, &mut enc, d, beflix::values(d, self.reduce_motion));
         }
         self.film.film(&mut enc, target);
         ctx.gpu.queue.submit([enc.finish()]);

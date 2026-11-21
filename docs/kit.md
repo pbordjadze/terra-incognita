@@ -42,6 +42,7 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; `toy_switches_text`, `toy_switch_set`) | `switches.rs`, `info.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and ten more, Nov 13; one sheet Nov 15; every globe toy Nov 16 (row 358) |
 | VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
+| A film of a toy's scene: drawn only when due, read into a grid of cells, redrawn by the toy's own shader (`Film`) | `film.rs` | ✓ | The Wave's BEFLIX and Bats' pinscreen, Nov 21 |
 | **Launch safety**: the iPhone's GPU limits requested on Linux (`KIT_IPHONE_LIMITS=1`), so a pipeline the phone refuses fails the check; GPU memory counted as it is allocated; a budget in `toy.json` | `gpu/`, `budget.rs` | + | the two launch crashes |
 | **Taps that must do something**: every finger event in a plan must change the frame unless it says `"inert": true` | `check.rs` | + | "plans pass when a tap does nothing" |
 | **Places by name**: a plan taps `"at": "name"` or `"lonlat": [lon, lat]`, the toy names its places (`Toy::anchors`) | `check.rs`, `lib.rs` (default: none) | + | "plans hard-code positions" |
