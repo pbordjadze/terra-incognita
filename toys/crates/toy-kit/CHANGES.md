@@ -8,7 +8,7 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
 - **A film of a toy's scene** (`film::Film`): the toy draws its scene only when a new drawing is due, its own
-  `fs_surface` reads it into a grid of cells (one R8 texel each) and its `fs_main` draws them every frame, with
+  `fs_surface` reads it into a grid of cells (one R8 texel each) and its `fs_main` draws them once a drawing, shown every frame; with
   a prelude of the uniform, the textures and the full-screen triangle. Moved out of The Wave's BEFLIX film for
   Bats' pinscreen.
 - **What the phone feels** (`Sensors`, `ctx.sensors`): which way is down (gravity), the calibrated magnetic

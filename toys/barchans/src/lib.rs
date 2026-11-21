@@ -249,7 +249,7 @@ impl Toy for Barchans {
             ];
             let p1 = [p0[0] - d.wind[0] * len * s, p0[1] - d.wind[1] * len * s];
             self.painter
-                .glow(p0, p1, 0.10 * s, 0.12 * s, [0.08, 0.08, 0.09, a * 1.6]);
+                .line(p0, p1, 0.10 * s, 0.12 * s, [0.08, 0.08, 0.09, a * 1.6]);
         }
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());

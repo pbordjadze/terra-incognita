@@ -22,7 +22,9 @@ fn light(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.30, 0.55, 0.15)); }
   for (var j = 0; j < 3; j++) {
     for (var i = 0; i < 3; i++) {
       // a little past the pin's own square, so a bat a pixel wide still pushes its pin
-      let q = (c + (vec2<f32>(f32(i), f32(j)) + 0.5) / 3.0 * 2.6 - 0.8) * p.cell;
+      // (odd rows sit half a pin to the right: read beneath where the pin stands)
+      let row = vec2<f32>(0.5 * (c.y - 2.0 * floor(c.y * 0.5)), 0.0);
+      let q = (c + row + (vec2<f32>(f32(i), f32(j)) + 0.5) / 3.0 * 2.6 - 0.8) * p.cell;
       let l = light(textureLoad(src, vec2<i32>(clamp(q, vec2<f32>(0.0), p.size - 1.0)), 0).rgb);
       sum += l;
       lo = min(lo, l);
@@ -56,7 +58,7 @@ fn height(i: f32, j: f32) -> f32 {
   let base = floor(q);
   var shade = 0.0;
   var head = 0.0;
-  for (var dj = -3; dj <= 0; dj++) {
+  for (var dj = -4; dj <= 0; dj++) {
     for (var di = -5; di <= 1; di++) {
       let i = base.x + f32(di);
       let j = base.y + f32(dj);

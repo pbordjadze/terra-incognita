@@ -1,6 +1,6 @@
 //! A film of a toy's scene: the toy draws its scene into `Film::scene` only when a new drawing is due
 //! (`due`), the toy's own `fs_surface` reads it into a grid of cells (`cells` across the screen's short
-//! side, one R8 texel each), and its `fs_main` draws the cells onto the screen every frame. The way an
+//! side, one R8 texel each), and its `fs_main` draws the cells once a drawing; every frame shows it. The way an
 //! old process made pictures out of a coarse grid of values: BEFLIX's characters (The Wave), a
 //! pinscreen's pins (Bats).
 //!
@@ -28,6 +28,10 @@ struct P {
 }
 
 fn hash(q: vec2<f32>) -> f32 { return fract(sin(dot(q, vec2<f32>(127.1, 311.7))) * 43758.5453); }
+
+@fragment fn fs_blit(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  return textureLoad(src, vec2<i32>(fc.xy), 0);
+}
 "#;
 
 use crate::Gpu;
@@ -49,6 +53,7 @@ pub struct Film {
     surface: wgpu::TextureView,
     surface_pipe: wgpu::RenderPipeline,
     film_pipe: wgpu::RenderPipeline,
+    blit_pipe: wgpu::RenderPipeline,
     layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     ubuf: wgpu::Buffer,
@@ -132,7 +137,14 @@ impl Film {
                 ],
             });
         let shader = gpu.shader(label, &format!("{PRELUDE}\n{wgsl}"));
-        let surface_pipe = surface_pipeline(gpu, &shader, &layout);
+        let surface_pipe = pipeline(
+            gpu,
+            &shader,
+            &layout,
+            "fs_surface",
+            wgpu::TextureFormat::R8Unorm,
+        );
+        let blit_pipe = pipeline(gpu, &shader, &layout, "fs_blit", gpu.format);
         let film_pipe = gpu.fullscreen_pipeline(label, &shader, &[&layout], None);
         let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
@@ -152,6 +164,7 @@ impl Film {
             surface,
             surface_pipe,
             film_pipe,
+            blit_pipe,
             layout,
             sampler,
             ubuf,
@@ -254,14 +267,21 @@ impl Film {
         rp.set_bind_group(0, &self.to_surface, &[]);
         rp.draw(0..3, 0..1);
         drop(rp);
+        // the cells drawn once a drawing, over the scene they were read from (it isn't needed again
+        // until the next drawing), and shown from there every frame
+        let mut rp = pass(enc, &self.scene, "film");
+        rp.set_pipeline(&self.film_pipe);
+        rp.set_bind_group(0, &self.to_film, &[]);
+        rp.draw(0..3, 0..1);
+        drop(rp);
         self.drawn = Some(d);
     }
 
-    /// Draws the cells onto `out`.
+    /// Shows the last drawing on `out`.
     pub fn film(&self, enc: &mut wgpu::CommandEncoder, out: &wgpu::TextureView) {
-        let mut rp = pass(enc, out, "film");
-        rp.set_pipeline(&self.film_pipe);
-        rp.set_bind_group(0, &self.to_film, &[]);
+        let mut rp = pass(enc, out, "film-show");
+        rp.set_pipeline(&self.blit_pipe);
+        rp.set_bind_group(0, &self.to_surface, &[]);
         rp.draw(0..3, 0..1);
     }
 }
@@ -289,21 +309,23 @@ fn pass<'a>(
     })
 }
 
-fn surface_pipeline(
+fn pipeline(
     gpu: &Gpu,
     shader: &wgpu::ShaderModule,
     layout: &wgpu::BindGroupLayout,
+    entry: &str,
+    format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
     let pl = gpu
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("film-cells"),
+            label: Some(entry),
             bind_group_layouts: &[Some(layout)],
             immediate_size: 0,
         });
     gpu.device
         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("film-cells"),
+            label: Some(entry),
             layout: Some(&pl),
             vertex: wgpu::VertexState {
                 module: shader,
@@ -316,9 +338,9 @@ fn surface_pipeline(
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: shader,
-                entry_point: Some("fs_surface"),
+                entry_point: Some(entry),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::R8Unorm,
+                    format,
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
