@@ -18,6 +18,7 @@ pub mod budget;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod check;
 pub mod field;
+pub mod film;
 #[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
