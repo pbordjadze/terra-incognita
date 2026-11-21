@@ -36,6 +36,7 @@ the owner's to decide):
 | Hoh: the rainforest at the foot of Mount Olympus, Washington; moss smothers seedlings on the floor, so trees grow in rows along fallen logs and stand on stilts when the logs rot; drag to run the years, tap a giant to fell it (row 343) | `hoh/` | `com.pbordjadze.toy.hoh` | inside Terra |
 | Magnet Marsh: bacteria from the salt marsh at Woods Hole, Massachusetts, in a drop under the microscope, each steered by its chain of magnetite along the magnetic field the phone itself feels; turn round and they follow north, hold a magnet to the phone and they pour toward it; a finger is a magnet | `marsh/` | `com.pbordjadze.toy.marsh` | inside Terra |
 | The Delta: the Okavango Delta, Botswana, in flood, from the air; land so flat that the phone's tilt decides where the flood spreads before it sinks into the Kalahari sand; a finger presses a low place | `delta/` | `com.pbordjadze.toy.delta` | inside Terra |
+| Fairy Circles: the bare circles in NamibRand's grass, spaced like a honeycomb by the grass's own competition for water; a finger rains (off Terra's map since Nov 21, 2026: it never visibly moved) | `fairy/` | `com.pbordjadze.toy.fairy` | none: not on the phone |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
