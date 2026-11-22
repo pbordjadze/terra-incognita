@@ -125,6 +125,12 @@ impl Throats {
         best.1
     }
 
+    /// The opening's size of a rock: never smaller than the hill filling a screen of `pts` points (as a
+    /// pinch is held to), so it never shows twice.
+    fn open_pt(pts: [f64; 2]) -> f64 {
+        OPEN_PT.max((pts[0] / W as f64).max(pts[1] / H as f64))
+    }
+
     fn clamp_pt(&self, pt: f64) -> f64 {
         let fill = (self.size_pt[0] / W as f64).max(self.size_pt[1] / H as f64);
         pt.clamp(MIN_PT.max(fill), MAX_PT)
@@ -266,8 +272,7 @@ impl Toy for Throats {
         let shader = gpu.shader("hill", include_str!("hill.wgsl"));
         let pipeline = gpu.fullscreen_pipeline("hill", &shader, &[&bgl], None);
         let pts = ctx.points();
-        // never smaller than the hill filling the screen (as a pinch is held to): it never shows twice
-        let open = OPEN_PT.max((pts[0] / W as f64).max(pts[1] / H as f64));
+        let open = Self::open_pt(pts);
         let center = Self::opening(&hill, [pts[0] / open, pts[1] / open]);
         Ok(Throats {
             hill,
