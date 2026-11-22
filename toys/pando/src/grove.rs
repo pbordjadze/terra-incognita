@@ -199,27 +199,33 @@ impl Grove {
             let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
             let w = wind.at([tr.x, tr.z]);
             let share = if self.flat { turned(w) } else { 0.02 };
-            // the crown's body first: its shaded inside, so the leaves on its surface have depth
+            // the crown's body first: a cloud of lobes the plotter outlines as one ragged edge, the stem's
+            // top hidden inside it
             let deep = mix3([0.50, 0.30, 0.07], HAZE, k);
-            for (dy, rk) in [(-0.55f32, 0.62f32), (0.0, 0.78), (0.5, 0.62)] {
-                let q = [c[0] + s * tr.d * (0.6 - 0.3 * dy), c[1] + dy * ry];
-                p.line(
-                    cam.pt([q[0], q[1] - ry * 0.18]),
-                    cam.pt([q[0], q[1] + ry * 0.18]),
-                    cam.len(rx * rk),
-                    cam.len(rx * 0.12),
-                    with(deep, fade),
+            let lobe = |p: &mut Painter, q: [f32; 2], r: f32| {
+                p.disc(cam.pt(q), cam.len(r), cam.len(rx * 0.05), with(deep, fade));
+                if let Some(last) = p.shapes_over.last_mut() {
+                    last._pad = crate::plotter::CLOUD;
+                }
+            };
+            for (dy, rk) in [(-0.45f32, 0.55f32), (0.0, 0.7), (0.45, 0.55)] {
+                lobe(
+                    p,
+                    [c[0] + s * tr.d * (0.6 - 0.3 * dy), c[1] + dy * ry],
+                    rx * rk,
                 );
             }
-            // the white stem going up inside the crown, seen in the gaps between its leaves
-            let inner = [c[0] + s * tr.d * 0.6, c[1] - ry * 0.7];
-            p.line(
-                cam.pt([c[0] + s * tr.d * 0.2, c[1] + ry]),
-                cam.pt(inner),
-                cam.len(wid * 0.7),
-                cam.len(0.6 * ppp),
-                with(mix3(bark, [0.5, 0.4, 0.3], 0.25), fade),
-            );
+            for i in 0..11u32 {
+                let hs = tr.seed.wrapping_add(i.wrapping_mul(104_729));
+                let ang = (i as f32 + 0.4 * hash(hs)) / 11.0 * std::f32::consts::TAU;
+                let (ex, ey) = (rx * 0.62, ry * 0.62 + rx * 0.4);
+                let up = 0.5 - 0.5 * ang.sin();
+                let q = [
+                    c[0] + ang.cos() * ex + s * tr.d * (0.4 + 0.6 * up),
+                    c[1] + ang.sin() * ey,
+                ];
+                lobe(p, q, rx * (0.24 + 0.14 * hash(hs ^ 0x3c3)));
+            }
             for j in 0..n {
                 let hseed = tr.seed.wrapping_add(j.wrapping_mul(7919));
                 // the plotter draws a cluster as a pen dot, and only some of them, so the crown is a stipple

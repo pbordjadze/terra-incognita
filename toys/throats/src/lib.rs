@@ -19,7 +19,7 @@ const H: usize = 512;
 /// Steps of the rule a second.
 const STEP_HZ: f64 = 2.2;
 /// A rock's size at the opening, points; and how far a pinch goes.
-const OPEN_PT: f64 = 1.5;
+const OPEN_PT: f64 = 3.0;
 /// (the least is also never less than the hill filling the screen: it never shows twice)
 const MIN_PT: f64 = 1.1;
 const MAX_PT: f64 = 90.0;

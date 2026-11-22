@@ -87,7 +87,7 @@ fn spot(d: f32, r: f32, px: f32) -> f32 {
         let since = c.z;
         // a pulse runs out across the field now and then, every dot it passes a little larger
         let beat = 0.5 + 0.5 * sin(t * 1.3 - length(bf - u.grid * 0.5) * 0.11);
-        var r = 0.17 + 0.05 * beat;
+        var r = 0.13 + 0.04 * beat;
         if (held == k) {
           // a newcomer swells in, past its size and back
           let g = ease(since / 0.5);

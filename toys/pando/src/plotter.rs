@@ -38,8 +38,14 @@ pub fn ink(painter: &mut Painter, size: [f32; 2], ppp: f32, grove: bool) {
     let pen = PEN * ppp;
     let shapes = std::mem::take(&mut painter.shapes_over);
     painter.shapes_add.clear();
+    let mut cloud: Vec<Shape> = Vec::new();
     for s in shapes {
         let a = s.color[3];
+        if s._pad == CLOUD && a >= FAINT {
+            cloud.push(s);
+            continue;
+        }
+        outline_cloud(painter, &mut cloud, pen);
         if s.r >= big {
             painter.shapes_over.push(Shape {
                 color: premul(PAPER, a),
@@ -85,6 +91,35 @@ pub fn ink(painter: &mut Painter, size: [f32; 2], ppp: f32, grove: bool) {
         if s.ring <= 0.0 && len > s.r * 10.0 && s.r > pen {
             eyes(painter, &s, len, pen);
         }
+    }
+    outline_cloud(painter, &mut cloud, pen);
+}
+
+/// A shape marked with this in `_pad` is one lobe of a cloud (a crown's body): the lobes are drawn as
+/// one outline, their union's, not each its own.
+pub const CLOUD: f32 = 1.0;
+
+/// Draws the lobes gathered so far as one cloud: every lobe's ring just outside its edge, then every
+/// lobe's paper over them, so only the union's outer edge stays inked.
+fn outline_cloud(painter: &mut Painter, cloud: &mut Vec<Shape>, pen: f32) {
+    for s in cloud.iter() {
+        painter.shapes_over.push(Shape {
+            r: s.r + pen * 0.5,
+            ring: pen,
+            soft: 0.75,
+            _pad: 0.0,
+            color: premul(INK, 1.0),
+            ..*s
+        });
+    }
+    for s in cloud.drain(..) {
+        painter.shapes_over.push(Shape {
+            ring: 0.0,
+            soft: 0.75,
+            _pad: 0.0,
+            color: premul(PAPER, 1.0),
+            ..s
+        });
     }
 }
 
