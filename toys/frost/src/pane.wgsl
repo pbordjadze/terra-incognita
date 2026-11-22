@@ -137,16 +137,10 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 
   // the ice
   let s = ice_at(p);
-  // meltwater where a fingertip was: the night clear through it under a thin film that catches the
-  // lamp, and a fine bright line of water at its edge
+  // meltwater where a fingertip was: the night clear through it under the faintest film (its edge is
+  // the ice's own line, below)
   let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.95, 0.985, s));
-  if wet > 0.0 {
-    let line = smoothstep(0.86, 0.9, s) * (1.0 - smoothstep(0.91, 0.94, s));
-    let sheen = 0.5 + 0.5 * sin((p.x * 0.6 + p.y) * 0.035);
-    // (the night clear through it, as through dry glass: only the faintest sheen, and a light rim)
-    c += vec3<f32>(0.010, 0.012, 0.015) * (0.4 + 0.6 * sheen) * wet;
-    c += vec3<f32>(0.30, 0.31, 0.32) * line * wet;
-  }
+  c += vec3<f32>(0.006, 0.007, 0.009) * wet;
   // the ice in line: its edge, and the contours of its age (the spines and ribs froze first, so
   // their contours run along them), one pen weight, chalk-white on the night
   let e = 0.7;
@@ -157,21 +151,26 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
   let around = 0.25 * (ice_at(p + vec2<f32>(r2, 0.0)) + ice_at(p - vec2<f32>(r2, 0.0)) + ice_at(p + vec2<f32>(0.0, r2)) + ice_at(p - vec2<f32>(0.0, r2)));
   let sm = 0.35 * s + 0.65 * around;
   let px = 1.0 / LP;
-  // the pen: about two thirds of a point wide, its edge a pixel soft
+  // the pen: about two thirds of a point wide, its edge a pixel soft; where edges crowd closer than
+  // the pen (the dense fern near the frame) the line thins rather than filling
   let w = 0.33;
-  let edge = 1.0 - smoothstep(w - px, w + px, abs(s - 1.0) / grad);
+  let edge = (1.0 - smoothstep(w - px, w + px, abs(s - 1.0) / grad)) * (1.0 - 0.6 * smoothstep(1.5, 4.0, grad));
+  // the contours of its age, sparse: two levels, and none where they would crowd into a fill (a pen
+  // can't draw lines closer than its own width)
   var ages = 0.0;
-  for (var k = 0; k < 3; k++) {
-    let lv = 1.0 + 0.06 * exp2(f32(k) * 1.4);
-    ages = max(ages, 1.0 - smoothstep(w * 0.8 - px, w * 0.8 + px, abs(sm - lv) / grad));
+  let sg = max(length(vec2<f32>(
+    ice_at(p + vec2<f32>(r2, 0.0)) - ice_at(p - vec2<f32>(r2, 0.0)),
+    ice_at(p + vec2<f32>(0.0, r2)) - ice_at(p - vec2<f32>(0.0, r2)))) * 0.65 / (2.0 * r2), 1e-4);
+  for (var k = 0; k < 2; k++) {
+    let lv = 1.0 + 0.25 * exp2(f32(k) * 1.6);
+    ages = max(ages, 1.0 - smoothstep(w * 0.8 - px, w * 0.8 + px, abs(sm - lv) / sg));
   }
-  let cover = smoothstep(0.98, 1.02, s);
-  // inside the ice the night shows a little paler, as through frosted glass
-  c = mix(c, c * 1.4 + vec3<f32>(0.035, 0.04, 0.05), cover);
+  ages *= 1.0 - smoothstep(0.25, 0.5, sg);
+  // the night through the glass, frosted or not: only the line is drawn
   let ink = vec3<f32>(0.90, 0.93, 0.97);
   let warm = exp(-ld * ld * 1.6) * LAMP;
   let chalk = ink * mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
-  c = mix(c, chalk, max(edge * 0.95, ages * 0.75 * cover));
+  c = mix(c, chalk, max(edge, ages * 0.8 * step(1.0, s)));
   // a breath of condensation low on the glass, before the frost: the faintest grey veil
   c += vec3<f32>(0.018, 0.020, 0.024) * smoothstep(0.5, 1.0, p.y / L.pane.y);
   // the wood over all of it

@@ -7,7 +7,7 @@
 //!
 //! All the simulation is GPU compute in `update`: up to twelve crystals grow at once, each in its own
 //! hex grid; the pane keeps who holds each patch of glass (the mask) and what the finished crystals
-//! left (the field), and how deep the glaze is (where a melt froze smooth), which `draw` (pane.wgsl) lights. painting-company row 218.
+//! left (the field), and how deep the glaze is (where a melt froze smooth), which `draw` (pane.wgsl) draws in line between two key drawings (keys.rs). painting-company row 218.
 
 mod keys;
 mod layout;

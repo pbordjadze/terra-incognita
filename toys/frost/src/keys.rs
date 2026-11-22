@@ -60,8 +60,8 @@ impl Keys {
                 enc.copy_buffer_to_buffer(&self.field, 0, &self.a, 0, size);
             }
             enc.copy_buffer_to_buffer(&self.field, 0, &self.b, 0, size);
-            // a key is held to the beat even if a frame came late
-            self.at = if self.at.is_finite() && t - self.at < 2.0 * KEY_S {
+            // a key is held to the beat if a frame came late; a clock set back starts the beat again
+            self.at = if (0.0..2.0 * KEY_S).contains(&(t - self.at)) {
                 self.at + KEY_S
             } else {
                 t
