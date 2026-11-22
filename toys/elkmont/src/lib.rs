@@ -6,6 +6,7 @@
 //! small light the males read as one of their own: hold it in the dark and the wood's next burst
 //! starts from it.
 
+pub mod engraved;
 pub mod forest;
 pub mod sound;
 pub mod swarm;
@@ -34,6 +35,8 @@ const TAPPED: u64 = u64::MAX;
 const SLABS: [f32; 6] = [1000.0, 30.0, 16.0, 9.0, 5.0, 0.0];
 
 pub struct Elkmont {
+    /// the film the woods are engraved on (`engraved`)
+    film: toy_kit::film::Film,
     backdrop: Backdrop,
     painter: Painter,
     swarm: Swarm,
@@ -178,6 +181,7 @@ impl Toy for Elkmont {
             lamp_last: -100.0,
             lamp_at: [0.0, EYE, LAMP_M],
             soft: ctx.reduce_motion,
+            film: engraved::new(&ctx.gpu, [ctx.width, ctx.height]),
         })
     }
 
@@ -265,7 +269,13 @@ impl Toy for Elkmont {
         }
     }
 
-    fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+    fn draw(&mut self, ctx: &mut Ctx, out: &wgpu::TextureView) {
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
+        // a new frame twenty-four times a second, engraved on black leader
+        let Some(d) = self.film.next(&ctx.gpu, out, self.t) else {
+            return;
+        };
+        let target = &self.film.scene.clone();
         let v = View::of(ctx, self.sway(ctx));
         let ppp = ctx.ppp as f32;
         let dusk = self.dusk();
@@ -293,6 +303,9 @@ impl Toy for Elkmont {
             self.draw_slab(&v, ppp, w[1], w[0], dusk, glow);
             self.painter.render(&ctx.gpu, &mut enc, target, size, None);
         }
+        let values = engraved::values(dusk, self.soft);
+        self.film.read(&ctx.gpu, &mut enc, d, values);
+        self.film.film(&mut enc, out);
         ctx.gpu.queue.submit([enc.finish()]);
     }
 
@@ -310,6 +323,15 @@ impl Toy for Elkmont {
             "Fireflies in the Smokies. Hold your light low.",
             vec![toy_kit::info::Stroke::hold(0.5, 6.0, [0.42 * w, 0.62 * h])],
         ))
+    }
+
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Blinkity Blank",
+            maker: "Norman McLaren",
+            place: "National Film Board of Canada, Montreal",
+            year: 1955,
+        })
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

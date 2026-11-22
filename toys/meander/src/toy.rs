@@ -72,7 +72,11 @@ struct Ripple {
     strong: bool,
 }
 
+mod mask;
+
 pub struct Meander {
+    /// the film the floodplain is shown in, sand on a lightbox (`sand`)
+    film: toy_kit::film::Film,
     river: River,
     /// The year each cell last had the river in it (NEVER if it never has).
     dep: Vec<f32>,
@@ -311,6 +315,7 @@ impl Toy for Meander {
             flecks: Vec::new(),
             bells: Bells::new(),
             reduce_motion: ctx.reduce_motion,
+            film: crate::sand::new(&ctx.gpu, [ctx.width, ctx.height]),
             frame: 0,
         };
         let b = toy.view_bounds(ctx);
@@ -545,7 +550,13 @@ impl Toy for Meander {
         }
     }
 
-    fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+    fn draw(&mut self, ctx: &mut Ctx, out: &wgpu::TextureView) {
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
+        // a new frame twelve times a second, the sand pushed again under the camera
+        let Some(drawing) = self.film.next(&ctx.gpu, out, self.t) else {
+            return;
+        };
+        let target = &self.film.scene.clone();
         let gpu = &ctx.gpu;
         let (s, c) = self.view(ctx);
         let ppp = ctx.ppp;
@@ -621,51 +632,7 @@ impl Toy for Meander {
         let year = self.river.year;
         // the mask, half the screen's pixels
         let msize = [(ctx.width / 2).max(1), (ctx.height / 2).max(1)];
-        if self.mask.as_ref().is_none_or(|m| m.1 != msize) {
-            let tex = gpu.texture(&wgpu::TextureDescriptor {
-                label: Some("water"),
-                size: wgpu::Extent3d {
-                    width: msize[0],
-                    height: msize[1],
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[],
-            });
-            let view = tex.create_view(&Default::default());
-            let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("meander"),
-                layout: &self.bgl,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: self.uni.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&self._plain.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(&self.dep_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::Sampler(&self.smp),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 4,
-                        resource: wgpu::BindingResource::TextureView(&view),
-                    },
-                ],
-            });
-            self.mask = Some((tex, msize, bind));
-        }
+        self.make_mask(gpu, msize);
         let mk = 0.5f32; // mask pixels a screen pixel
         let mp = move |q: [f32; 2]| [q[0] * mk, q[1] * mk];
         let p = &mut self.mask_painter;
@@ -855,6 +822,9 @@ impl Toy for Meander {
         }
         self.painter
             .render(gpu, &mut enc, target, [ctx.width, ctx.height], None);
+        let values = crate::sand::values(self.reduce_motion);
+        self.film.read(gpu, &mut enc, drawing, values);
+        self.film.film(&mut enc, out);
         gpu.queue.submit([enc.finish()]);
     }
 
@@ -903,6 +873,10 @@ impl Toy for Meander {
             turn: TURN,
             sheet: Some(sheet),
         })
+    }
+
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(crate::sand::STYLE)
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

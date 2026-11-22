@@ -7,6 +7,7 @@
 //! and the calls. Everything runs at `PACE` times the real speed.
 
 pub mod flock;
+pub mod printer;
 pub mod sound;
 
 use flock::Huddle as Flock;
@@ -40,6 +41,9 @@ pub struct Huddle {
     flock: Flock,
     ice: Backdrop,
     painter: Painter,
+    /// the printout the huddle is shown as (`printer`)
+    film: toy_kit::film::Film,
+    reduce_motion: bool,
     sound: sound::Sound,
     /// the world point (metres) at the screen's middle
     eye: [f32; 2],
@@ -258,6 +262,8 @@ impl Toy for Huddle {
             flock,
             ice: Backdrop::new(gpu, "huddle-ice", include_str!("ice.wgsl")),
             painter: Painter::new(gpu),
+            film: printer::new(gpu, [ctx.width, ctx.height]),
+            reduce_motion: ctx.reduce_motion,
             sound: sound::Sound::default(),
             eye: c,
             flakes,
@@ -270,6 +276,7 @@ impl Toy for Huddle {
 
     fn resize(&mut self, ctx: &mut Ctx) {
         self.size_pt = ctx.points();
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -346,12 +353,18 @@ impl Toy for Huddle {
         }
     }
 
-    fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+    fn draw(&mut self, ctx: &mut Ctx, out: &wgpu::TextureView) {
         let gpu = &ctx.gpu;
         let k = ctx.ppp as f32;
         let size = [ctx.width, ctx.height];
         let (c, r) = self.flock.middle();
+        self.reduce_motion = ctx.reduce_motion;
+        // a new sheet twelve times a second, each photographed twice
+        let Some(d) = self.film.next(gpu, out, self.t) else {
+            return;
+        };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
+        let target = &self.film.scene.clone();
         let w = self.flock.wind;
         self.ice.render(
             gpu,
@@ -368,6 +381,9 @@ impl Toy for Huddle {
         self.paint_penguins(k);
         self.paint_snow(k);
         self.painter.render(gpu, &mut enc, target, size, None);
+        self.film
+            .read(gpu, &mut enc, d, printer::values(self.reduce_motion));
+        self.film.film(&mut enc, out);
         gpu.queue.submit([enc.finish()]);
     }
 
@@ -398,6 +414,15 @@ impl Toy for Huddle {
                 [s[0] * 0.85, s[1] * 0.70],
             )],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Kitty",
+            maker: "Nikolai Konstantinov and his team",
+            place: "Moscow State University",
+            year: 1968,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {

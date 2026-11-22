@@ -1,4 +1,5 @@
 //! Meander (a working title): a river on the Rio Beni's floodplain that wanders and leaves oxbow lakes.
+pub mod sand;
 pub mod sim;
 
 /// A full turn as the river was tuned with it: 6.283, not TAU, so its opening course keeps its shape.

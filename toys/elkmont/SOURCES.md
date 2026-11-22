@@ -40,3 +40,17 @@ What is measured, what is drawn, and from where. No data file is bundled: the wo
   the night's haze, the stars in the canopy's gaps, and the dusk at the start.
 - **The sound**: the Little River and a far gray treefrog's trill, drawn from noise; the fireflies are
   silent.
+
+## The look: engraved on black film (after the real method; the details drawn)
+
+- **Norman McLaren, *Blinkity Blank*** (National Film Board of Canada, Montreal, 1955): "engraved
+  directly onto black film leader"; lines, dots and shapes "blink in and out of existence"; some frames
+  left blank, "sprinkling on the empty band of time" (https://en.wikipedia.org/wiki/Blinkity_Blank); in
+  his notes, made to "investigate the possibilities of intermittent animation"
+  (https://blog.animationstudies.org/?p=266, quoting his technical notes). The NFB's copy of the notes
+  refused automated fetches and was not read.
+- Here (`src/engraved.rs`, `src/engraved.wgsl`): the woods drawn as before and read into a grid; the
+  fireflies scratched through as ragged bursts with short rays, broad light hatched, the trunks and ferns
+  as scratches along their edges cut anew each frame, on some runs of three frames and not others;
+  twenty-four frames a second. Under Reduce Motion every frame is cut and nothing boils.
+- **Drawn, not sourced:** the dyes and their colours, the rays, the hatching, the runs of three, the dust.
