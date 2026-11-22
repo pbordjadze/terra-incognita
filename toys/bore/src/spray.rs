@@ -39,7 +39,7 @@ impl Spray {
         if strength < 0.15 {
             return;
         }
-        self.owed += dt * 900.0 * strength;
+        self.owed += dt * 450.0 * strength;
         let n = self.owed as usize;
         self.owed -= n as f64;
         // drops leave faster when the scene runs fast, so they still read as thrown
@@ -138,22 +138,30 @@ impl Spray {
             let a = [a[0] * ppp, a[1] * ppp];
             let r = (d.size * k)
                 .max(0.6)
-                .min(if d.mist { 60.0 * ppp } else { 3.5 * ppp });
+                .min(if d.mist { 22.0 * ppp } else { 1.8 * ppp });
             let life = (1.0 - d.age / d.life).clamp(0.0, 1.0) as f32;
             if d.mist {
-                let al = 0.16 * life * (1.0 - fade);
+                let al = 0.1 * life * (1.0 - fade);
                 out.push(
                     Stroke::disc(zc, a, r, [paper[0], paper[1], paper[2], al]).soft(r as f32 * 0.8),
                 );
             } else {
-                let al = (0.95 * life.sqrt()) * (1.0 - fade);
-                // a drop: bare paper, a dark grain of ink at its edge now and then
-                if r < 2.5 * ppp {
-                    out.push(Stroke::disc(zc, a, r * 1.25, [0.08, 0.08, 0.09, al * 0.25]));
-                }
-                out.push(Stroke::disc(
+                // a fleck of the brush: a short stroke of bare paper along its flight, a grain of ink beside it
+                let tail = 0.04 + 0.1 * d.size.fract();
+                let back = [
+                    d.p[0] - d.v[0] * tail,
+                    d.p[1] - d.v[1] * tail,
+                    d.p[2] - d.v[2] * tail,
+                ];
+                let b = cam
+                    .project(back, size)
+                    .map_or(a, |(b, _)| [b[0] * ppp, b[1] * ppp]);
+                let al = (0.9 * life.sqrt()) * (1.0 - fade);
+                out.push(Stroke::line(zc, a, b, r * 1.3, [0.1, 0.1, 0.11, al * 0.3]));
+                out.push(Stroke::line(
                     zc - 0.01,
                     a,
+                    b,
                     r,
                     [paper[0], paper[1], paper[2], al],
                 ));

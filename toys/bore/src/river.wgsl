@@ -175,12 +175,16 @@ fn river_ink(px: vec2<f32>, p: vec3<f32>, d: vec3<f32>, t: f32) -> f32 {
   let churn = select(0.0, exp(-w.s / 700.0), w.s > 0.0) * max(rl, 0.25 * bore);
   // foam lies in streaks along the front, stretched across the river
   let foam_n = fbm(vec2<f32>(p.x * 0.02, p.z * 0.12 - u.time * 0.05)) * 0.8 + noise2(px * 0.02 / sc) * 0.2;
-  let foam = max(near_crest * rl * smoothstep(0.3, 0.42, foam_n + 0.12), churn * smoothstep(0.5, 0.6, foam_n));
-  // the foam's edge, where the noise crosses its threshold: the brush's ragged line round the white
-  let rim = max(near_crest * rl * (1.0 - smoothstep(0.0, 0.03, abs(foam_n + 0.12 - 0.36))), churn * (1.0 - smoothstep(0.0, 0.02, abs(foam_n - 0.55))));
+  let crest = near_crest * rl * smoothstep(0.3, 0.42, foam_n + 0.12);
+  // behind it the churned flood: a soft grey wash, and the foam on it as long dry-brush strokes across the
+  // river, broken where the brush runs dry
+  let sweep = noise2(vec2<f32>(px.x * 0.0035 / sc + noise2(px * 0.003 / sc) * 4.0, px.y * 0.2 / sc + p.z * 0.015 - u.time * 0.3));
+  let broke = smoothstep(0.25, 0.6, noise2(vec2<f32>(px.x * 0.03, px.y * 0.4) / sc));
+  let streaks_f = churn * smoothstep(0.6, 0.72, sweep) * broke;
+  let foam = max(crest, streaks_f);
+  let rim = near_crest * rl * (1.0 - smoothstep(0.0, 0.03, abs(foam_n + 0.12 - 0.36)));
   ink = mix(ink, 0.0, clamp(foam * 1.2, 0.0, 1.0));
-  // between the foam the churned water is darker, the risen sea
-  ink = max(ink, churn * (1.0 - foam) * (0.5 + 0.15 * noise2(px * 0.01 / sc)));
+  ink = max(ink, churn * (1.0 - foam) * (0.26 + 0.14 * noise2(px * 0.004 / sc) + 0.08 * smoothstep(0.45, 0.6, sweep)));
   let dry = smoothstep(0.4, 0.65, noise2(vec2<f32>(px.x * 0.05, px.y * 0.12) / sc));
   ink = max(ink, rim * dry * 0.9);
   // the white line itself, seen from afar: the crest a thin bare stroke with a dark lip under it

@@ -61,6 +61,9 @@ pub struct Bore {
     wet: f32,
     /// how far down at the rail the eye is (0 up on the stand, 1 at the rail), and where it watches
     near: f64,
+    /// where the bore is drawn (m down the river from us): the model's front, which moves a cell (50 m) at a
+    /// time, carried smoothly on at the bore's own speed
+    zv: Option<f64>,
     watch: f64,
     cam: Camera,
     crowd: Crowd,
@@ -85,6 +88,7 @@ impl Bore {
         self.began = self.t;
         self.passed = None;
         self.front = self.tide.front();
+        self.zv = None;
     }
 
     fn cut_to(&mut self, k: usize) {
@@ -224,7 +228,29 @@ impl Bore {
     fn bore(&self) -> Option<(Front, f64, f64)> {
         let f = self.front?;
         let k = smooth(0.12, 0.3, f.steep);
-        (k > 0.0).then_some((f, YANGUAN - f.x, k))
+        (k > 0.0).then_some((f, self.zv.unwrap_or(YANGUAN - f.x), k))
+    }
+
+    /// Carries the drawn bore on toward us at its own speed (its Froude number times the shallow-water
+    /// speed ahead of it), never back, catching up with the model's front when that is ahead of it.
+    fn track(&mut self, dt: f64) {
+        let Some(f) = self.front.filter(|f| f.steep > 0.12) else {
+            self.zv = None;
+            return;
+        };
+        let sim = YANGUAN - f.x;
+        let c = f.froude * (9.81 * f.depth.max(0.3)).sqrt();
+        self.zv = Some(match self.zv {
+            None => sim,
+            Some(v) => {
+                let v = v - c * dt * self.rate;
+                if sim < v {
+                    v + (sim - v) * (dt * 2.0).min(1.0)
+                } else {
+                    v
+                }
+            }
+        });
     }
 
     /// How many times faster than the river the scene runs now: the bore comes on quickly from far off
@@ -274,6 +300,7 @@ impl Toy for Bore {
             rate: 1.0,
             wet: 0.0,
             near: 0.0,
+            zv: None,
             watch: 400.0,
             cam: Camera::at_the_rail(),
             crowd: Crowd::new(),
@@ -336,6 +363,7 @@ impl Toy for Bore {
         self.rate += (self.pace() - self.rate) * (dt * 3.0).min(1.0);
         self.tide.run(dt * self.rate);
         self.front = self.tide.front();
+        self.track(dt);
         let bore = self.bore();
         if let Some((_, z, _)) = bore {
             if z < -30.0 && self.passed.is_none() {

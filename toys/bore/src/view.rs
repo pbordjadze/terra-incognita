@@ -58,10 +58,12 @@ impl Camera {
         let lerp = |a: f64, b: f64| a + (b - a) * k;
         let stand = Camera::at_the_rail();
         let z = zi.clamp(18.0, 400.0);
+        // at the rail among the crowd, looking down the wall, so the stones and the people stay in view as it
+        // strikes below us
         let rail = Camera::looking(
-            [2.6, WALL_TOP - 2.6 + 1.6, 0.0],
-            [40.0, 1.6, z * 0.9 + 20.0],
-            0.6,
+            [-0.4, WALL_TOP + 1.6, 0.0],
+            [9.0, 1.0, z * 0.9 + 30.0],
+            0.62,
         );
         Camera {
             x: lerp(stand.x, rail.x),
