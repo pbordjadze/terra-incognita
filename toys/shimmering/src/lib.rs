@@ -160,6 +160,15 @@ impl Toy for Shimmering {
         ))
     }
 
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Calculated Movements",
+            maker: "Larry Cuba",
+            place: "Santa Cruz, California",
+            year: 1985,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::new(
             &[
