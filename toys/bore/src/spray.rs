@@ -46,7 +46,8 @@ impl Spray {
         let pace = rate.sqrt().clamp(1.0, 4.0);
         for _ in 0..n.min(400) {
             let mist = self.f() < 0.08;
-            let up = (2.0 * 9.81 * (0.6 + 3.5 * strength) * self.f()).sqrt();
+            // most of it climbs: a sheet thrown up the stones, a little falling short
+            let up = (2.0 * 9.81 * (0.8 + 3.5 * strength) * (0.35 + 0.65 * self.f())).sqrt();
             let v = [
                 -1.5 * self.f() * strength + 0.8 * (self.f() - 0.5),
                 up,
@@ -61,7 +62,7 @@ impl Spray {
             let size = if mist {
                 1.0 + 2.5 * self.f() * strength
             } else {
-                0.06 + 0.16 * self.f()
+                0.03 + 0.35 * self.f().powi(2)
             };
             self.drops.push(Drop {
                 p,
@@ -90,8 +91,18 @@ impl Spray {
             let z = zf + crate::view::bow(x, zf) - 1.0 * self.f();
             let up = (2.0 * 9.81 * (0.3 + 1.2 * dh) * self.f()).sqrt();
             let p = [x, level + 0.2, z];
-            let size = 0.25 + 0.6 * self.f() * dh;
-            let v = [0.0, up, -1.5 - 2.0 * self.f()];
+            // the roller throws its water up and forward, toward us, off the breaking crest
+            let mist = self.f() < 0.15;
+            let size = if mist {
+                0.25 + 0.6 * self.f() * dh
+            } else {
+                0.03 + 0.25 * self.f().powi(2)
+            };
+            let v = [
+                0.0,
+                up * if mist { 1.0 } else { 1.4 },
+                -2.5 - 3.0 * self.f(),
+            ];
             let life = 1.2 + self.f();
             self.drops.push(Drop {
                 p,
@@ -99,7 +110,7 @@ impl Spray {
                 age: 0.0,
                 life,
                 size,
-                mist: true,
+                mist,
             });
         }
     }
@@ -146,25 +157,39 @@ impl Spray {
                     Stroke::disc(zc, a, r, [paper[0], paper[1], paper[2], al]).soft(r as f32 * 0.8),
                 );
             } else {
-                // a fleck of the brush: a short stroke of bare paper along its flight, a grain of ink beside it
-                let tail = 0.04 + 0.1 * d.size.fract();
-                let back = [
-                    d.p[0] - d.v[0] * tail,
-                    d.p[1] - d.v[1] * tail,
-                    d.p[2] - d.v[2] * tail,
-                ];
-                let b = cam
-                    .project(back, size)
-                    .map_or(a, |(b, _)| [b[0] * ppp, b[1] * ppp]);
+                // a fleck of the brush along its flight, fat at its head and thinning behind, no two alike;
+                // now and then a grain of ink thrown with it
+                let tail = 0.03 + 0.12 * (d.size * 37.0).fract();
                 let al = (0.9 * life.sqrt()) * (1.0 - fade);
-                out.push(Stroke::line(zc, a, b, r * 1.3, [0.1, 0.1, 0.11, al * 0.3]));
-                out.push(Stroke::line(
-                    zc - 0.01,
-                    a,
-                    b,
-                    r,
-                    [paper[0], paper[1], paper[2], al],
-                ));
+                let mut head = a;
+                for (j, w) in [1.0, 0.6, 0.3].into_iter().enumerate() {
+                    let back = tail * (j + 1) as f64 / 3.0;
+                    let q = [
+                        d.p[0] - d.v[0] * back,
+                        d.p[1] - d.v[1] * back,
+                        d.p[2] - d.v[2] * back,
+                    ];
+                    let b = cam
+                        .project(q, size)
+                        .map_or(head, |(b, _)| [b[0] * ppp, b[1] * ppp]);
+                    out.push(Stroke::line(
+                        zc - 0.01,
+                        head,
+                        b,
+                        r * w,
+                        [paper[0], paper[1], paper[2], al * (1.0 - 0.2 * j as f32)],
+                    ));
+                    head = b;
+                }
+                if (d.size * 91.0).fract() < 0.12 {
+                    let off = [a[0] + r * 2.5, a[1] + r * 1.5];
+                    out.push(Stroke::disc(
+                        zc,
+                        off,
+                        (r * 0.35).max(0.5 * ppp),
+                        [0.1, 0.1, 0.11, al * 0.7],
+                    ));
+                }
             }
         }
     }
