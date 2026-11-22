@@ -1,7 +1,8 @@
-// Every toy's device shell (toys/README.md): a UIKit app whose one view is a CAMetalLayer the toy's
-// Rust library draws on (toy-kit's C ABI, toy.h). Touches go in as pointer events in points; a
-// display link asks for a frame at the screen's rate; the toy's sound, if it has one, is pulled by an
-// AVAudioEngine source node on the audio thread. Nothing else lives here: the library is the toy.
+// The iPhone's frame (toys/README.md): a UIKit app whose one view is a CAMetalLayer the toy's Rust library
+// draws on (toy-kit's one frame core, frame.rs, through the C ABI in toy.h). Touches go in as pointer events in
+// points; a display link asks for a frame at the screen's rate; the toy's sound, if it has one, is pulled by an
+// AVAudioEngine source node on the audio thread. Around it, the chrome the kit describes as data (Chrome.swift),
+// in UIKit's own controls; the senses the toy asks for, and no others.
 import UIKit
 import QuartzCore
 import AVFoundation
@@ -20,7 +21,15 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     let motion = CMMotionManager()
     var touchIds: [ObjectIdentifier: UInt64] = [:]
     var nextTouchId: UInt64 = 1
+    /// The haptic intents (toy-kit's `Haptic`), lightest to heaviest.
     let haptic = UIImpactFeedbackGenerator(style: .light)
+    let softHaptic = UIImpactFeedbackGenerator(style: .soft)
+    let firmHaptic = UIImpactFeedbackGenerator(style: .medium)
+    let thudHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    /// The chrome as the toy last described it (toy-kit's chrome.rs).
+    var chrome: Chrome?
+    /// Whether the device's motion runs with the compass (the magnetometer) on.
+    var motionCompass = false
     /// The info mark's one line, in the system's text (it follows the reader's text size; VoiceOver
     /// reads it), shown while the kit plays the mark's demo (toy-kit's info.rs), on a small dark glass
     /// so it reads over a bright scene (frost, snow, paper) as over night.
@@ -49,14 +58,14 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     var moreText: String?
     /// Words the toy places itself (toy_label: Terra's postcard), in the system's text in the toy's box.
     let label = UILabel()
-    var labelText: String?
+    var labelNow: Chrome.Label?
     /// (TOY_OPEN=rules, origins, switches or info, or several with commas, set by tools/toys/sim_launch.sh: opens
     /// each once, the first TOY_OPEN_AFTER seconds in, the next TOY_OPEN_EVERY seconds after)
     var openAt: [(String, Double)] = []
     /// The toy's quiet line at the top (toy_title: Screw's song), in the system's text.
     let title = UILabel()
     var titleText: String?
-    /// The sound file the reader chose (toy_wants_file), kept in the app's own storage
+    /// The sound file the reader chose (the toy's "file" event), kept in the app's own storage
     /// (Application Support/opened/) and handed to the toy again at every launch.
     var picking = false
 
@@ -141,6 +150,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         let store = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("toy.json").path
         store.withCString { toy_store(shell, $0) }
         if let kept = keptFile() { open(kept) }
+        if let c = readChrome() { apply(c) }
         startSound()
         let center = NotificationCenter.default
         center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
@@ -161,6 +171,11 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         center.addObserver(forName: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { toy_set_reduce_motion(shell, UIAccessibility.isReduceMotionEnabled) }
         }
+        // the toy's buttons (Terra's lights) come in the chrome only while VoiceOver runs: they move every frame
+        tell(["reader": ["on": UIAccessibility.isVoiceOverRunning]])
+        center.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.tell(["reader": ["on": UIAccessibility.isVoiceOverRunning]])
+        }
         let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
         l.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
         l.add(to: .main, forMode: .common)
@@ -173,9 +188,18 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// every other call is; a few hard jolts there are a shake.
     /// With them, what the phone feels (toy-kit's `Sensors`): which way is down, and, where the compass
     /// is, the magnetic field through it (calibrated, in µT) and the heading, for the toys that tilt or
-    /// follow north (The Delta, Magnet Marsh). None of it asks permission.
+    /// follow north (The Delta, Magnet Marsh). None of it asks permission. Only while the toy asks for a
+    /// sense (the chrome's `senses`), and the compass only while it asks for the field or the heading.
     func startMotion() {
-        guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
+        guard let want = chrome?.senses, want.any, motion.isDeviceMotionAvailable else {
+            motion.stopDeviceMotionUpdates()
+            return
+        }
+        if motion.isDeviceMotionActive {
+            if want.compass == motionCompass { return }
+            motion.stopDeviceMotionUpdates()
+        }
+        motionCompass = want.compass
         motion.deviceMotionUpdateInterval = 1.0 / 60.0
         let frames = CMMotionManager.availableAttitudeReferenceFrames()
         let handler: CMDeviceMotionHandler = { [weak self] m, _ in
@@ -202,7 +226,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
                       known ? b.field.x * s + b.field.y * c : nan,
                       known ? b.field.z : nan, h)
         }
-        if frames.contains(.xMagneticNorthZVertical) {
+        if want.compass && frames.contains(.xMagneticNorthZVertical) {
             motion.startDeviceMotionUpdates(using: .xMagneticNorthZVertical, to: .main, withHandler: handler)
         } else {
             motion.startDeviceMotionUpdates(to: .main, withHandler: handler)
@@ -219,7 +243,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     func startSound() {
         guard let shell, let s = toy_synth(shell) else { return }
         synth = s
-        if toy_plays_music(shell) {
+        if chrome?.music == true {
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
         } else {
             try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
@@ -278,44 +302,51 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     @objc func tick(_ link: CADisplayLink) {
         guard let shell else { return }
         toy_frame(shell, link.targetTimestamp)
-        if toy_take_haptic(shell) { haptic.impactOccurred() }
-        if toy_wants_file(shell) { pickFile() }
-        showTitle(toy_title(shell).map { String(cString: $0) })
+        takeEvents()
         if let o = openAt.first, CACurrentMediaTime() >= o.1 {
             openAt.removeFirst()
             switch o.0 {
-            case "rules", "switches": toy_rules_open(shell)
-            case "origins": toy_origins_open(shell)
-            default: toy_demo_open(shell, CACurrentMediaTime())
+            case "rules", "switches": tell("rules")
+            case "origins": tell("origins")
+            default: tell(["demo": ["t": CACurrentMediaTime()]])
             }
         }
-        showCaption(toy_info_line(shell).map { String(cString: $0) })
-        let switches = toy_switches_text(shell).map { String(cString: $0) }
-        let more = toy_sheet_more(shell).map { String(cString: $0) }
-        showRules((toy_rules_text(shell) ?? toy_origins_text(shell)).map { String(cString: $0) }, switches, more)
-        showLabel(toy_label(shell).map { String(cString: $0) })
+        if let c = readChrome() { apply(c) }
     }
 
-    /// The toy's own words (lines: its box, alpha and ink, tab-separated; then a heading, a quieter line,
-    /// plain lines), or none.
-    func showLabel(_ text: String?) {
-        guard text != labelText else { return }
-        let sameWords = text?.split(separator: "\n").dropFirst() == labelText?.split(separator: "\n").dropFirst()
-        labelText = text
-        guard let text, let head = text.split(separator: "\n").first else {
+    /// The chrome, changed: each part shown as it now is.
+    func apply(_ c: Chrome) {
+        let senses = chrome?.senses
+        chrome = c
+        showTitle(c.title)
+        showCaption(c.caption)
+        let rules = c.sheet.flatMap { $0.page == "rules" ? $0 : nil }
+        let switches = rules.flatMap { r in
+            r.switches.isEmpty ? nil : r.switches.map { "\($0.label)\t\($0.on ? 1 : 0)\n" }.joined()
+        }
+        let more = rules.map { r in (r.demo ? "demo\n" : "") + (r.origins ? "origins\n" : "") }
+        showRules(c.sheet.map(ToyView.sheetText), switches, more)
+        showLabel(c.label)
+        if senses != c.senses { startMotion() }
+    }
+
+    /// The toy's own words (its box in points, alpha and ink; a heading, a quieter line, plain lines), or none.
+    func showLabel(_ l: Chrome.Label?) {
+        guard l != labelNow else { return }
+        let sameWords = l?.lines == labelNow?.lines
+        labelNow = l
+        guard let l, l.at.count == 4 else {
             label.alpha = 0
             label.isAccessibilityElement = false
             return
         }
-        let f = head.split(separator: "\t").compactMap { Double($0) }
-        guard f.count == 6 else { return }
         if !sameWords {
-            let ink = f[5] == 1 ? UIColor(white: 0.11, alpha: 1) : UIColor.white
+            let ink = l.dark ? UIColor(white: 0.11, alpha: 1) : UIColor.white
             let fonts = [UIFont.preferredFont(forTextStyle: .title3).withWeight(.semibold),
                          UIFont.preferredFont(forTextStyle: .subheadline), UIFont.preferredFont(forTextStyle: .subheadline)]
             let alphas: [CGFloat] = [1, 0.6, 0.85]
             let s = NSMutableAttributedString()
-            for (i, line) in text.split(separator: "\n").dropFirst().enumerated() {
+            for (i, line) in l.lines.enumerated() {
                 let j = min(i, 2)
                 let p = NSMutableParagraphStyle()
                 p.paragraphSpacingBefore = i == 1 ? 2 : 0
@@ -323,13 +354,13 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
                                             attributes: [.font: fonts[j], .foregroundColor: ink.withAlphaComponent(alphas[j]), .paragraphStyle: p]))
             }
             label.attributedText = s
-            label.accessibilityLabel = text.split(separator: "\n").dropFirst().joined(separator: ". ")
+            label.accessibilityLabel = l.lines.joined(separator: ". ")
         }
-        label.isAccessibilityElement = f[4] > 0.5
-        label.frame = CGRect(x: f[0], y: f[1], width: f[2], height: f[3])
+        label.isAccessibilityElement = l.alpha > 0.5
+        label.frame = CGRect(x: l.at[0], y: l.at[1], width: l.at[2], height: l.at[3])
         label.sizeToFit()
-        label.frame.size.width = f[2]
-        label.alpha = f[4]
+        label.frame.size.width = l.at[2]
+        label.alpha = l.alpha
     }
 
     /// The switches (lines of label, a tab, 1 or 0) under the rules, made or updated.
@@ -363,8 +394,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     }
 
     @objc func switchChanged(_ toggle: UISwitch) {
-        guard let shell else { return }
-        toy_switch_set(shell, UInt32(toggle.tag), toggle.isOn)
+        tell(["switch": ["i": toggle.tag, "on": toggle.isOn] as [String: Any]])
     }
 
     /// The sheet's buttons ("demo", "origins", a line each), made or updated.
@@ -389,8 +419,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     }
 
     @objc func morePressed(_ b: UIButton) {
-        guard let shell else { return }
-        if b.accessibilityIdentifier == "demo" { toy_demo_open(shell, CACurrentMediaTime()) } else { toy_origins_open(shell) }
+        if b.accessibilityIdentifier == "demo" { tell(["demo": ["t": CACurrentMediaTime()]]) } else { tell("origins") }
     }
 
     /// The sheet: the rules (or the origins in their place), the switches and the buttons; nil hides it.
@@ -428,7 +457,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             rulesLabel.accessibilityLabel = parts.joined(separator: ". ")
             rulesLabel.isHidden = text.isEmpty
         }
-        if opening, let shell { cardTop = toy_card_at_top(shell) }
+        if opening { cardTop = chrome?.sheet?.top ?? false }
         layoutRules()
         guard opening else { return }
         rules.isHidden = false
@@ -482,8 +511,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
 
     /// VoiceOver's two-finger scrub closes the sheet.
     override func accessibilityPerformEscape() -> Bool {
-        guard let shell, rulesText != nil else { return false }
-        if toy_origins_text(shell) != nil { toy_origins_open(shell) } else { toy_rules_open(shell) }
+        guard rulesText != nil else { return false }
+        tell("close")
         return true
     }
 
@@ -595,9 +624,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// buttons, and the mark ("About this toy": it opens the sheet).
     override var accessibilityElements: [Any]? {
         get {
-            var x = 0.0, y = 0.0
             var out: [Any] = []
-            guard let shell else { return [] }
+            guard shell != nil, let chrome else { return [] }
             if rulesText != nil {
                 if !rulesLabel.isHidden { out.append(rulesLabel) }
                 out.append(contentsOf: switchCells.map { $0.1 })
@@ -605,21 +633,16 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
             }
             if titleText != nil { title.isAccessibilityElement = true; out.append(title) }
             if label.isAccessibilityElement { out.append(label) }
-            if let text = toy_buttons(shell).map({ String(cString: $0) }), !text.isEmpty {
-                for (i, line) in text.split(separator: "\n").enumerated() {
-                    let f = line.split(separator: "\t")
-                    guard f.count == 3, let bx = Double(f[1]), let by = Double(f[2]) else { continue }
-                    let label = String(f[0])
-                    let e = buttonElements[label] ?? ButtonElement(accessibilityContainer: self)
-                    buttonElements[label] = e
-                    e.accessibilityLabel = label
-                    e.index = UInt32(i)
-                    e.accessibilityFrameInContainerSpace = CGRect(x: bx - 22, y: by - 22, width: 44, height: 44)
-                    out.append(e)
-                }
+            for (i, b) in chrome.buttons.enumerated() where b.at.count == 2 {
+                let e = buttonElements[b.label] ?? ButtonElement(accessibilityContainer: self)
+                buttonElements[b.label] = e
+                e.accessibilityLabel = b.label
+                e.index = i
+                e.accessibilityFrameInContainerSpace = CGRect(x: b.at[0] - 22, y: b.at[1] - 22, width: 44, height: 44)
+                out.append(e)
             }
-            if toy_info_spot(shell, &x, &y) {
-                infoElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
+            if let at = chrome.mark.at, at.count == 2 {
+                infoElement.accessibilityFrameInContainerSpace = CGRect(x: at[0] - 22, y: at[1] - 22, width: 44, height: 44)
                 out.append(infoElement)
             }
             return out
@@ -660,22 +683,22 @@ final class InfoElement: UIAccessibilityElement {
         accessibilityTraits = .button
     }
     override func accessibilityActivate() -> Bool {
-        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
-        toy_info_open(shell, CACurrentMediaTime())
+        guard let view = accessibilityContainer as? ToyView else { return false }
+        view.tell(["mark": ["t": CACurrentMediaTime()]])
         return true
     }
 }
 
 /// One of the toy's own buttons (toy_buttons), pressed by its index in this frame's list.
 final class ButtonElement: UIAccessibilityElement {
-    var index: UInt32 = 0
+    var index = 0
     override init(accessibilityContainer container: Any) {
         super.init(accessibilityContainer: container)
         accessibilityTraits = .button
     }
     override func accessibilityActivate() -> Bool {
-        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
-        toy_button_press(shell, index, CACurrentMediaTime())
+        guard let view = accessibilityContainer as? ToyView else { return false }
+        view.tell(["press": ["i": index, "t": CACurrentMediaTime()] as [String: Any]])
         UIAccessibility.post(notification: .layoutChanged, argument: nil)
         return true
     }

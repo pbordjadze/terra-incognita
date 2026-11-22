@@ -24,10 +24,11 @@ before design work. Keep design discussions and plans in that private repository
 ## Map
 
 - **The toys and Terra** (`toys/`): the toy kit (`toys/crates/toy-kit`: the `Toy` trait, the shared
-  globe, paint, sound, the headless check), the one iOS shell (`toys/ios/`), each toy's crate, and Terra, the host that
-  links them. `toys/README.md` is their map and what a toy should be; `docs/kit.md` the kit's tools.
-- **Terra on the web** (`toys/terra-web/`): the same library behind the iPhone shell's calls for JavaScript, and a page
-  (`index.html`) doing what `main.swift` does, and a link's `#<toy id>` opening that toy; built by `tools/toys/web_build.sh`, pushed by CI to the `web` branch
+  globe, paint, sound, the headless check, the one frame core and the chrome as data: `frame.rs`, `chrome.rs`), the
+  iPhone's frame (`toys/ios/`), each toy's crate, and Terra, the host that links them. Each platform's frame
+  draws the chrome the kit describes in that platform's own controls, and asks for capabilities, never a platform. `toys/README.md` is their map and what a toy should be; `docs/kit.md` the kit's tools.
+- **Terra on the web** (`toys/terra-web/`): the same library on the one frame core, for JavaScript, and a page
+  (`index.html`), the web's frame as `main.swift` is the iPhone's, and a link's `#<toy id>` opening that toy; built by `tools/toys/web_build.sh`, pushed by CI to the `web` branch
   (CI owns it), which the owner's site serves at an unlisted path. Browsers' WebAssembly has no threads or clock:
   a toy uses `toy_kit::wall_clock()` and never spawns a thread on wasm32.
 - **Adrift** (`adrift/`): glass floats on the real sea, Rust on wgpu; `adrift/README.md`, its rulings

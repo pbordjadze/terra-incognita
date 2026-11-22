@@ -1,4 +1,6 @@
-// The C ABI every toy's static library exports (toy-kit's `ios_shell!`, toys/crates/toy-kit/src/lib.rs).
+// The C ABI the one frame core exports (toy-kit's frame.rs, through `ios_shell!`: toys/crates/toy-kit/src/ios.rs).
+// The pixels, the fingers, the senses and the sound go straight through; everything around the toy is data
+// (toy-kit's chrome.rs, as JSON: toy_chrome, toy_events out, toy_send in).
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -12,7 +14,6 @@ void toy_pointer(ToyShell *shell, uint64_t id, uint32_t phase, double x, double 
 void toy_shaken(ToyShell *shell, double t);
 void toy_motion(ToyShell *shell, double x, double y, double z, double t);
 void toy_sense(ToyShell *shell, double gx, double gy, double gz, double bx, double by, double bz, double heading);
-bool toy_take_haptic(ToyShell *shell);
 void toy_set_night(ToyShell *shell, bool on);
 void toy_set_reduce_motion(ToyShell *shell, bool on);
 void toy_store(ToyShell *shell, const char *path);
@@ -21,43 +22,13 @@ ToySynth *toy_synth(ToyShell *shell);
 void toy_audio(ToySynth *synth, float *out, uint32_t frames, uint32_t channels, double rate);
 void toy_synth_free(ToySynth *synth);
 void toy_free(ToyShell *shell);
-// The mark (toy-kit's info.rs): its place in points (false: the toy has none); the demo's line while it
-// plays (NULL otherwise; valid until the next frame); the mark's tap (VoiceOver's activation): the sheet
-// opened or closed, or for a toy with a demo alone the demo; and the demo itself (the sheet's "Show me").
-bool toy_info_spot(ToyShell *shell, double *x, double *y);
-const char *toy_info_line(ToyShell *shell);
-void toy_info_open(ToyShell *shell, double t);
-void toy_demo_open(ToyShell *shell, double t);
-// The sheet: its rules while its rules page shows (lines, then a blank line and a dimmer note; NULL otherwise;
-// valid until the next frame), and opening or closing it; the origins in its place (Toy::origins), and
-// showing or hiding them (its "Where this comes from"); its buttons while the rules show (a line each:
-// "demo", "origins"; NULL otherwise).
-const char *toy_rules_text(ToyShell *shell);
-void toy_rules_open(ToyShell *shell);
-const char *toy_origins_text(ToyShell *shell);
-void toy_origins_open(ToyShell *shell);
-const char *toy_sheet_more(ToyShell *shell);
-// The rules as switches under them (toy-kit's switches.rs; Toy::switches): a line each, label, a tab, 1 on or
-// 0 off, while the sheet's rules show (NULL otherwise; valid until the next frame); turning rule i, which
-// stays so when the sheet closes.
-const char *toy_switches_text(ToyShell *shell);
-void toy_switch_set(ToyShell *shell, uint32_t i, bool on);
-// Words the toy places itself (Toy::label: Terra's postcard): a first line of its box in points (x, y, w, h),
-// alpha and ink (1 dark), tab-separated; then a heading, a quieter line and plain lines (NULL: none; valid
-// until the next call).
-const char *toy_label(ToyShell *shell);
-// Whether the sheet hangs from the top, asked as it opens (Toy::card_at_top).
-bool toy_card_at_top(ToyShell *shell);
-// The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in
-// points (empty: none; valid until the next call), and pressing one by its line's index.
-const char *toy_buttons(ToyShell *shell);
-void toy_button_press(ToyShell *shell, uint32_t index, double t);
-// A sound file of the reader's own (Toy::wants_file, Toy::opened: Screw's song): whether the toy asks for
-// one now (the shell shows the Files picker), the file decoded and handed over (left/right `frames`
-// floats at `rate` Hz; right NULL for mono; copied), and the toy's quiet title line (NULL: none; valid
-// until the next call).
-bool toy_wants_file(ToyShell *shell);
+// The chrome (chrome.rs's Chrome) as JSON when it changed since the last call, NULL while the same; what the toy
+// asks of the frame (a JSON list of chrome.rs's Out: {"event":"haptic","haptic":"tick"}, {"event":"file"}),
+// NULL when nothing; each valid until the next call of the same kind. And what the reader did in the frame's
+// controls (JSON: chrome.rs's In, e.g. "rules", {"switch":{"i":0,"on":false}}, {"back":{"t":12.5}}).
+const char *toy_chrome(ToyShell *shell);
+const char *toy_events(ToyShell *shell);
+void toy_send(ToyShell *shell, const char *json);
+// A sound file of the reader's own (Toy::wants_file, Toy::opened: Screw's song), decoded and handed over
+// (left/right `frames` floats at `rate` Hz; right NULL for mono; copied).
 void toy_opened_audio(ToyShell *shell, const char *name, const float *left, const float *right, uint64_t frames, double rate);
-const char *toy_title(ToyShell *shell);
-// Whether the toy's sound is music the reader asked for (Toy::plays_music): the playback category.
-bool toy_plays_music(ToyShell *shell);

@@ -35,7 +35,9 @@ pub trait Room {
     fn switches(&self) -> Vec<Switch>;
     fn set_switch(&mut self, i: usize, on: bool);
     fn synth(&mut self) -> Option<Box<dyn Synth>>;
-    fn take_haptic(&mut self) -> bool;
+    fn take_haptics(&mut self) -> Vec<toy_kit::Haptic>;
+    /// The senses the toy reads (`Toy::senses`): Terra asks the frame for them while it is open.
+    fn senses(&self) -> toy_kit::Senses;
     /// The device was shaken (Frost sweeps its window clear).
     fn shaken(&mut self);
     /// What the phone feels now (its tilt, the magnetic field: `Ctx::sensors`).
@@ -192,8 +194,11 @@ impl<T: Toy> Room for Inside<T> {
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
         self.toy.synth()
     }
-    fn take_haptic(&mut self) -> bool {
-        self.ctx.take_haptic()
+    fn take_haptics(&mut self) -> Vec<toy_kit::Haptic> {
+        self.ctx.take_haptics()
+    }
+    fn senses(&self) -> toy_kit::Senses {
+        self.toy.senses()
     }
     fn shaken(&mut self) {
         self.toy.shaken(&mut self.ctx);

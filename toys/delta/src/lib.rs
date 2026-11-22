@@ -108,6 +108,15 @@ impl Delta {
 }
 
 impl Toy for Delta {
+    fn senses(&self) -> toy_kit::Senses {
+        // the phone's lean decides where the flood spreads (`Sensors::downhill`)
+        toy_kit::Senses {
+            shake: false,
+            gravity: true,
+            field: false,
+            heading: false,
+        }
+    }
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let size_pt = ctx.points();
         let cell_pt = size_pt[0] / GRID[0] as f64;

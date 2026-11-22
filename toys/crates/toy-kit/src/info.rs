@@ -1,18 +1,19 @@
 //! The mark (painting-company row 355, Nov 15 2026: five marks became one): a tiny mark in the bottom right
-//! corner, three dots. A tap on it opens the toy's sheet, and a tap anywhere else closes it; nothing
-//! closes it on a timer. The sheet is the shell's, in the system's text over the live scene:
+//! corner, three dots (or the frame's own button: `native`). A tap on it opens the toy's sheet, and a tap
+//! anywhere else closes it; nothing closes it on a timer. The sheet is the frame's, in its platform's own
+//! controls over the live scene (the chrome's `sheet`, chrome.rs):
 //!
 //! - the toy's [`Rules`] (`Toy::rules`): the few rules the real thing follows and how a finger joins in,
 //!   in two to four short lines (`host.info.rules()`);
 //! - under them the rules as switches (`Toy::switches`, switches.rs), which stay as the reader left them
 //!   when the sheet closes; the mark wears a small amber dot while any is off;
-//! - and its buttons (`host.sheet_more()`): "Show me", the demo again (`Toy::demo`: a ghost finger doing
+//! - and its buttons (the sheet's `demo` and `origins`): "Show me", the demo again (`Toy::demo`: a ghost finger doing
 //!   the toy's one gesture over the live scene, real touches the scene answers, and at most one line),
 //!   and "Where this comes from" (`Toy::origins`, a [`Rules`] too, the science and history behind the
 //!   rules), which takes the sheet's place.
 //!
-//! A toy drawn in a style from the history of animation says whose (`Toy::style`, a [`Style`]): one dimmer
-//! line at the foot of the rules, "Drawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963." (Paul,
+//! A toy drawn in a style from the history of animation says whose (`Toy::style`, a [`Style`], the sheet's
+//! `style`): one dimmer line at the foot of the rules, "Drawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963." (Paul,
 //! Nov 22 2026: "have it say somewhere in the toy what the style is").
 //!
 //! A toy with a demo alone has no sheet: its mark plays the demo. The demo also opens by itself on a first
@@ -138,7 +139,7 @@ impl Demo {
 
 /// What the rules mark (or the origins mark) shows: lines, a line each, and an optional dimmer note
 /// (empty: none; Screw's says the reader's song stays on the phone).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Rules {
     pub lines: Vec<String>,
     pub note: String,
@@ -220,11 +221,14 @@ pub struct Info {
     /// A tap closed it: the ghost's fingers go up on the next frame.
     close_pending: bool,
     now: f64,
-    line: Option<std::ffi::CString>,
-    /// The rules while they show (the shell's text).
-    rules: Option<std::ffi::CString>,
-    /// Where the rules came from, while that shows (the shell's text).
-    origins: Option<std::ffi::CString>,
+    line: Option<String>,
+    /// The rules while they show (the frame's sheet: chrome.rs).
+    rules: Option<Rules>,
+    /// Where the rules came from, while that shows (the frame's sheet).
+    origins: Option<Rules>,
+    /// The frame draws the mark itself, natively (`Ctx::native_chrome`): the kit neither draws it nor
+    /// routes a finger to it, and only plays the demo's ghost.
+    pub native: bool,
 }
 
 /// Which marks a toy has (each shown only if the toy gives its text).
@@ -276,9 +280,9 @@ impl Info {
         self.open.is_some() || self.rules.is_some() || self.origins.is_some()
     }
 
-    /// Where the rules came from, while that shows (for the shell's text; `Rules::text`).
-    pub fn origins(&self) -> Option<&std::ffi::CStr> {
-        self.origins.as_deref()
+    /// Where the rules came from, while that shows (the frame's sheet).
+    pub fn origins(&self) -> Option<&Rules> {
+        self.origins.as_ref()
     }
 
     /// The sheet showing: its rules page or its origins page.
@@ -294,12 +298,12 @@ impl Info {
             }
             self.rules = None;
         }
-        self.origins = origins.map(|r| std::ffi::CString::new(r.text()).unwrap_or_default());
+        self.origins = origins;
     }
 
-    /// The rules while they show (for the shell to set in the system's text; `Rules::text`).
-    pub fn rules(&self) -> Option<&std::ffi::CStr> {
-        self.rules.as_deref()
+    /// The rules while they show (the frame's sheet).
+    pub fn rules(&self) -> Option<&Rules> {
+        self.rules.as_ref()
     }
 
     /// Shows the rules (closing the demo, whose ghost goes up on the next frame), or hides them.
@@ -310,11 +314,11 @@ impl Info {
             }
             self.origins = None;
         }
-        self.rules = rules.map(|r| std::ffi::CString::new(r.text()).unwrap_or_default());
+        self.rules = rules;
     }
 
-    /// The line while the demo shows (for the shell to set in the system's text).
-    pub fn line(&self) -> Option<&std::ffi::CStr> {
+    /// The line while the demo shows (the frame sets it in the system's text).
+    pub fn line(&self) -> Option<&str> {
         self.line.as_deref()
     }
 
@@ -331,6 +335,7 @@ impl Info {
                     && !closed
                     && !self.is_open()
                     && m.any()
+                    && !self.native
                     && near(Self::spot(points))
                 {
                     return Route::Open;
@@ -348,7 +353,7 @@ impl Info {
             self.closer = Some(e.id);
             return Route::Taken;
         }
-        if m.any() && near(Self::spot(points)) {
+        if m.any() && !self.native && near(Self::spot(points)) {
             self.taken.push(e.id);
             return Route::Taken;
         }
@@ -447,6 +452,9 @@ impl<T: crate::Toy> crate::Host<T> {
         } else {
             self.toy.origins()
         };
+        if r.is_some() && !self.info.sheet_open() {
+            self.sheet_top = self.toy.card_at_top(&self.ctx);
+        }
         self.info.show_origins(r);
     }
 
@@ -462,10 +470,9 @@ impl<T: crate::Toy> crate::Host<T> {
             return;
         }
         // (a toy with switches and no rules of its own: the sheet is its switches alone)
-        let mut r = self.toy.rules().unwrap_or_else(|| Rules::lines(&[]));
-        if let Some(s) = self.toy.style() {
-            r = s.under(r);
-        }
+        // (the style's credit goes with it in the frame's sheet: `chrome::Sheet::style`)
+        let r = self.toy.rules().unwrap_or_else(|| Rules::lines(&[]));
+        self.sheet_top = self.toy.card_at_top(&self.ctx);
         self.info.show_rules(Some(r));
     }
 
@@ -499,12 +506,6 @@ impl<T: crate::Toy> crate::Host<T> {
         self.marks.any().then(|| Info::spot(self.ctx.points()))
     }
 
-    /// The sheet's buttons while its rules page shows, a line each: `demo` ("Show me") and `origins`
-    /// ("Where this comes from"), for the toy that has them.
-    pub fn sheet_more(&self) -> Option<&std::ffi::CStr> {
-        self.info.rules().is_some().then_some(self.more.as_c_str())
-    }
-
     /// Each frame: which of the mark's things the toy has now (a host's change with what it holds).
     pub(crate) fn marks_step(&mut self) {
         let sw = self.toy.switches();
@@ -515,15 +516,6 @@ impl<T: crate::Toy> crate::Host<T> {
             switches: !sw.is_empty(),
             off: sw.iter().any(|s| !s.on),
         };
-        let more = match (self.marks.demo, self.marks.origins) {
-            (true, true) => "demo\norigins\n",
-            (true, false) => "demo\n",
-            (false, true) => "origins\n",
-            (false, false) => "",
-        };
-        if self.more.as_bytes() != more.as_bytes() {
-            self.more = std::ffi::CString::new(more).unwrap_or_default();
-        }
     }
 }
 
@@ -539,8 +531,7 @@ impl Info {
     }
 
     pub fn open(&mut self, demo: Demo, now: f64) {
-        self.line = (!demo.line.is_empty())
-            .then(|| std::ffi::CString::new(demo.line.replace('\0', "")).unwrap_or_default());
+        self.line = (!demo.line.is_empty()).then(|| demo.line.clone());
         self.open = Some((demo, now));
         self.ghosts.clear();
         self.played.clear();
@@ -630,23 +621,26 @@ impl Info {
             return;
         }
         let lit = if self.is_open() { 0.85 } else { 0.5 };
+        let native = self.native;
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
         let (kp, k) = (ppp as f32, (ppp * Self::mark_scale(points)) as f32);
-        // a soft dark ground so it reads on any scene, a small ring, and three dots (more, as iOS has it)
+        // a soft dark ground, a small ring, three dots (as iOS has it); none where the frame draws its own
         let s = Self::spot(points);
         let c = [s[0] as f32 * kp, s[1] as f32 * kp];
-        painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
-        painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        for i in -1..=1 {
-            painter.disc(
-                [c[0] + 2.9 * k * i as f32, c[1]],
-                0.95 * k,
-                0.7,
-                [1.0, 1.0, 1.0, lit],
-            );
+        if !native {
+            painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
+            painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            for i in -1..=1 {
+                painter.disc(
+                    [c[0] + 2.9 * k * i as f32, c[1]],
+                    0.95 * k,
+                    0.7,
+                    [1.0, 1.0, 1.0, lit],
+                );
+            }
         }
-        if m.off {
+        if m.off && !native {
             // a rule is off: a small amber dot on the mark's shoulder, so the toy is never mistaken for the real thing
             let d = [c[0] + 5.6 * k, c[1] - 5.6 * k];
             painter.disc(d, 3.3 * k, 0.8, [0.0, 0.0, 0.0, 0.5]);
@@ -746,7 +740,7 @@ mod tests {
             Route::Toy
         ));
         info.show_rules(Some(Rules::new(&["a", "b"], "c")));
-        assert_eq!(info.rules().unwrap().to_str().unwrap(), "a\nb\n\nc");
+        assert_eq!(info.rules().unwrap().text(), "a\nb\n\nc");
         assert!(info.is_open() && info.sheet_open());
         // the origins take the rules' place
         info.show_origins(Some(Rules::new(&["d"], "")));
@@ -764,6 +758,12 @@ mod tests {
             Route::Taken
         ));
         assert!(!info.is_open());
+        // where the frame draws its own mark, the corner is the toy's
+        info.native = true;
+        assert!(matches!(
+            tap(&mut info, 6, Info::spot(pts), all),
+            Route::Toy
+        ));
     }
 
     #[test]
