@@ -37,13 +37,15 @@ fn vnoise(p: vec2<f32>) -> f32 {
   let near = smoothstep(0.05, 0.85, dg.y);
   let d = select(-2.0e9, dg.x / max(dg.y, 1e-3), dg.y > 0.02);
   let age = u.now - d;
+  // (the banks' phase and its derivative before the branch: browsers' WGSL takes derivatives only in
+  // uniform control flow)
+  let per = 22.0;
+  let ph = d / per;
+  let fw = max(fwidth(ph), 1e-4);
   if (dg.y > 0.02 && age >= 0.0) {
     // where the river has been, its old banks: a thin pale arc every ten years (lines of equal age,
     // the scroll bars a growing bend leaves on its inside), fading as the forest closes over them;
     // a narrow fringe of bare sand at the newest
-    let per = 22.0;
-    let ph = d / per;
-    let fw = max(fwidth(ph), 1e-4);
     let line = smoothstep(0.0, 3.0 * fw + 0.08, abs(fract(ph) - 0.5) * 2.0 - (1.0 - 4.0 * fw));
     let grain = vnoise(world / 30.0);
     let fade = 1.0 - smoothstep(50.0, 200.0, age + grain * 20.0);

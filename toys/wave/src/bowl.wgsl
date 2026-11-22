@@ -51,10 +51,12 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
 }
 
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
+  // (derivatives before the pitch's early return: browsers' WGSL refuses them in non-uniform control flow)
+  let seat = i.uv;
+  let px = fwidth(seat);
   if (i.uv.x < 0.0) {
     return vec4<f32>(pitch(i.world), 1.0);
   }
-  let seat = i.uv;
   let id = vec2<i32>(i32(floor(seat.x)) % i32(cam.grid.x), clamp(i32(floor(seat.y)), 0, i32(cam.grid.y) - 1));
   let s = textureLoad(seats, id, 0);
   let up = s.r;
@@ -64,11 +66,10 @@ fn pitch(w: vec3<f32>) -> vec3<f32> {
   let aisle = step(abs(seat.y - 20.0), 0.35) + step(abs(seat.y - 40.0), 0.35);
   // (the concourses and every fourth row's step are drawn lighter, so the film's characters show the
   // bowl's tiers as rings round the pitch)
-  let step4 = 1.0 - smoothstep(0.0, max(fwidth(seat.y) * 1.5, 0.08), abs(fract(seat.y / 4.0) - 0.02) * 4.0);
+  let step4 = 1.0 - smoothstep(0.0, max(px.y * 1.5, 0.08), abs(fract(seat.y / 4.0) - 0.02) * 4.0);
   c = mix(c, vec3<f32>(0.16, 0.16, 0.17), clamp(aisle, 0.0, 1.0));
   c = c + vec3<f32>(0.08, 0.08, 0.085) * step4;
   // the phone's light: a soft dot, raised and brighter as the person stands
-  let px = fwidth(seat);
   let size = max(px.x, px.y);
   var f = fract(seat) - vec2<f32>(0.5, 0.5);
   f.y = f.y - 0.32 * up;

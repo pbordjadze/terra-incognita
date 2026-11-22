@@ -33,7 +33,8 @@ use veil::Veil;
 
 /// The Earth mark: bottom left, as the toy's own mark is bottom right (toy-kit info.rs).
 fn earth_spot(points: [f64; 2]) -> [f64; 2] {
-    [26.0, points[1] - 34.0]
+    let m = toy_kit::info::Info::mark_scale(points);
+    [26.0 * m, points[1] - 34.0 * m]
 }
 const EARTH_REACH: f64 = 24.0;
 /// The opening's zoom: on a tall phone the Earth a little wider than the screen, so its lights are large
@@ -42,6 +43,11 @@ const EARTH_REACH: f64 = 24.0;
 /// Earth ran off all four sides). The kit's disc radius is (short side / 2 - 14) x zoom.
 pub fn opening_zoom(points: [f64; 2]) -> f64 {
     let (w, h) = (points[0].min(points[1]), points[0].max(points[1]));
+    if points[0] > points[1] && w > 600.0 {
+        // on its side (a laptop's browser, however wide; a landscape iPad): the whole Earth inside the
+        // height, lights and all (a phone on its side keeps the phone's)
+        return (w * 0.45) / (w / 2.0 - 14.0);
+    }
     if h / w > 1.8 {
         return 1.4;
     }
@@ -262,6 +268,7 @@ impl Terra {
         let k = ctx.ppp as f32;
         let s = earth_spot(ctx.points());
         let c = [s[0] as f32 * k, s[1] as f32 * k];
+        let k = k * toy_kit::info::Info::mark_scale(ctx.points()) as f32;
         let lit = 0.62 * alpha;
         let p = &mut self.painter;
         p.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42 * alpha]);
@@ -293,7 +300,8 @@ impl Terra {
     /// Inside: the Earth mark's finger (true if it was the mark's); lifted on it, the toy goes back into its card.
     fn earth_mark_pointer(&mut self, ctx: &mut Ctx, e: &PointerEvent) -> bool {
         let s = earth_spot(ctx.points());
-        let near = |k: f64| (e.x - s[0]).hypot(e.y - s[1]) < EARTH_REACH * k;
+        let m = toy_kit::info::Info::mark_scale(ctx.points());
+        let near = |k: f64| (e.x - s[0]).hypot(e.y - s[1]) < EARTH_REACH * m * k;
         if e.phase == Phase::Down && self.earth_finger.is_none() && near(1.0) {
             self.earth_finger = Some(e.id);
             return true;
@@ -408,6 +416,8 @@ impl Toy for Terra {
         // `with_rivers` brings them back)
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
         globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
+        // (an opening under the whole-screen Earth stays there: the hand's coast would ease it up to 1)
+        globe.hand.rest_zoom = globe.camera.zoom.min(1.0);
         globe.set_home();
         let mut life = Life::new();
         let [w, h] = ctx.points();
@@ -708,7 +718,11 @@ impl Toy for Terra {
     }
 
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
-        self.inside() && self.room.as_ref().is_some_and(|r| r.card_at_top())
+        if !self.inside() {
+            // a toy's card up over the Earth: the sheet hangs from the top, clear of it, not over it
+            return self.card.is_some_and(|c| c.gone.is_none());
+        }
+        self.room.as_ref().is_some_and(|r| r.card_at_top())
     }
 
     fn rules(&self) -> Option<Rules> {
