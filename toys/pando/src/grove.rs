@@ -3,6 +3,7 @@
 //! crown's leaves tremble, and where a gust is passing more of them turn their pale undersides up, so
 //! a gust shows as a pale wave running over the gold.
 
+use crate::pen::Pen;
 use crate::wind::{hash, Wind};
 use crate::Cam;
 use toy_kit::paint::Painter;
@@ -76,14 +77,6 @@ pub fn fog(z: f32) -> f32 {
     1.0 - (-z / 150.0).exp()
 }
 pub const HAZE: [f32; 3] = [0.86, 0.70, 0.52];
-
-fn mix3(a: [f32; 3], b: [f32; 3], k: f32) -> [f32; 3] {
-    [
-        a[0] + (b[0] - a[0]) * k,
-        a[1] + (b[1] - a[1]) * k,
-        a[2] + (b[2] - a[2]) * k,
-    ]
-}
 
 /// The gold of a leaf's top in the low sun, and its pale underside.
 pub const GOLD: [f32; 3] = [0.95, 0.64, 0.12];
@@ -170,111 +163,151 @@ impl Grove {
         best.map(|b| b.0)
     }
 
+    /// The grove drawn with the plotter's pen (`pen.rs`), far to near: each stem two lines and its
+    /// bark's eyes, each crown a ragged outline laid over paper (so it hides what is behind it), and in
+    /// it a few of its leaves, a short stroke each, or a small ring for one turned pale side up.
     pub fn draw(&self, p: &mut Painter, v: &View, cam: &Cam, wind: &Wind, ppp: f32, fade: f32) {
         let t = wind.t;
+        let pen = Pen::new(ppp, fade);
         for tr in &self.trees {
-            let k = fog(tr.z);
+            // far off, only some of the crowns are drawn, so the far band stays open
+            if hash(tr.seed ^ 0xFA) > 1.25 - tr.z / FAR {
+                continue;
+            }
             let foot = v.project([tr.x, 0.0, tr.z]);
             let top = v.project([tr.x + tr.d + tr.lean * tr.h, tr.h, tr.z]);
             let (Some(foot), Some(top)) = (foot, top) else {
                 continue;
             };
             let s = v.f / tr.z;
-            // the stem: chalk white, greener in the shade
-            let bark = mix3([0.86, 0.87, 0.80], HAZE, k);
-            let wid = (s * 0.14).max(0.5 * ppp);
-            let a = cam.pt(foot);
-            let b = cam.pt([
-                foot[0] + (top[0] - foot[0]) * 0.6,
-                foot[1] + (top[1] - foot[1]) * 0.6,
-            ]);
-            p.line(a, b, cam.len(wid), cam.len(0.6 * ppp), with(bark, fade));
-            // its crown: a cloud of small leaf clusters, swaying with the stem
-            let rx = s * tr.r;
-            let ry = s * tr.h * 0.2;
             let c = v
-                .project([tr.x + tr.lean * tr.h * 0.74, tr.h * 0.74, tr.z])
+                .project([tr.x + tr.lean * tr.h * 0.8, tr.h * 0.8, tr.z])
                 .unwrap_or(top);
-            let blob = (rx * 0.13).max(0.9 * ppp);
-            let n = ((rx * ry) / (blob * blob) * 2.6).clamp(6.0, 420.0) as u32;
-            let w = wind.at([tr.x, tr.z]);
-            let share = if self.flat { turned(w) } else { 0.02 };
-            // the crown's body first: a cloud of lobes the plotter outlines as one ragged edge, the stem's
-            // top hidden inside it
-            let deep = mix3([0.50, 0.30, 0.07], HAZE, k);
-            let lobe = |p: &mut Painter, q: [f32; 2], r: f32| {
-                p.disc(cam.pt(q), cam.len(r), cam.len(rx * 0.05), with(deep, fade));
-                if let Some(last) = p.shapes_over.last_mut() {
-                    last._pad = crate::plotter::CLOUD;
-                }
-            };
-            for (dy, rk) in [(-0.45f32, 0.55f32), (0.0, 0.7), (0.45, 0.55)] {
-                lobe(
-                    p,
-                    [c[0] + s * tr.d * (0.6 - 0.3 * dy), c[1] + dy * ry],
-                    rx * rk,
-                );
+            stem(p, &pen, cam, tr, foot, c, s, ppp);
+            self.crown(p, &pen, cam, tr, c, s, wind.at([tr.x, tr.z]), t, ppp);
+        }
+    }
+
+    /// A crown: narrow and tall, its outline scalloped where clusters of leaves stand out, the top swaying
+    /// farther than the bottom.
+    #[allow(clippy::too_many_arguments)] // the tree, where it is, and how it is drawn
+    fn crown(
+        &self,
+        p: &mut Painter,
+        pen: &Pen,
+        cam: &Cam,
+        tr: &Tree,
+        c: [f32; 2],
+        s: f32,
+        w: f32,
+        t: f32,
+        ppp: f32,
+    ) {
+        let hw = s * tr.r * 0.62;
+        let hh = s * tr.h * 0.17;
+        let sway = |up: f32| s * tr.d * (0.4 + 0.6 * up);
+        // the paper first, in rows, a little inside the outline
+        let rows = 10;
+        for i in 0..rows {
+            let y = -1.0 + (i as f32 + 0.5) * 2.0 / rows as f32;
+            let half = hw * 0.92 * (1.0 - y * y).max(0.0).sqrt();
+            let r = hh / rows as f32 * 1.4;
+            let q = [c[0] + sway(0.5 - 0.5 * y), c[1] + y * hh];
+            let dx = (half - r).max(0.0);
+            pen.paper(
+                p,
+                cam.pt([q[0] - dx, q[1]]),
+                cam.pt([q[0] + dx, q[1]]),
+                cam.len(r.min(half)),
+            );
+        }
+        // the outline: round lobes where clusters of leaves stand out, cusps between them
+        let lobes = ((hw + hh) / (5.0 * ppp)).clamp(7.0, 16.0).round();
+        let n = (lobes * 6.0) as u32;
+        let ph = hash(tr.seed ^ 0x10B) * std::f32::consts::PI;
+        let pts: Vec<[f32; 2]> = (0..n)
+            .map(|i| {
+                let th = i as f32 / n as f32 * std::f32::consts::TAU;
+                let m = 0.9 + 0.12 * (0.5 * lobes * th + ph).sin().abs();
+                let (ox, oy) = (th.cos(), th.sin());
+                cam.pt([
+                    c[0] + ox * hw * m + sway(0.5 - 0.5 * oy),
+                    c[1] + oy * hh * m,
+                ])
+            })
+            .collect();
+        pen.path(p, &pts, true);
+        // the leaves inside: one mark to about every six points square of crown
+        let area = cam.len(hw) * cam.len(hh) * std::f32::consts::PI;
+        let marks = (area / (6.0 * ppp).powi(2)).min(160.0) as u32;
+        if cam.len(hw) < 3.0 * ppp {
+            return;
+        }
+        let share = if self.flat { turned(w) } else { 0.02 };
+        let len = 1.6 * ppp;
+        for j in 0..marks {
+            let hs = tr.seed.wrapping_add(j.wrapping_mul(7919));
+            let ang = hash(hs) * std::f32::consts::TAU;
+            let rr = hash(hs ^ 0x5555).sqrt() * 0.8;
+            let (ox, oy) = (ang.cos() * rr, ang.sin() * rr);
+            let q = cam.pt([c[0] + ox * hw + sway(0.5 - 0.5 * oy), c[1] + oy * hh]);
+            let freq = 3.0 + 2.0 * hash(hs ^ 0x77);
+            let ph = hash(hs ^ 0x99) * std::f32::consts::TAU;
+            let flick = (ph + std::f32::consts::TAU * freq * t).sin();
+            if flick > 1.0 - 2.0 * share {
+                // an underside turned up: a little ring
+                pen.circle(p, q, 0.9 * ppp);
+            } else {
+                // a leaf seen edge-on or flat: a short stroke, turning as it trembles
+                let a = ph + 0.5 * flick;
+                let d = [a.cos() * len * 0.5, a.sin() * len * 0.5];
+                pen.line(p, [q[0] - d[0], q[1] - d[1]], [q[0] + d[0], q[1] + d[1]]);
             }
-            for i in 0..11u32 {
-                let hs = tr.seed.wrapping_add(i.wrapping_mul(104_729));
-                let ang = (i as f32 + 0.4 * hash(hs)) / 11.0 * std::f32::consts::TAU;
-                let (ex, ey) = (rx * 0.62, ry * 0.62 + rx * 0.4);
-                let up = 0.5 - 0.5 * ang.sin();
-                let q = [
-                    c[0] + ang.cos() * ex + s * tr.d * (0.4 + 0.6 * up),
-                    c[1] + ang.sin() * ey,
-                ];
-                lobe(p, q, rx * (0.24 + 0.14 * hash(hs ^ 0x3c3)));
-            }
-            for j in 0..n {
-                let hseed = tr.seed.wrapping_add(j.wrapping_mul(7919));
-                // the plotter draws a cluster as a pen dot, and only some of them, so the crown is a stipple
-                if hash(hseed ^ 0xD07) >= crate::plotter::DOTS_KEPT {
-                    continue;
-                }
-                let ang = hash(hseed) * std::f32::consts::TAU;
-                // most of the leaves are at the crown's surface
-                let rr = hash(hseed ^ 0x5555).powf(0.3);
-                let (ox, oy) = (ang.cos() * rr, ang.sin() * rr);
-                // the higher a cluster, the farther the sway carries it
-                let up = 0.5 - 0.5 * oy;
-                let sway = s * tr.d * (0.4 + 0.6 * up);
-                let freq = 3.0 + 2.0 * hash(hseed ^ 0x77);
-                let ph = hash(hseed ^ 0x99) * std::f32::consts::TAU;
-                let flick = (ph + std::f32::consts::TAU * freq * t).sin();
-                let pale = flick > 1.0 - 2.0 * share;
-                // a round crown in the low sun from the upper left: bright on that side, in its own
-                // shade on the other, darker inside than at its surface
-                let nz = (1.0 - rr * rr).max(0.0).sqrt();
-                let sun = (-0.55 * ox - 0.6 * oy + 0.58 * nz).max(0.0);
-                let lit = 0.28 + 0.85 * sun;
-                let base = tone(hseed);
-                let col = if pale {
-                    let l = 0.75 + 0.4 * sun;
-                    [
-                        (PALE[0] * l).min(1.0),
-                        (PALE[1] * l).min(1.0),
-                        (PALE[2] * l).min(1.0),
-                    ]
-                } else {
-                    [base[0] * lit, base[1] * lit, base[2] * lit]
-                };
-                // where a gust is passing, the whole crown pales and brightens, so the gust is a band
-                // of light running over the grove, not only leaves switching
-                let gust = ((w - 2.2) / 4.0).clamp(0.0, 1.0) * self.flat as u32 as f32;
-                let col = mix3(col, [1.0, 0.93, 0.70], 0.4 * gust * (0.4 + 0.6 * sun));
-                let col = mix3(col, HAZE, k);
-                let q = [c[0] + ox * rx + sway, c[1] + oy * ry];
-                // an underside turned up is a small pale glint, a leaf's width
-                let br = blob * if pale { 0.5 } else { 1.0 };
-                // soft-edged, so the clusters melt into one mass of leaves
-                p.disc(
-                    cam.pt(q),
-                    cam.len(br),
-                    cam.len(br * 0.45 + 0.6 * ppp),
-                    with(col, fade),
-                );
-            }
+        }
+    }
+}
+
+/// A stem: its two edges up into the crown (the crown's paper hides their tops), or one line when it
+/// is thin, and the bark's dark eyes, chevrons where branches fell.
+#[allow(clippy::too_many_arguments)] // the tree, where it is, and how it is drawn
+fn stem(
+    p: &mut Painter,
+    pen: &Pen,
+    cam: &Cam,
+    tr: &Tree,
+    foot: [f32; 2],
+    c: [f32; 2],
+    s: f32,
+    ppp: f32,
+) {
+    let a = cam.pt(foot);
+    let b = cam.pt([c[0] + s * tr.d * 0.3, c[1]]);
+    let half = cam.len(s * 0.07).max(0.0);
+    let len = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2))
+        .sqrt()
+        .max(1e-3);
+    let d = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+    let n = [-d[1], d[0]];
+    if half < 1.5 * pen.w {
+        pen.line(p, a, b);
+        return;
+    }
+    pen.paper(p, a, b, half);
+    for side in [-1.0f32, 1.0] {
+        let o = [n[0] * half * side, n[1] * half * side];
+        pen.line(p, [a[0] + o[0], a[1] + o[1]], [b[0] + o[0], b[1] + o[1]]);
+    }
+    if half < 2.5 * ppp {
+        return;
+    }
+    let count = (len / (half * 9.0)).min(7.0) as u32;
+    for i in 0..count {
+        let f = (i as f32 + 0.3 + 0.4 * hash(tr.seed.wrapping_add(i * 13))) / count.max(1) as f32;
+        let q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+        let w = half * (0.5 + 0.4 * hash(tr.seed ^ (i * 977)));
+        let apex = [q[0] + d[0] * w * 0.45, q[1] + d[1] * w * 0.45];
+        for side in [-1.0f32, 1.0] {
+            pen.line(p, apex, [q[0] + n[0] * w * side, q[1] + n[1] * w * side]);
         }
     }
 }

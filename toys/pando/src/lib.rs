@@ -7,6 +7,7 @@
 
 pub mod grove;
 pub mod leaf;
+pub mod pen;
 pub mod plotter;
 pub mod skin;
 pub mod sound;
@@ -550,7 +551,7 @@ impl Toy for Pando {
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         self.backdrop
             .render(&ctx.gpu, &mut enc, target, sz, &params);
-        plotter::ink(&mut self.painter, size, ppp, matches!(scale, Scale::Grove));
+        plotter::ink(&mut self.painter, size, ppp);
         self.painter.render(&ctx.gpu, &mut enc, target, sz, None);
         ctx.gpu.queue.submit([enc.finish()]);
     }
