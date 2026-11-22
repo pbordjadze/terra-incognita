@@ -26,6 +26,8 @@ const HORIZON: f32 = 0.79;
 const DUSK_S: f32 = 300.0;
 /// The emergence is already under way when the toy opens: this many seconds of it are run first.
 const PREWARM_S: f32 = 70.0;
+/// The step the colony runs ahead by (`Toy::warm`), seconds.
+const RUN_AHEAD_DT: f32 = 0.25;
 /// A real wingspan, metres (bats, the hawk), and how much larger the hawk is drawn, to be seen.
 const BAT_SPAN: f32 = 0.30;
 const HAWK_SPAN: f32 = 1.3;
@@ -56,6 +58,8 @@ pub struct Bats {
     swerves: f32,
     film: toy_kit::film::Film,
     reduce_motion: bool,
+    /// Steps still to run ahead before it is shown (`Toy::warm`).
+    run_ahead: usize,
 }
 
 /// The camera: points a radian (focal length), and the pitch up.
@@ -287,11 +291,7 @@ impl Bats {
 impl Toy for Bats {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let gpu = &ctx.gpu;
-        let mut colony = Colony::new(N, 0xBA75_0001);
-        let dt = 0.25;
-        for _ in 0..(PREWARM_S / dt) as usize {
-            colony.step(dt);
-        }
+        let colony = Colony::new(N, 0xBA75_0001);
         Ok(Bats {
             colony,
             sky: Backdrop::new(gpu, "bats-land", include_str!("land.wgsl")),
@@ -303,7 +303,20 @@ impl Toy for Bats {
             swerves: 0.0,
             film: pinscreen::new(gpu, [ctx.width, ctx.height]),
             reduce_motion: ctx.reduce_motion,
+            run_ahead: (PREWARM_S / RUN_AHEAD_DT) as usize,
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        // a slice a few steps long (each is short)
+        for _ in 0..4 {
+            if self.run_ahead == 0 {
+                return true;
+            }
+            self.colony.step(RUN_AHEAD_DT);
+            self.run_ahead -= 1;
+        }
+        self.run_ahead == 0
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {

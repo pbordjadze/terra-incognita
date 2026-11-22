@@ -33,6 +33,7 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | --- | --- | --- | --- |
 | The toy's life: new, pointer, update, draw, save/restore, shaken, settings | `lib.rs` (`Toy`, `Ctx`, `Host`) | ✓ | |
 | What the phone feels: tilt, magnetic field, heading (`Sensors`, `ctx.sensors`; `toy_sense`, the web's `sense`; plans' `gravity`/`field`/`heading`) | `lib.rs`, `ios.rs`, `check.rs`, `toys/ios`, `toys/terra-web` | ✓ | Magnet Marsh, The Delta, Nov 18 |
+| Work left from `new` done in slices (`Toy::warm`): a toy's run-ahead or a solve, a few milliseconds each; the shell runs them all before the first frame, Terra as many as fit in a frame (`work_clock`) while the card rises, then fades the toy in | `lib.rs`, `clock.rs`, `toys/terra/src/rooms.rs` | ✓ | a friend's trace of the web Terra frozen for 3 s on a touch, Nov 22 |
 | The GPU, textures, the view uniform | `gpu/` | ✓ | |
 | The globe by day and night, its hand (drag, pinch, fling), project/unproject | `globe/` | ✓ | adrift-core, Nov 2 |
 | Real data: a manifest, files by name, the bundle or a directory | `assets.rs` | ✓ | |

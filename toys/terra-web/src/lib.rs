@@ -34,6 +34,8 @@ pub async fn start(
     console_error_panic_hook::set_once();
     toy_kit::set_log_sink(|line| web_sys::console::log_1(&format!("toy: {line}").into()));
     toy_kit::set_wall_clock(now);
+    // (a toy's warming and Nazaré's swells stop each frame's share of their work by it)
+    toy_kit::set_work_clock(|| js_sys::Date::now() / 1000.0);
     let err = |e: &dyn std::fmt::Display| JsValue::from_str(&e.to_string());
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::BROWSER_WEBGPU,

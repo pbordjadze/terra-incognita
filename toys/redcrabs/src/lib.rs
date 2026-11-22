@@ -38,6 +38,8 @@ pub struct RedCrabs {
     k: f32,
     t: f64,
     size_pt: [f64; 2],
+    /// Steps of the opening still to run ahead before it is shown (`Toy::warm`).
+    run_ahead: usize,
 }
 
 fn scale(size: [f64; 2]) -> f32 {
@@ -177,12 +179,21 @@ impl RedCrabs {
 
 /// The island as it opens: the rain has just been, and the crabs are on their way.
 fn opening(w: f32, h: f32) -> Island {
-    let mut island = Island::new(w, h, 0x00C2_AB5E);
-    island.rain([w * 0.4, h * 0.15]);
-    for _ in 0..180 {
+    let mut island = rained(w, h);
+    for _ in 0..RUN_AHEAD {
         island.step(1.0 / 30.0);
     }
     island.t = 0.0;
+    island
+}
+
+/// Steps the opening runs ahead (`Toy::warm`), each a thirtieth of a second.
+const RUN_AHEAD: usize = 180;
+
+/// The island just rained on, not yet run ahead (`opening`).
+fn rained(w: f32, h: f32) -> Island {
+    let mut island = Island::new(w, h, 0x00C2_AB5E);
+    island.rain([w * 0.4, h * 0.15]);
     island
 }
 
@@ -191,7 +202,7 @@ impl Toy for RedCrabs {
         let size_pt = ctx.points();
         let k = scale(size_pt);
         let (w, h) = (size_pt[0] as f32 / k, size_pt[1] as f32 / k);
-        let island = opening(w, h);
+        let island = rained(w, h);
         Ok(RedCrabs {
             island,
             ground: Backdrop::new(&ctx.gpu, "redcrabs-ground", include_str!("ground.wgsl")),
@@ -200,7 +211,22 @@ impl Toy for RedCrabs {
             k,
             t: 0.0,
             size_pt,
+            run_ahead: RUN_AHEAD,
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        for _ in 0..4 {
+            if self.run_ahead == 0 {
+                break;
+            }
+            self.island.step(1.0 / 30.0);
+            self.run_ahead -= 1;
+            if self.run_ahead == 0 {
+                self.island.t = 0.0;
+            }
+        }
+        self.run_ahead == 0
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
@@ -213,6 +239,7 @@ impl Toy for RedCrabs {
         let on = self.island.on;
         self.island = opening(size[0] as f32 / self.k, size[1] as f32 / self.k);
         self.island.on = on;
+        self.run_ahead = 0;
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {

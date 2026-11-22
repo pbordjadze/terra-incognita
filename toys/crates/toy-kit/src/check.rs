@@ -430,6 +430,7 @@ pub fn resolve(
 
 /// A headless GPU (Vulkan on Linux, Metal on a Mac).
 pub fn gpu() -> anyhow::Result<Gpu> {
+    crate::clock::headless(); // (no frame's work is cut short by a slow machine: `Toy::warm`)
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL,
         ..wgpu::InstanceDescriptor::new_without_display_handle()

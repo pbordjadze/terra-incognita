@@ -149,7 +149,16 @@ pub fn transmittance(dir: [f64; 3]) -> [f64; 3] {
     }
 }
 
+/// `Sky::compute_now` part done: its pass (of three, each lit by the last's ambient), row and ambient.
+#[derive(Clone, Copy, Default)]
+pub struct NowWork {
+    pass: usize,
+    row: usize,
+    ambient: [f64; 3],
+}
+
 /// The table, worked out a few rows at a time.
+#[derive(Clone)]
 pub struct Sky {
     /// The sun's elevation (degrees) the finished table is for, and the table (rgb, linear).
     pub ready_for: Option<f64>,
@@ -188,17 +197,33 @@ impl Sky {
 
     /// Works out the whole table now (at the start).
     pub fn compute_now(&mut self, sun_el: f64) {
-        let mut ambient = [0.0; 3];
-        for _ in 0..3 {
-            for j in 0..EL {
-                Self::row(&mut self.work, j, sun_el, ambient);
-            }
+        let mut w = NowWork::default();
+        while !self.compute_part(sun_el, &mut w, EL) {}
+    }
+
+    /// `compute_now` in parts of at most `rows` rows (a toy's warming, a frame at a time): true once the
+    /// table is done, the same table.
+    pub fn compute_part(&mut self, sun_el: f64, w: &mut NowWork, rows: usize) -> bool {
+        if w.pass >= 3 {
+            return true;
+        }
+        let end = (w.row + rows.max(1)).min(EL);
+        for j in w.row..end {
+            Self::row(&mut self.work, j, sun_el, w.ambient);
+        }
+        w.row = end;
+        if w.row == EL {
             std::mem::swap(&mut self.work, &mut self.table);
-            ambient = self.ambient();
+            w.ambient = self.ambient();
+            (w.pass, w.row) = (w.pass + 1, 0);
+        }
+        if w.pass < 3 {
+            return false;
         }
         self.ready_for = Some(sun_el);
         self.changed = true;
         self.next_row = EL;
+        true
     }
 
     /// Works on `rows` rows toward the sun at `sun_el`, starting a new table when the sun has moved

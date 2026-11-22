@@ -22,6 +22,8 @@ const PT_PER_M: f64 = 50.0;
 const PACE: f32 = 4.0;
 /// Seconds (real, before `PACE`) the huddle has already stood when the toy opens.
 const PREWARM_S: f32 = 50.0;
+/// The step the huddle runs ahead by (`Toy::warm`), seconds.
+const RUN_AHEAD_DT: f32 = 0.5;
 /// A penguin's shadow on the ice, metres (x west, y south): the sun a few degrees up.
 const SHADOW: [f32; 2] = [0.6, 1.3];
 /// The day's wind, metres a second (the paper's days ran to 8.3 m/s).
@@ -52,6 +54,8 @@ pub struct Huddle {
     t: f64,
     size_pt: [f64; 2],
     calls_owed: f32,
+    /// Steps still to run ahead before it is shown (`Toy::warm`).
+    run_ahead: usize,
 }
 
 impl Huddle {
@@ -234,30 +238,9 @@ impl Toy for Huddle {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let gpu = &ctx.gpu;
         // the wind off the ice cap to the south, blowing north and a little west
-        let mut flock = Flock::new(N, [-0.35, -0.94], 0x5EA1_CE01);
-        let dt = 0.5;
-        for _ in 0..(PREWARM_S * PACE / dt) as usize {
-            flock.step(dt);
-        }
+        let flock = Flock::new(N, [-0.35, -0.94], 0x5EA1_CE01);
         let (c, _) = flock.middle();
-        let mut seed = 0x1234_5678u32;
-        let mut r = || {
-            seed ^= seed << 13;
-            seed ^= seed >> 17;
-            seed ^= seed << 5;
-            (seed >> 8) as f32 / (1u32 << 24) as f32
-        };
         let pts = ctx.points();
-        let span = [(pts[0] / PT_PER_M) as f32, (pts[1] / PT_PER_M) as f32];
-        let flakes = (0..FLAKES)
-            .map(|_| {
-                [
-                    c[0] + (r() - 0.5) * span[0],
-                    c[1] + (r() - 0.5) * span[1],
-                    0.4 + 0.8 * r(),
-                ]
-            })
-            .collect();
         Ok(Huddle {
             flock,
             ice: Backdrop::new(gpu, "huddle-ice", include_str!("ice.wgsl")),
@@ -266,12 +249,46 @@ impl Toy for Huddle {
             reduce_motion: ctx.reduce_motion,
             sound: sound::Sound::default(),
             eye: c,
-            flakes,
+            flakes: Vec::new(),
             touch: None,
             t: 0.0,
             size_pt: pts,
             calls_owed: 0.0,
+            run_ahead: (PREWARM_S * PACE / RUN_AHEAD_DT) as usize,
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        if self.run_ahead == 0 {
+            return true;
+        }
+        self.flock.step(RUN_AHEAD_DT);
+        self.run_ahead -= 1;
+        if self.run_ahead > 0 {
+            return false;
+        }
+        // the eye on the huddle, the snow round it
+        let (c, _) = self.flock.middle();
+        self.eye = c;
+        let mut seed = 0x1234_5678u32;
+        let mut r = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            (seed >> 8) as f32 / (1u32 << 24) as f32
+        };
+        let pts = self.size_pt;
+        let span = [(pts[0] / PT_PER_M) as f32, (pts[1] / PT_PER_M) as f32];
+        self.flakes = (0..FLAKES)
+            .map(|_| {
+                [
+                    c[0] + (r() - 0.5) * span[0],
+                    c[1] + (r() - 0.5) * span[1],
+                    0.4 + 0.8 * r(),
+                ]
+            })
+            .collect();
+        true
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
