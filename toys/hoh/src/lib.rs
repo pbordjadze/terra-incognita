@@ -57,6 +57,8 @@ pub struct Hoh {
     ppp: f64,
     thuds: u32,
     size: f32,
+    /// The opening's history still running (`Toy::warm`): the chosen giants felled so far.
+    history: Option<usize>,
 }
 
 impl Hoh {
@@ -103,7 +105,7 @@ impl Hoh {
 
 impl Toy for Hoh {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let forest = history::opening(SEED);
+        let forest = history::begin(SEED);
         let [gw, gh] = forest.grid();
         Ok(Hoh {
             field: Field::new(
@@ -125,7 +127,19 @@ impl Toy for Hoh {
             ppp: ctx.ppp,
             thuds: 0,
             size: 60.0,
+            history: Some(0),
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        let Some(next) = self.history.as_mut() else {
+            return true;
+        };
+        // a few years a slice
+        if history::years(&mut self.forest, next, 4) {
+            self.history = None;
+        }
+        self.history.is_none()
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {

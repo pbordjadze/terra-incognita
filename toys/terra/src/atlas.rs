@@ -128,11 +128,15 @@ impl Terra {
             }
         };
         room.settings(ctx.night, ctx.reduce_motion);
-        room.update(t);
         *self.room_sound.lock().unwrap() = room.synth();
         // (another card up gives way at once: one toy is held at a time)
         let risen = self.card.is_some_and(|c| c.gone.is_none());
         self.room = Some(room);
+        self.warming = Default::default();
+        self.warm_room(t, true);
+        if let Some(r) = self.room.as_mut() {
+            r.update(t);
+        }
         self.door = i;
         self.card = Some(Up {
             t0: if risen { t - card::RISE * 0.5 } else { t },
@@ -195,6 +199,11 @@ impl Terra {
         if self.room.is_none() || !matches!(self.state, State::Atlas) {
             return;
         }
+        // (a toy still warming goes in once it is ready: `warm_room`)
+        if self.room.as_ref().is_some_and(|r| !r.ready()) {
+            self.warming.go_in = true;
+            return;
+        }
         self.flight = None;
         // the Earth's other fingers are let go, so its hand is not left holding one
         for (id, (at, _, _)) in std::mem::take(&mut self.downs) {
@@ -213,6 +222,8 @@ impl Terra {
 
     /// The card falls away and its toy is let go.
     pub(crate) fn put_card_away(&mut self, t: f64) {
+        // (a touch that asked to go in while the toy warmed no longer does)
+        self.warming.go_in = false;
         if let Some(c) = self.card.as_mut() {
             if c.gone.is_none() {
                 c.gone = Some(t);

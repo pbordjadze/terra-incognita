@@ -41,5 +41,9 @@ delta = { path = "../delta" }
 name = "terra-check"
 path = "src/bin/check.rs"
 
+[[bin]]
+name = "terra-open-times"
+path = "src/bin/open_times.rs"
+
 [lints]
 workspace = true

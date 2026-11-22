@@ -71,6 +71,7 @@ pub fn norm(a: V3) -> V3 {
 }
 
 /// A small, fast random source (xorshift), seeded so a check sees the same flock.
+#[derive(Clone)]
 pub struct Rng(u64);
 impl Rng {
     pub fn new(seed: u64) -> Rng {
@@ -94,6 +95,7 @@ impl Rng {
     }
 }
 
+#[derive(Clone)]
 pub struct Bird {
     pub pos: V3,
     pub vel: V3,
@@ -109,6 +111,7 @@ pub struct Bird {
     pub size: f32,
 }
 
+#[derive(Clone)]
 pub struct Flock {
     pub birds: Vec<Bird>,
     /// The bird that is you.
@@ -565,6 +568,44 @@ impl Flock {
         b.wander = addv(scale(b.wander, 0.97), scale(g, 0.03 * 4.0));
         addv(a, scale(b.wander, NOISE))
     }
+}
+
+/// The heading of the birds between `r0` and `r1` metres of yours: the flock round you that your
+/// lean has not yet bent (the whole flock's, if none are there).
+pub fn ring_heading(f: &Flock, r0: f32, r1: f32) -> V3 {
+    let p = f.birds[f.you].pos;
+    let mut h = [0.0f32; 3];
+    let mut n = 0;
+    for b in &f.birds {
+        let d = sub(b.pos, p);
+        let d2 = dot(d, d);
+        if d2 > r0 * r0 && d2 < r1 * r1 {
+            h = addv(h, b.vel);
+            n += 1;
+        }
+    }
+    if n < 20 {
+        return norm(f.centre().1);
+    }
+    norm(h)
+}
+
+/// The birds within `r` metres of yours: their mean heading (unit), their centre, how many.
+pub fn local(f: &Flock, r: f32) -> (V3, V3, usize) {
+    let p = f.birds[f.you].pos;
+    let (mut h, mut c, mut n) = ([0.0f32; 3], [0.0f32; 3], 0usize);
+    for b in &f.birds {
+        let d = sub(b.pos, p);
+        if dot(d, d) < r * r {
+            h = addv(h, b.vel);
+            c = addv(c, b.pos);
+            n += 1;
+        }
+    }
+    if n == 0 {
+        return (norm(f.birds[f.you].vel), p, 0);
+    }
+    (norm(h), scale(c, 1.0 / n as f32), n)
 }
 
 #[cfg(test)]
