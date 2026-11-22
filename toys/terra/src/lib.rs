@@ -43,12 +43,13 @@ const EARTH_REACH: f64 = 24.0;
 /// Earth ran off all four sides). The kit's disc radius is (short side / 2 - 14) x zoom.
 pub fn opening_zoom(points: [f64; 2]) -> f64 {
     let (w, h) = (points[0].min(points[1]), points[0].max(points[1]));
+    if points[0] > points[1] && w > 600.0 {
+        // on its side (a laptop's browser, however wide; a landscape iPad): the whole Earth inside the
+        // height, lights and all (a phone on its side keeps the phone's)
+        return (w * 0.45) / (w / 2.0 - 14.0);
+    }
     if h / w > 1.8 {
         return 1.4;
-    }
-    if points[0] > points[1] {
-        // on its side (a laptop's browser, a landscape iPad): the whole Earth inside the height, lights and all
-        return (w * 0.45) / (w / 2.0 - 14.0).max(40.0);
     }
     ((w * 0.53) / (w / 2.0 - 14.0).max(40.0)).min(1.4)
 }
@@ -399,6 +400,8 @@ impl Toy for Terra {
         // `with_rivers` brings them back)
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
         globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
+        // (an opening under the whole-screen Earth stays there: the hand's coast would ease it up to 1)
+        globe.hand.rest_zoom = globe.camera.zoom.min(1.0);
         globe.set_home();
         let mut life = Life::new();
         let [w, h] = ctx.points();
