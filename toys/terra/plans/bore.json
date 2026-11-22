@@ -1,11 +1,11 @@
 {
- "_": "Barchans (painting-company row 327), its light over the barchan corridor south of Tarfaya, crescent dunes walking down the reg. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
+ "_": "The Silver Dragon (in Barchans' place on the map), its light over Yanguan on the Qiantang, where the tidal bore comes up the river. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
  "seconds": 13,
  "fps": 20,
  "events": [
   {
    "t": 1.0,
-   "tap": "barchans"
+   "tap": "bore"
   },
   {
    "t": 2.6,

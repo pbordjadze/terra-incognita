@@ -1,0 +1,26 @@
+[package]
+name = "bore"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The Silver Dragon (a working title): the Qiantang's tidal bore coming up the river at Yanguan, in ink-wash; drag the moon through its month."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "bore-check"
+path = "src/bin/check.rs"
+
+[lints]
+workspace = true

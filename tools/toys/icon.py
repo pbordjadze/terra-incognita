@@ -700,7 +700,34 @@ def hoh():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad, 'biobay': biobay, 'hoh': hoh}
+def bore():
+    # ink wash on warm paper: the tide's one wave across the river, a dark face under a white roller, the
+    # calm water ahead of it, the moon pale above, a vermilion seal
+    img = Image.new('RGBA', (N, N), (236, 228, 210, 255))
+    d = ImageDraw.Draw(img)
+    d.ellipse([640, 150, 800, 310], outline=(120, 112, 100, 255), width=6)
+    wash = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    wd = ImageDraw.Draw(wash)
+    wd.polygon([(0, 560), (N, 470), (N, 600), (0, 700)], fill=(40, 36, 32, 235))
+    wd.polygon([(0, 700), (N, 600), (N, N), (0, N)], fill=(120, 112, 100, 150))
+    img = Image.alpha_composite(img, wash.filter(ImageFilter.GaussianBlur(6)))
+    foam = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    fd = ImageDraw.Draw(foam)
+    rnd = random.Random(3)
+    for i in range(70):
+        x = rnd.uniform(-40, N + 40)
+        y = 560 - 90 * x / N + rnd.uniform(-34, 8)
+        r = rnd.uniform(14, 40)
+        fd.ellipse([x - r * 1.8, y - r, x + r * 1.8, y + r], fill=(246, 242, 232, 255))
+    img = Image.alpha_composite(img, foam.filter(ImageFilter.GaussianBlur(3)))
+    d = ImageDraw.Draw(img)
+    for y in (780, 830, 900):
+        d.line([(90, y), (N - 260, y - 60)], fill=(236, 228, 210, 255), width=4)
+    d.rectangle([830, 860, 920, 950], fill=(184, 52, 38, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats, 'bats': bats, 'huddle': huddle, 'wave': wave, 'elkmont': elkmont, 'nazare': nazare, 'catatumbo': catatumbo, 'bubblers': bubblers, 'barchans': barchans, 'pando': pando, 'moonroad': moonroad, 'biobay': biobay, 'hoh': hoh, 'bore': bore}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

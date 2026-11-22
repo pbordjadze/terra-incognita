@@ -125,6 +125,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "bubblers"
 version = "0.1.0"
 dependencies = [
@@ -1102,9 +1113,9 @@ name = "terra"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "barchans",
  "bats",
  "biobay",
+ "bore",
  "bubblers",
  "bytemuck",
  "catatumbo",

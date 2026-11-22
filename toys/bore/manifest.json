@@ -1,0 +1,6 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Built data under toys/bore/data/ is the toy's own; never hand-edit it (cargo run --release -p bore --example library).",
+  "files": {
+    "tides.bin": "toys/bore/data/tides.bin"
+  }
+}
