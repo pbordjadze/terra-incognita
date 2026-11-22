@@ -222,6 +222,8 @@ impl Terra {
 
     /// The card falls away and its toy is let go.
     pub(crate) fn put_card_away(&mut self, t: f64) {
+        // (a touch that asked to go in while the toy warmed no longer does)
+        self.warming.go_in = false;
         if let Some(c) = self.card.as_mut() {
             if c.gone.is_none() {
                 c.gone = Some(t);

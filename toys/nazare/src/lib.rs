@@ -617,9 +617,11 @@ impl Toy for Nazare {
             .pending
             .as_ref()
             // taken up once solved, or a moment later at the latest (waiting for it then: a machine
-            // drawing flat out can starve the solve's thread)
+            // drawing flat out can starve the solve's thread; on the web, solved in this thread a part a
+            // frame, only once solved)
             .is_some_and(|(job, at)| {
-                self.clock >= *at && (job.is_finished() || self.clock >= *at + 1.0)
+                self.clock >= *at
+                    && (job.is_finished() || (!cfg!(target_arch = "wasm32") && self.clock >= *at + 1.0))
             })
             // and not while the camera is down by a peak: its view is built on it, so the new sea waits
             // for the camera to be back on the headland

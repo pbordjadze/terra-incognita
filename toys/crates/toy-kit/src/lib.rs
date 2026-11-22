@@ -39,7 +39,7 @@ pub mod web;
 
 pub use assets::{Assets, DirAssets, MemoryAssets};
 #[cfg(target_arch = "wasm32")]
-pub use clock::set_wall_clock;
+pub use clock::{set_wall_clock, set_work_clock};
 pub use clock::{wall_clock, work_clock};
 #[cfg(feature = "globe")]
 pub use globe::Globe;

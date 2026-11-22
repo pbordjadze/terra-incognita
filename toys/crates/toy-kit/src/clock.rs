@@ -18,20 +18,15 @@ pub fn wall_clock() -> f64 {
 
 /// A clock for how long work in a frame has taken (seconds, from any start), to stop it in time
 /// (`Toy::warm`). None in the headless check, whose frames must come out the same on every run however
-/// fast the machine (it does all such work at once), and on wasm32 outside the web shell.
+/// fast the machine (it does all such work at once), and on wasm32 until the web shell gives it one
+/// (`set_work_clock`).
 pub fn work_clock() -> Option<f64> {
     if HEADLESS.load(std::sync::atomic::Ordering::Relaxed) {
         return None;
     }
-    #[cfg(all(feature = "web", target_arch = "wasm32"))]
+    #[cfg(target_arch = "wasm32")]
     {
-        web_sys::window()
-            .and_then(|w| w.performance())
-            .map(|p| p.now() / 1000.0)
-    }
-    #[cfg(all(not(feature = "web"), target_arch = "wasm32"))]
-    {
-        None
+        WORK.get().map(|f| f())
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -47,6 +42,16 @@ pub fn work_clock() -> Option<f64> {
 
 #[cfg(target_arch = "wasm32")]
 static WALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+#[cfg(target_arch = "wasm32")]
+static WORK: std::sync::OnceLock<fn() -> f64> = std::sync::OnceLock::new();
+
+/// The page's clock for `work_clock` on wasm32 (seconds; JavaScript's `performance.now() / 1000`), which a
+/// browser's WebAssembly cannot read by itself.
+#[cfg(target_arch = "wasm32")]
+pub fn set_work_clock(clock: fn() -> f64) {
+    let _ = WORK.set(clock);
+}
 
 /// The page's clock (JavaScript's `Date.now() / 1000`), for `wall_clock` on wasm32.
 #[cfg(target_arch = "wasm32")]
