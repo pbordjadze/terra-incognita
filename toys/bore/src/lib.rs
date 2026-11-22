@@ -232,7 +232,7 @@ impl Bore {
     }
 
     /// Carries the drawn bore on toward us at its own speed (its Froude number times the shallow-water
-    /// speed ahead of it), never back, catching up with the model's front when that is ahead of it.
+    /// speed ahead of it), kept within a cell of the model's front, which moves a cell at a time.
     fn track(&mut self, dt: f64) {
         let Some(f) = self.front.filter(|f| f.steep > 0.12) else {
             self.zv = None;
@@ -242,14 +242,8 @@ impl Bore {
         let c = f.froude * (9.81 * f.depth.max(0.3)).sqrt();
         self.zv = Some(match self.zv {
             None => sim,
-            Some(v) => {
-                let v = v - c * dt * self.rate;
-                if sim < v {
-                    v + (sim - v) * (dt * 2.0).min(1.0)
-                } else {
-                    v
-                }
-            }
+            // never more than one of the model's cells (50 m) from its front, either way
+            Some(v) => (v - c * dt * self.rate).clamp(sim - 50.0, sim + 50.0),
         });
     }
 
