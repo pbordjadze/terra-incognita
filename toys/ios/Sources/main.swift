@@ -507,7 +507,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// VoiceOver's two-finger scrub closes the sheet.
     override func accessibilityPerformEscape() -> Bool {
         guard rulesText != nil else { return false }
-        tell(chrome?.sheet?.page == "origins" ? "origins" : "rules")
+        tell("close")
         return true
     }
 

@@ -188,9 +188,9 @@ pub enum In {
     Frame { native_chrome: bool },
     /// The mark was pressed (`t`: the frame's seconds): the sheet opened or closed, or the demo.
     Mark { t: f64 },
-    /// The sheet's rules page opened (or closed, if it shows).
+    /// The sheet on its rules page (from closed, or back from the origins).
     Rules,
-    /// The origins page in the sheet's place (or back to closed, if it shows).
+    /// The origins page in the sheet's place ("Where this comes from").
     Origins,
     /// The demo ("Show me").
     Demo { t: f64 },
@@ -271,8 +271,18 @@ impl<T: Toy> Host<T> {
                 self.toy.settings(&mut self.ctx);
             }
             In::Mark { t } => self.open_mark(t),
-            In::Rules => self.open_rules(),
-            In::Origins => self.open_origins(),
+            In::Rules => {
+                if self.info.rules().is_none() {
+                    // (from the origins: closed first, so the rules open rather than toggle shut)
+                    self.info.close();
+                    self.open_rules();
+                }
+            }
+            In::Origins => {
+                if self.info.origins().is_none() && self.marks.origins {
+                    self.open_origins();
+                }
+            }
             In::Demo { t } => self.open_info(t),
             In::Close => {
                 if self.info.sheet_open() {
