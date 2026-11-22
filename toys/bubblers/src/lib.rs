@@ -8,9 +8,10 @@
 //! painting-company row 327.
 
 pub mod beach;
+pub mod beads;
 pub mod sound;
 
-use beach::{Beach, State, CELL};
+use beach::{Beach, CELL};
 use sound::{Sound, Tick};
 use toy_kit::backdrop::BackdropParams;
 use toy_kit::field::Field;
@@ -255,45 +256,10 @@ impl Toy for Bubblers {
                 0.0,
             ],
         };
-        paint_burrows(&mut self.painter, b, s, eye, half);
-        // the balls: a shadow, the ball, its light
-        for p in &b.pellets {
-            let grow = ((b.t - p.born) / 0.18).clamp(0.0, 1.0);
-            let melt = if p.gone >= 0.0 {
-                1.0 - ((b.t - p.gone) / 1.5).clamp(0.0, 1.0)
-            } else {
-                1.0
-            };
-            let r = p.r * grow * (0.5 + 0.5 * melt);
-            if r <= 0.0 {
-                continue;
-            }
-            let a = melt;
-            // a ball of the sand itself: dark and wet when it is rolled, paling as it dries
-            let dry = ((b.t - p.born) / 50.0).clamp(0.0, 1.0);
-            let tone = 0.05 * p.shade;
-            let wet = [0.62, 0.55, 0.45];
-            let pale = [0.86, 0.80, 0.68];
-            let col = |i: usize| wet[i] + (pale[i] - wet[i]) * dry + tone;
-            self.painter.disc(
-                px([p.p[0] + r * 0.35, p.p[1] + r * 0.45]),
-                r * 1.05 * s,
-                r * 0.7 * s,
-                [0.28, 0.22, 0.16, 0.30 * a],
-            );
-            self.painter
-                .disc(px(p.p), r * s, r * 0.35 * s, [col(0), col(1), col(2), a]);
-            // the light on its upper left, the grains on it
-            self.painter.disc(
-                px([p.p[0] - r * 0.3, p.p[1] - r * 0.3]),
-                r * 0.55 * s,
-                r * 0.5 * s,
-                [1.0, 0.96, 0.88, (0.16 + 0.1 * dry) * a],
-            );
-        }
-        // the crabs
+        beads::burrows(&mut self.painter, b, &px, s);
+        beads::balls(&mut self.painter, b, &px, s);
         for c in &b.crabs {
-            paint_crab(&mut self.painter, c, [s, b.t], eye, half);
+            beads::crab(&mut self.painter, c, s, b.t, &px);
         }
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
@@ -315,6 +281,15 @@ impl Toy for Bubblers {
         ))
     }
 
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Bead Game",
+            maker: "Ishu Patel",
+            place: "National Film Board of Canada",
+            year: 1977,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "On the beaches of Phuket at low tide, sand-bubbler crabs feed outward from their burrows, leaving the sifted sand behind in little balls.",
@@ -330,109 +305,6 @@ impl Toy for Bubblers {
     fn set_switch(&mut self, _ctx: &mut Ctx, i: usize, on: bool) {
         if let Some(r) = self.beach.on.get_mut(i) {
             *r = on;
-        }
-    }
-}
-
-/// The open burrows (not those under the water): a collar of dug-out sand, a soft hollow, the hole.
-fn paint_burrows(painter: &mut Painter, b: &Beach, s: f32, eye: [f32; 2], half: [f32; 2]) {
-    let px = |p: [f32; 2]| [(p[0] - eye[0]) * s + half[0], (p[1] - eye[1]) * s + half[1]];
-    let front = b.front().unwrap_or(f32::MAX);
-    for c in &b.crabs {
-        if c.home[1] > front || !c.dug {
-            continue;
-        }
-        // a collar of dug-out sand, lit on its far side; a soft hollow; the dark hole in it
-        let z = 0.85 + 0.3 * ((c.home[0] * 7.1 + c.home[1] * 3.3).sin() * 0.5 + 0.5);
-        painter.disc(
-            px([c.home[0] + 0.06, c.home[1] + 0.07]),
-            0.48 * z * s,
-            0.2 * s,
-            [0.98, 0.93, 0.82, 0.35],
-        );
-        painter.disc(
-            px([c.home[0] - 0.04, c.home[1] - 0.05]),
-            0.42 * z * s,
-            0.22 * s,
-            [0.45, 0.38, 0.30, 0.35],
-        );
-        painter.disc(
-            px([c.home[0] - 0.03, c.home[1] - 0.03]),
-            0.2 * z * s,
-            0.12 * s,
-            [0.10, 0.08, 0.06, 0.92],
-        );
-    }
-}
-
-fn paint_crab(p: &mut Painter, c: &beach::Crab, st: [f32; 2], eye: [f32; 2], half: [f32; 2]) {
-    let [s, t] = st;
-    let px = |q: [f32; 2]| [(q[0] - eye[0]) * s + half[0], (q[1] - eye[1]) * s + half[1]];
-    let body = 0.48 * c.size;
-    let f = c.facing;
-    let (fx, fy) = (f.cos(), f.sin());
-    let at = |along: f32, across: f32| {
-        [
-            c.p[0] + fx * along - fy * across,
-            c.p[1] + fy * along + fx * across,
-        ]
-    };
-    match c.state {
-        State::Hidden(_) => {}
-        State::Peek(_) => {
-            // two eyes on their stalks at the mouth of the hole
-            let wob = (t * 3.0 + c.gait).sin() * 0.03;
-            for side in [-1.0f32, 1.0] {
-                let e = at(0.05, side * 0.16 + wob);
-                p.disc(px(e), 0.07 * s, 0.03 * s, [0.10, 0.09, 0.08, 1.0]);
-            }
-        }
-        _ => {
-            // the shadow, the legs, the body, its mottling, the claws and the eyes
-            p.disc(
-                px([c.p[0] + 0.12, c.p[1] + 0.15]),
-                body * 1.25 * s,
-                body * 0.5 * s,
-                [0.25, 0.2, 0.15, 0.28],
-            );
-            for side in [-1.0f32, 1.0] {
-                for leg in 0..4 {
-                    let a = (leg as f32 - 1.5) * 0.42;
-                    let swing =
-                        (c.gait + leg as f32 * 1.7 + side * 0.8).sin() * 0.18 * c.moving.min(1.0);
-                    let root = at(a * body * 0.8, side * body * 0.7);
-                    let knee = at(a * body * 1.4 + swing * 0.5, side * body * 1.45);
-                    let foot = at(a * body * 1.9 + swing, side * body * 1.95);
-                    let col = [0.58, 0.48, 0.36, 1.0];
-                    p.line(px(root), px(knee), 0.055 * s, 0.03 * s, col);
-                    p.line(px(knee), px(foot), 0.04 * s, 0.03 * s, col);
-                }
-            }
-            p.disc(px(c.p), body * s, 0.06 * s, [0.80, 0.70, 0.55, 1.0]);
-            for (i, (u, v)) in [(0.15, 0.2), (-0.2, -0.15), (0.05, -0.28), (-0.25, 0.22)]
-                .iter()
-                .enumerate()
-            {
-                let r = body * (0.18 + 0.05 * i as f32);
-                p.disc(
-                    px(at(u * body, v * body)),
-                    r * s,
-                    r * 0.6 * s,
-                    [0.55, 0.44, 0.33, 0.55],
-                );
-            }
-            p.disc(
-                px(at(-0.1 * body, -0.1 * body)),
-                body * 0.5 * s,
-                body * 0.5 * s,
-                [1.0, 0.96, 0.88, 0.25],
-            );
-            for side in [-1.0f32, 1.0] {
-                let claw = at(body * 0.95, side * body * 0.35);
-                p.disc(px(claw), body * 0.22 * s, 0.03 * s, [0.86, 0.78, 0.66, 1.0]);
-                let eye = at(body * 0.85, side * body * 0.55);
-                p.disc(px(eye), 0.065 * s, 0.025 * s, [0.08, 0.07, 0.06, 1.0]);
-            }
         }
     }
 }

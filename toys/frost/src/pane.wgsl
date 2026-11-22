@@ -1,6 +1,7 @@
 // Frost: the window, every pixel. Outside, Oymyakon's winter night (a clear sky, the snow, the larches
-// on the far bank, all drawn); on the glass the ice the automaton grew (frost.wgsl's field), lit by
-// the cabin's lamp behind the reader.
+// on the far bank, all drawn); on the glass the ice the automaton grew (frost.wgsl's field), drawn in
+// line as Peter Foldès drew on the NRC's key-frame system (keys.rs, SOURCES.md): a stroke down each
+// spine, branch and needle, each frame the drawing between the last two key drawings.
 
 struct Look {
   size: vec2<f32>,   // pixels
@@ -10,13 +11,18 @@ struct Look {
   fs: f32,           // field texels a point
   field_w: f32,
   field_h: f32,
-  lamp: f32,
+  key: f32,     // how far between the two key drawings
   frame: f32,   // points
   bar: f32,     // the crossbar's middle, points from the top
 };
 
 @group(0) @binding(0) var<uniform> L: Look;
-@group(0) @binding(1) var<storage, read> field: array<f32>;
+@group(0) @binding(1) var<storage, read> key_a: array<f32>;
+@group(0) @binding(2) var<storage, read> key_b: array<f32>;
+// the cabin's lamp, always lit
+const LAMP = 1.0;
+// pixels a point
+var<private> LP: f32 = 3.0;
 
 struct VO { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
@@ -41,7 +47,9 @@ fn noise(p: vec2<f32>) -> f32 {
 fn texel(x: i32, y: i32) -> f32 {
   let cx = clamp(x, 0, i32(L.field_w) - 1);
   let cy = clamp(y, 0, i32(L.field_h) - 1);
-  return field[cy * i32(L.field_w) + cx];
+  // the in-between: the computer's drawing between the two key drawings
+  let i = cy * i32(L.field_w) + cx;
+  return mix(key_a[i], key_b[i], L.key);
 }
 
 // the field between its texels
@@ -119,66 +127,59 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 }
 
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
+  LP = L.ppp;
   let p = i.uv * L.pane;
   var c = night(p);
   // the lamp behind the reader, a faint warm reflection low on the glass
   let lamp_at = vec2<f32>(L.pane.x * 0.18, L.pane.y * 1.05);
   let ld = length((p - lamp_at) / L.pane.x);
-  c += vec3<f32>(0.060, 0.034, 0.014) * exp(-ld * ld * 2.2) * L.lamp;
+  c += vec3<f32>(0.060, 0.034, 0.014) * exp(-ld * ld * 2.2) * LAMP;
 
   // the ice
   let s = ice_at(p);
-  // meltwater where a fingertip was: the night clear through it under a thin film that catches the
-  // lamp, and a fine bright line of water at its edge
+  // meltwater where a fingertip was: the night clear through it under the faintest film (its edge is
+  // the ice's own line, below)
   let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.95, 0.985, s));
-  if wet > 0.0 {
-    let line = smoothstep(0.86, 0.9, s) * (1.0 - smoothstep(0.91, 0.94, s));
-    let sheen = 0.5 + 0.5 * sin((p.x * 0.6 + p.y) * 0.035);
-    // (the night clear through it, as through dry glass: only the faintest sheen, and a light rim)
-    c += vec3<f32>(0.010, 0.012, 0.015) * (0.4 + 0.6 * sheen) * wet;
-    c += vec3<f32>(0.30, 0.31, 0.32) * line * wet;
-  }
-  let cover = smoothstep(0.98, 1.02, s);
-  if cover > 0.0 {
-    // the ice's edge: where the cover changes within a point (thin new ice, the branches' rims)
-    let e = 0.8;
-    let cx = smoothstep(0.98, 1.02, ice_at(p + vec2<f32>(e, 0.0))) - smoothstep(0.98, 1.02, ice_at(p - vec2<f32>(e, 0.0)));
-    let cy = smoothstep(0.98, 1.02, ice_at(p + vec2<f32>(0.0, e))) - smoothstep(0.98, 1.02, ice_at(p - vec2<f32>(0.0, e)));
-    let rim = clamp(length(vec2<f32>(cx, cy)), 0.0, 1.0);
-    // the age of the ice: the earliest (the spines) has taken the most from the air
-    // a rim lit from the lamp (low, to the left) is brighter than one turned away
-    let toward = clamp(dot(normalize(vec2<f32>(cx, cy) + vec2<f32>(1e-5, 0.0)), normalize(vec2<f32>(0.55, -0.8))), -1.0, 1.0);
-    let cool = vec3<f32>(0.66, 0.78, 0.93);
-    let milky = vec3<f32>(0.93, 0.95, 0.98);
-    // ridges and hollows: the ice's water against its surroundings' (the spines and ribs froze first)
-    let r2 = 2.4;
-    let around = 0.25 * (ice_at(p + vec2<f32>(r2, 0.0)) + ice_at(p - vec2<f32>(r2, 0.0)) + ice_at(p + vec2<f32>(0.0, r2)) + ice_at(p - vec2<f32>(0.0, r2)));
-    let ridge = clamp((s - max(around, 1.0)) * 6.0, -1.0, 1.0);
-    // the age of the ice, read over a few points (the glass's flaws make it speckle cell by cell):
-    // the earliest (the spines) has taken the most from the air
-    let sm = 0.35 * s + 0.65 * around;
-    let age = clamp(log(1.0 + max(sm - 1.0, 0.0) * 30.0) / 3.0, 0.0, 1.0);
-    var ice = mix(cool, milky, age) * (0.95 + 0.06 * ridge);
-    ice = mix(ice, vec3<f32>(1.0), rim * (0.55 + 0.45 * toward));
-    // the lamp warms the ice low on the glass
-    let warm = exp(-ld * ld * 1.6) * L.lamp;
-    ice *= mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
-    // a few facets catch the lamp: sparks that come and go slowly
-    let g = floor(p * 1.5);
-    let h = hash2(g);
-    if h > 0.985 {
-      let tw = 0.5 + 0.5 * sin(L.time * (0.7 + 1.5 * hash2(g + 2.0)) + h * 60.0);
-      ice += vec3<f32>(1.0, 0.97, 0.9) * pow(tw, 6.0) * 0.9 * age;
-    }
-    let a = cover * clamp(mix(0.46, 0.82, age * age) + rim * 0.45, 0.0, 0.92);
-    c = mix(c, ice, a);
-  }
+  c += vec3<f32>(0.006, 0.007, 0.009) * wet;
+  // the ice in line, as a hand draws it: each spine, branch and needle one stroke along its middle (the
+  // ridge of the ice, where it froze first and holds most), not the outline of its area; one pen weight,
+  // chalk-white on the night, which shows through everywhere else
+  let h = 0.8;
+  let s00 = ice_at(p + vec2<f32>(-h, -h));
+  let s10 = ice_at(p + vec2<f32>(0.0, -h));
+  let s20 = ice_at(p + vec2<f32>(h, -h));
+  let s01 = ice_at(p + vec2<f32>(-h, 0.0));
+  let s21 = ice_at(p + vec2<f32>(h, 0.0));
+  let s02 = ice_at(p + vec2<f32>(-h, h));
+  let s12 = ice_at(p + vec2<f32>(0.0, h));
+  let s22 = ice_at(p + vec2<f32>(h, h));
+  let g = vec2<f32>(s21 - s01, s12 - s10) / (2.0 * h);
+  let hxx = (s21 - 2.0 * s + s01) / (h * h);
+  let hyy = (s12 - 2.0 * s + s10) / (h * h);
+  let hxy = (s22 - s20 - s02 + s00) / (4.0 * h * h);
+  // the most bent way across the ice, and how sharply it falls off that way
+  let tr = 0.5 * (hxx + hyy);
+  let disc = sqrt(max(0.25 * (hxx - hyy) * (hxx - hyy) + hxy * hxy, 0.0));
+  let lam = tr - disc;
+  var n = vec2<f32>(hxy, lam - hxx);
+  if (dot(n, n) < 1e-12) { n = vec2<f32>(lam - hyy, hxy); }
+  n = n / max(length(n), 1e-6);
+  // the distance across to the ridge's top: the slope that way over the bend
+  let across = abs(dot(g, n)) / max(-lam, 1e-4);
+  let px = 1.0 / LP;
+  let w = 0.33;
+  let on = 1.0 - smoothstep(w - px, w + px, across);
+  let ridge = on * smoothstep(0.04, 0.12, -lam) * smoothstep(0.98, 1.05, s);
+  let ink = vec3<f32>(0.90, 0.93, 0.97);
+  let warm = exp(-ld * ld * 1.6) * LAMP;
+  let chalk = ink * mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
+  c = mix(c, chalk, ridge);
   // a breath of condensation low on the glass, before the frost: the faintest grey veil
   c += vec3<f32>(0.018, 0.020, 0.024) * smoothstep(0.5, 1.0, p.y / L.pane.y);
   // the wood over all of it
   let d = wood_depth(p);
   if d > -1.5 {
-    let w = wood(p, d, exp(-ld * ld * 1.2) * L.lamp);
+    let w = wood(p, d, exp(-ld * ld * 1.2) * LAMP);
     // a soft shadow on the glass beside the wood
     if d < 0.0 {
       c *= 0.6 + 0.4 * smoothstep(-1.5, 0.0, -d - 0.0) ;

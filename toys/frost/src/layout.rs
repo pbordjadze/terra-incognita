@@ -18,12 +18,12 @@ pub fn sim(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
     })
 }
 
-/// The window's: the look and the field.
+/// The window's: the look and the two key drawings (keys.rs).
 pub fn draw(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
     let fs = wgpu::ShaderStages::FRAGMENT;
     dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("frost draw"),
-        entries: &[uniform(0, fs), storage(1, true, fs)],
+        entries: &[uniform(0, fs), storage(1, true, fs), storage(2, true, fs)],
     })
 }
 

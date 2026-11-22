@@ -34,6 +34,8 @@ pub struct Pellet {
     pub r: f32,
     pub born: f32,
     pub shade: f32,
+    /// the heading of the spoke it was rolled on (the balls of one run share it)
+    pub spoke: f32,
     /// when the tide took it (it melts away)
     pub gone: f32,
 }
@@ -436,6 +438,7 @@ impl Beach {
                 r,
                 born: t,
                 shade: self.rng.range(-1.0, 1.0),
+                spoke: c.heading,
                 gone: -1.0,
             });
             self.laid.push(p);
