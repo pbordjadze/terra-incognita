@@ -188,8 +188,8 @@ impl Grove {
         }
     }
 
-    /// A crown: narrow and tall, its outline scalloped where clusters of leaves stand out, the top swaying
-    /// farther than the bottom.
+    /// A crown: a few clumps of leaves on the stem's first forks, each its own scalloped outline, the
+    /// stem and forks glimpsed between them; the top sways farther than the bottom.
     #[allow(clippy::too_many_arguments)] // the tree, where it is, and how it is drawn
     fn crown(
         &self,
@@ -206,93 +206,120 @@ impl Grove {
         let hw = s * tr.r * 0.62;
         let hh = s * tr.h * 0.17;
         let sway = |up: f32| s * tr.d * (0.4 + 0.6 * up);
-        // the paper first, in rows, a little inside the outline
-        let rows = 10;
-        for i in 0..rows {
-            let y = -1.0 + (i as f32 + 0.5) * 2.0 / rows as f32;
-            let half = hw * 0.92 * (1.0 - y * y).max(0.0).sqrt();
-            let r = hh / rows as f32 * 1.4;
-            let q = [c[0] + sway(0.5 - 0.5 * y), c[1] + y * hh];
-            let dx = (half - r).max(0.0);
-            pen.paper(
-                p,
-                cam.pt([q[0] - dx, q[1]]),
-                cam.pt([q[0] + dx, q[1]]),
-                cam.len(r.min(half)),
-            );
-        }
-        // the outline: round lobes where clusters of leaves stand out, cusps between them
-        let lobes = ((hw + hh) / (5.0 * ppp)).clamp(7.0, 16.0).round();
-        let n = (lobes * 6.0) as u32;
-        let ph = hash(tr.seed ^ 0x10B) * std::f32::consts::PI;
-        let pts: Vec<[f32; 2]> = (0..n)
+        let at = |x: f32, u: f32| cam.pt([c[0] + x + sway(0.5 - 0.5 * u), c[1] + u * hh]);
+        let n = 3 + (hash(tr.seed ^ 0xC1) * 2.99) as u32;
+        // the clumps, top first so the lower ones (nearer the eye, under it) lie over them
+        let clumps: Vec<([f32; 2], f32, f32)> = (0..n)
             .map(|i| {
-                let th = i as f32 / n as f32 * std::f32::consts::TAU;
-                let m = 0.9 + 0.12 * (0.5 * lobes * th + ph).sin().abs();
-                let (ox, oy) = (th.cos(), th.sin());
-                cam.pt([
-                    c[0] + ox * hw * m + sway(0.5 - 0.5 * oy),
-                    c[1] + oy * hh * m,
-                ])
+                let f = i as f32 / (n - 1) as f32;
+                let u = -0.62 + 1.25 * f;
+                let side = if i % 2 == 0 { -1.0 } else { 1.0 };
+                let x = side * hw * (0.2 + 0.3 * hash(tr.seed ^ (i * 17 + 1)));
+                let size = 0.65 + 0.35 * f;
+                (
+                    [x, u],
+                    hw * 0.62 * size,
+                    hh * (0.42 + 0.1 * hash(tr.seed ^ (i * 5))) * size,
+                )
             })
             .collect();
-        pen.path(p, &pts, true);
-        // the stem going on up inside the crown, glimpsed between the leaves, and its first limbs
-        let sw = cam.len(s * 0.05);
-        if sw > 0.8 * ppp {
-            for k in 0..6u32 {
-                let y0 = 0.95 - k as f32 * 0.22;
-                if hash(tr.seed ^ (k * 7 + 3)) < 0.3 {
-                    continue;
-                }
-                let (u0, u1) = (y0, y0 - 0.13);
-                let w0 = sw * (0.6 + 0.4 * (u0 + 1.0) * 0.5);
-                let at =
-                    |u: f32| cam.pt([c[0] + s * tr.d * 0.3 + sway(0.5 - 0.5 * u), c[1] + u * hh]);
-                let (a, b) = (at(u0), at(u1));
-                for side in [-1.0f32, 1.0] {
-                    pen.line(p, [a[0] + side * w0, a[1]], [b[0] + side * w0 * 0.95, b[1]]);
-                }
+        // the stem on up through the crown, and a fork out to each clump
+        if cam.len(s * 0.05) > 0.8 * ppp {
+            let sw = cam.len(s * 0.04);
+            let (a, b) = (at(0.0, 1.0), at(0.0, -0.75));
+            for side in [-1.0f32, 1.0] {
+                pen.line(p, [a[0] + side * sw, a[1]], [b[0] + side * sw * 0.5, b[1]]);
             }
-            for k in 0..3u32 {
-                let u = 0.4 - k as f32 * 0.45;
-                let side = if hash(tr.seed ^ (k * 11 + 5)) < 0.5 {
-                    -1.0
-                } else {
-                    1.0
-                };
-                let a = cam.pt([c[0] + sway(0.5 - 0.5 * u), c[1] + u * hh]);
-                let reach = cam.len(hw) * (0.45 + 0.2 * hash(tr.seed ^ (k * 13)));
-                pen.line(p, a, [a[0] + side * reach, a[1] - reach * 1.1]);
+            for (q, _, _) in &clumps {
+                let from = at(0.0, q[1] + 0.35);
+                pen.line(p, from, at(q[0] * 0.8, q[1]));
             }
-        }
-        // the leaves inside: one mark to about every four and a half points square of crown
-        let area = cam.len(hw) * cam.len(hh) * std::f32::consts::PI;
-        let marks = (area / (4.5 * ppp).powi(2)).min(260.0) as u32;
-        if cam.len(hw) < 3.0 * ppp {
-            return;
+        } else {
+            pen.line(p, at(0.0, 1.0), at(0.0, -0.75));
         }
         let share = if self.flat { turned(w) } else { 0.02 };
-        let len = 1.6 * ppp;
-        for j in 0..marks {
-            let hs = tr.seed.wrapping_add(j.wrapping_mul(7919));
-            let ang = hash(hs) * std::f32::consts::TAU;
-            // denser toward the crown's middle, thinning at its edge
-            let rr = hash(hs ^ 0x5555).powf(0.8) * 0.85;
-            let (ox, oy) = (ang.cos() * rr, ang.sin() * rr);
-            let q = cam.pt([c[0] + ox * hw + sway(0.5 - 0.5 * oy), c[1] + oy * hh]);
-            let freq = 3.0 + 2.0 * hash(hs ^ 0x77);
-            let ph = hash(hs ^ 0x99) * std::f32::consts::TAU;
-            let flick = (ph + std::f32::consts::TAU * freq * t).sin();
-            if flick > 1.0 - 2.0 * share {
-                // an underside turned up: a little ring
-                pen.circle(p, q, 0.9 * ppp);
-            } else {
-                // a leaf seen edge-on or flat: a short stroke, turning as it trembles
-                let a = ph + 0.5 * flick;
-                let d = [a.cos() * len * 0.5, a.sin() * len * 0.5];
-                pen.line(p, [q[0] - d[0], q[1] - d[1]], [q[0] + d[0], q[1] + d[1]]);
-            }
+        for (i, (q, cw, ch)) in clumps.iter().enumerate() {
+            let k = tr.seed.wrapping_add(i as u32 * 7_919_000);
+            clump(
+                p,
+                pen,
+                cam,
+                [c[0] + q[0] + sway(0.5 - 0.5 * q[1]), c[1] + q[1] * hh],
+                *cw,
+                *ch,
+                k,
+                share,
+                t,
+                ppp,
+            );
+        }
+    }
+}
+
+/// One clump of leaves at `c` (half-width `hw`, half-height `hh`): paper, a scalloped outline, and its
+/// leaves inside as short strokes, trembling, or a small ring for one turned pale side up.
+#[allow(clippy::too_many_arguments)] // where the clump is, how big, its seed, the wind and the pen
+fn clump(
+    p: &mut Painter,
+    pen: &Pen,
+    cam: &Cam,
+    c: [f32; 2],
+    hw: f32,
+    hh: f32,
+    seed: u32,
+    share: f32,
+    t: f32,
+    ppp: f32,
+) {
+    let rows = 6;
+    for i in 0..rows {
+        let y = -1.0 + (i as f32 + 0.5) * 2.0 / rows as f32;
+        let half = hw * 0.92 * (1.0 - y * y).max(0.0).sqrt();
+        let r = (hh / rows as f32 * 1.5).min(half);
+        let dx = (half - r).max(0.0);
+        pen.paper(
+            p,
+            cam.pt([c[0] - dx, c[1] + y * hh]),
+            cam.pt([c[0] + dx, c[1] + y * hh]),
+            cam.len(r),
+        );
+    }
+    let lobes = ((cam.len(hw) + cam.len(hh)) / (4.0 * ppp))
+        .clamp(5.0, 12.0)
+        .round();
+    let n = (lobes * 6.0) as u32;
+    let ph = hash(seed ^ 0x10B) * std::f32::consts::PI;
+    let pts: Vec<[f32; 2]> = (0..n)
+        .map(|i| {
+            let th = i as f32 / n as f32 * std::f32::consts::TAU;
+            // the lobes uneven: each its own depth
+            let lobe = (0.5 * lobes * th + ph) / std::f32::consts::PI;
+            let depth = 0.08 + 0.12 * hash(seed ^ (lobe.floor() as u32 * 31 + 7));
+            let m = 0.9 + depth * (std::f32::consts::PI * lobe).sin().abs();
+            cam.pt([c[0] + th.cos() * hw * m, c[1] + th.sin() * hh * m])
+        })
+        .collect();
+    pen.path(p, &pts, true);
+    let area = cam.len(hw) * cam.len(hh) * std::f32::consts::PI;
+    if cam.len(hw) < 3.0 * ppp {
+        return;
+    }
+    let marks = (area / (4.0 * ppp).powi(2)).min(120.0) as u32;
+    let len = 1.6 * ppp;
+    for j in 0..marks {
+        let hs = seed.wrapping_add(j.wrapping_mul(7919));
+        let ang = hash(hs) * std::f32::consts::TAU;
+        let rr = hash(hs ^ 0x5555).powf(0.8) * 0.85;
+        let q = cam.pt([c[0] + ang.cos() * rr * hw, c[1] + ang.sin() * rr * hh]);
+        let freq = 3.0 + 2.0 * hash(hs ^ 0x77);
+        let ph = hash(hs ^ 0x99) * std::f32::consts::TAU;
+        let flick = (ph + std::f32::consts::TAU * freq * t).sin();
+        if flick > 1.0 - 2.0 * share {
+            pen.circle(p, q, 0.9 * ppp);
+        } else {
+            let a = ph + 0.5 * flick;
+            let d = [a.cos() * len * 0.5, a.sin() * len * 0.5];
+            pen.line(p, [q[0] - d[0], q[1] - d[1]], [q[0] + d[0], q[1] + d[1]]);
         }
     }
 }
