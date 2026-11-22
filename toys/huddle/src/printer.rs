@@ -11,7 +11,11 @@
 use toy_kit::film::Film;
 
 /// Character places across the screen's short side.
-pub const COLUMNS: f32 = 66.0;
+pub const COLUMNS: f32 = 92.0;
+/// Each bird as the program draws it for the printer, a share of its size: about one character place,
+/// so each bird prints as a character of its own with paper round it, countable, as a printer plot
+/// puts one character at each point.
+pub const BODY: f32 = 0.36;
 /// Sheets a second.
 pub const SHEETS_HZ: f64 = 12.0;
 

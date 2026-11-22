@@ -29,13 +29,26 @@ fn sheet_shift() -> vec2<f32> {
   let ch = p.cell * ROW;
   if (c.y * ch > p.size.y + ch) { return vec4<f32>(0.0); }
   var sum = 0.0;
-  for (var j = 0; j < 3; j++) {
-    for (var i = 0; i < 3; i++) {
-      let q = (c + (vec2<f32>(f32(i), f32(j)) + 0.5) / 3.0) * vec2<f32>(cw, ch);
-      sum += light(textureLoad(src, vec2<i32>(clamp(q, vec2<f32>(0.0), p.size - 1.0)), 0).rgb);
+  var lo = 1.0;
+  for (var j = 0; j < 4; j++) {
+    for (var i = 0; i < 4; i++) {
+      let q = (c + (vec2<f32>(f32(i), f32(j)) + 0.5) / 4.0) * vec2<f32>(cw, ch);
+      let l = light(textureLoad(src, vec2<i32>(clamp(q, vec2<f32>(0.0), p.size - 1.0)), 0).rgb);
+      sum += l;
+      lo = min(lo, l);
     }
   }
-  let l = sum / 9.0;
+  // and the light round the place, a bird's width away: a bird's back stands out lighter than the
+  // dark between birds, so the program sharpens the difference and each bird prints as a body
+  var round = 0.0;
+  for (var k = 0; k < 8; k++) {
+    let a = f32(k) * 0.785;
+    let q = (c + 0.5) * vec2<f32>(cw, ch) + vec2<f32>(cos(a), sin(a)) * cw * 1.6;
+    round += light(textureLoad(src, vec2<i32>(clamp(q, vec2<f32>(0.0), p.size - 1.0)), 0).rgb);
+  }
+  // a bird anywhere in the place is struck there: the darkest point counts most
+  let l0 = mix(sum / 16.0, lo, 0.35);
+  let l = l0 + (l0 - round / 8.0) * 1.6 * smoothstep(0.45, 0.25, l0);
   // the ice prints as a few light marks, the birds solid; the snow, lighter than the ice, leaves gaps
   let d = pow(clamp((0.70 - l) / 0.64, 0.0, 1.0), 1.4);
   let n = f32(TYPE_N);

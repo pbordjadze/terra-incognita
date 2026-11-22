@@ -486,9 +486,10 @@ impl Toy for Catatumbo {
         self.strikes = strikes;
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+        // the sky and lake traced on the tube; the bolts drawn over the trace as the beam's own strokes
         self.sky.render(&ctx.gpu, &mut enc, target, size, &params);
-        self.painter.render(&ctx.gpu, &mut enc, target, size, None);
         self.film.read(&ctx.gpu, &mut enc, d, scope::values());
+        self.painter.render(&ctx.gpu, &mut enc, target, size, None);
         self.film.film(&mut enc, out);
         ctx.gpu.queue.submit([enc.finish()]);
     }
@@ -585,7 +586,7 @@ impl Catatumbo {
                 let (qa, qb) = (px(pa, ppp), px(pb, ppp));
                 let violet = [0.62, 0.52, 1.0, alpha * 0.22];
                 let p = ppp as f32;
-                self.painter.glow(qa, qb, 0.0, r * 9.0 * p, violet);
+                self.painter.glow(qa, qb, 0.0, r * 3.5 * p, violet);
                 // the core: opaque and drawn over while bright, so the joints don't bead where the
                 // segments' caps overlap; dim, a soft glow with no hard core (which would bead too)
                 let v = if core { alpha.min(1.0) } else { alpha * 0.8 };

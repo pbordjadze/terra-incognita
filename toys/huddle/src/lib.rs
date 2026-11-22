@@ -111,7 +111,7 @@ impl Huddle {
                     .wrapping_add(n.wrapping_mul(40_503));
                 ((x ^ (x >> 15)).wrapping_mul(2_246_822_519) >> 8) as f32 / (1u32 << 24) as f32
             };
-            let s = s * (0.88 + 0.22 * h(1));
+            let s = s * (0.88 + 0.22 * h(1)) * printer::BODY;
             let turn_head = (h(2) - 0.5) * 0.06;
             let shown = (0.30 + 0.7 * b.exposed.max(b.moving)) * (0.6 + 0.4 * h(3));
             let f = b.face;

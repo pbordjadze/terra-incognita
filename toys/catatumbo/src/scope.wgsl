@@ -4,12 +4,12 @@
 //
 // `fs_surface`: the storm's light, one texel a cell, lifted (a square root) so the dark lake and the
 // clouds have levels to trace.
-// `fs_main`: the tube's face as filmed: a thin trace along each of LEVELS levels of that light, a beam
-// that is calligraphic, drawn along lines, not scanned; each level through its own colour filter, the
-// films printed over one another (adding light), the brightest levels white-hot, each trace's glow in
-// the emulsion round it.
+// `fs_main`: the tube's face as filmed: a thin trace along each of LEVELS levels of the sky's and
+// lake's light, a beam that is calligraphic, drawn along lines, not scanned; each level through its own
+// colour filter, each trace's glow in the emulsion round it. The bolts are not traced from the picture:
+// lib.rs draws them over the trace, each one stroke of the beam turned up.
 
-const LEVELS: f32 = 9.0;
+const LEVELS: f32 = 5.0;
 
 fn light(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.30, 0.55, 0.15)); }
 
@@ -46,31 +46,25 @@ fn tint(k: f32) -> vec3<f32> {
 }
 
 @fragment fn fs_main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let px = p.size.x / 1179.0;
   let h = p.cell * 0.75;
   let v = level_at(fc.xy);
   let gx = (level_at(fc.xy + vec2<f32>(h, 0.0)) - level_at(fc.xy - vec2<f32>(h, 0.0))) / (2.0 * h);
   let gy = (level_at(fc.xy + vec2<f32>(0.0, h)) - level_at(fc.xy - vec2<f32>(0.0, h))) / (2.0 * h);
   let g = max(length(vec2<f32>(gx, gy)) * LEVELS, 1e-4);
-  // distance in pixels to the nearest level's line
+  // the clouds and the lake: a few levels of their light, each one thin trace
   let x = v * LEVELS;
   let k = round(x);
   let d = abs(x - k) / g;
-  let px = p.size.x / 1179.0;
-  // the beam: a hot thin core and its glow; where the light hardly changes (a level drawn flat)
-  // the beam would sweep a whole field, so a trace fades there, as a slow sweep does
-  let core = exp(-d * d / (0.9 * px * px));
-  let glow = exp(-d / (6.0 * px)) * 0.22;
-  let flat = smoothstep(0.0008, 0.004, g / LEVELS);
-  var on = (core + glow) * flat * step(0.5, k);
-  // the brightest levels: the beam turned up, white at the core
-  let hot = smoothstep(LEVELS * 0.55, LEVELS * 0.9, k);
-  let col = mix(tint(k), vec3<f32>(1.0, 0.97, 0.9), hot * core);
-  // where the light is brightest (the bolt itself) the beam rides the ridge, one unbroken stroke,
-  // rather than tracing rings round it
-  let ridge = smoothstep(0.90, 0.985, v);
+  // where the light hardly changes the beam would sweep a whole field: a trace fades there, as a
+  // slow sweep does
+  let flat = smoothstep(0.003, 0.010, g / LEVELS);
+  let lit = step(0.5, k);
+  let core = exp(-d * d / (0.8 * px * px));
+  let glow = exp(-d / (5.0 * px)) * 0.18;
+  let trace = (core + glow) * flat * lit;
   // the tube's face: faint phosphor grain, and the film's grain over everything
   let grain = 0.9 + 0.2 * hash(floor(fc.xy * 0.5) + p.drawing * 0.37);
   let base = vec3<f32>(0.010, 0.012, 0.022) * (0.8 + 0.4 * hash(floor(fc.xy / 3.0) + p.drawing));
-  let beam = vec3<f32>(1.0, 0.96, 0.88) * ridge * 1.3;
-  return vec4<f32>(base + (col * on * (0.55 + 0.9 * hot) + beam) * grain, 1.0);
+  return vec4<f32>(base + (tint(k) * trace * 1.4) * grain, 1.0);
 }

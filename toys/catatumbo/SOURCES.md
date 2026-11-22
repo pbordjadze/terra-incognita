@@ -34,7 +34,7 @@ damping of the thunder's highs is a filter by distance, not a measured curve.
   words they are "calligraphic", not raster, "photographed on motion picture film"
   (https://www.centerforvisualmusic.org/ButePhotography.htm).
 - Here (`src/scope.rs`, `src/scope.wgsl`): the storm drawn as before, its light read into a grid, and
-  traced as a beam along nine levels of that light, each level through its own colour, the bolt's
-  ridge one white stroke; twenty-four frames a second.
+  traced as a beam along five levels of that light, each level through its own colour; each bolt drawn
+  over the trace as one stroke of the beam; twenty-four frames a second.
 - **Drawn, not sourced:** tracing the scene's levels (Bute drove the beam with signals, not a picture),
   the filters' colours, the glow and grain.

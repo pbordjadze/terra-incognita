@@ -50,7 +50,7 @@ What is measured, what is drawn, and from where. No data file is bundled: the wo
   (https://blog.animationstudies.org/?p=266, quoting his technical notes). The NFB's copy of the notes
   refused automated fetches and was not read.
 - Here (`src/engraved.rs`, `src/engraved.wgsl`): the woods drawn as before and read into a grid; the
-  fireflies scratched through as ragged bursts with short rays, broad light hatched, the trunks and ferns
-  as scratches along their edges cut anew each frame, on some runs of three frames and not others;
+  fireflies scratched through as ragged points, the trunks and ferns as scratches along their edges cut
+  anew each frame, on some runs of three frames and not others (on all while a burst lights the woods);
   twenty-four frames a second. Under Reduce Motion every frame is cut and nothing boils.
-- **Drawn, not sourced:** the dyes and their colours, the rays, the hatching, the runs of three, the dust.
+- **Drawn, not sourced:** the dyes and their colours, the runs of three, the dust; stars held below the fireflies' light.

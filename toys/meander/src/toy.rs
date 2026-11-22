@@ -286,7 +286,6 @@ impl Toy for Meander {
         let dep_view = dep_tex.create_view(&Default::default());
         let shader = gpu.shader("meander-plain", WGSL);
         let pipeline = gpu.fullscreen_pipeline("meander-plain", &shader, &[&bgl], None);
-        let painter = Painter::new(gpu);
         let mut toy = Meander {
             river: River::new(Vec::new(), 7),
             dep: vec![NEVER; NG * NG],
@@ -302,7 +301,7 @@ impl Toy for Meander {
             smp,
             dep_view,
             uni,
-            painter,
+            painter: Painter::new(gpu),
             hands: Vec::new(),
             ticked: -100.0,
             pushed: -100.0,

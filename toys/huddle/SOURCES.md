@@ -50,8 +50,9 @@ penguins are worked out from the constants and rules in `src/`.
   onto paper using the alphanumeric printing device ACPU-128" and transferred to film
   (https://en.wikipedia.org/wiki/Kitten_(film)); "printing hundreds of cat shaped numerical patterns on
   paper and photographing them one at a time" (https://www.animatsiya.net/film.php?filmid=617).
-- Here (`src/printer.rs`, `src/printer.wgsl`): the huddle drawn as before, read into character places, a
-  digit or mark struck at each by how dark it is beneath (`tools/toys/printer_glyphs.py` cuts them from
+- Here (`src/printer.rs`, `src/printer.wgsl`): the huddle drawn as before (each bird drawn for the printer
+  about one character place in size), read into character places, a digit or mark struck at each by how
+  dark it is beneath (`tools/toys/printer_glyphs.py` cuts them from
   DejaVu Sans Mono Bold and sorts them by ink); a sheet twelve times a second.
 - **Drawn, not sourced:** the type's face and the 10-by-6-to-the-inch places (a usual line printer's,
   not the ACPU-128's measured), the darkest places struck twice, the drum's characters standing a little

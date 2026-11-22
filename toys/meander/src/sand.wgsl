@@ -17,8 +17,8 @@ fn depth_of(c: vec3<f32>) -> f32 {
   // lakes (blue over the green): swept thin
   let lake = smoothstep(0.0, 0.06, c.b - c.g);
   // the forest: deep, a little less where it is lighter (old scrolls of the river, young growth)
-  let forest = 0.34 + 0.50 * smoothstep(0.40, 0.14, l);
-  return mix(mix(forest, 0.26, lake), 0.0, warm);
+  let forest = 0.17 + 0.48 * smoothstep(0.40, 0.12, l);
+  return mix(mix(forest, 0.12, lake), 0.035, warm);
 }
 
 @fragment fn fs_surface(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
@@ -49,30 +49,44 @@ fn noise(q: vec2<f32>) -> f32 {
   let boil = (vec2<f32>(noise(fc.xy / (40.0 * px) + p.drawing * 1.7),
                         noise(fc.xy / (40.0 * px) + p.drawing * 2.3 + 9.0)) - 0.5) * 5.0 * px * p.a.x;
   let q = fc.xy + boil;
-  var d = deep(q);
-  // the rim: what a finger clears it heaps beside the cleared edge
-  let h = p.cell * 1.2;
-  let around = (deep(q + vec2<f32>(h, 0.0)) + deep(q - vec2<f32>(h, 0.0)) +
-                deep(q + vec2<f32>(0.0, h)) + deep(q - vec2<f32>(0.0, h))) * 0.25;
-  let far = (deep(q + vec2<f32>(3.0 * h, 0.0)) + deep(q - vec2<f32>(3.0 * h, 0.0)) +
-             deep(q + vec2<f32>(0.0, 3.0 * h)) + deep(q - vec2<f32>(0.0, 3.0 * h))) * 0.25;
-  d += max(d - far, 0.0) * 1.4;
-  // the grains: each a speck the light passes or doesn't; thin sand lets the lamp through between
-  // them, deep sand barely at all; drifts of finer and coarser sand
-  let g = hash(floor(q / (2.2 * px)));
-  let clump = noise(q / (14.0 * px)) * 0.5 + noise(q / (55.0 * px)) * 0.5;
-  let t = d * (0.75 + 0.5 * clump);
-  // a grain's chance of stopping the light, as the sand deepens
-  let blocked = smoothstep(g * 0.85, g * 0.85 + 0.22, t * 1.15);
-  var through = mix(1.0, 0.0, blocked);
-  // even where the glass is bare a few grains are left behind
-  through *= 1.0 - step(0.985, g) * 0.6 * smoothstep(0.0, 0.05, 0.02 + t);
+  // the cleared edge crumbles: sand slumps back into a channel unevenly, coarse and fine
+  let crumb = (noise(q / (7.0 * px)) - 0.5) * 0.35 + (noise(q / (2.5 * px)) - 0.5) * 0.2;
+  var d = max(deep(q) + crumb * smoothstep(0.02, 0.25, deep(q)) * (1.0 - smoothstep(0.5, 0.9, deep(q))), 0.0);
+  // the banks: what a finger clears it heaps along the cleared edge, a ridge darker than the sand
+  // behind it
+  let h = p.cell * 1.5;
+  var near = 0.0;
+  for (var i = 0; i < 6; i++) {
+    let a = f32(i) * 1.047;
+    near += deep(q + vec2<f32>(cos(a), sin(a)) * h * 2.0);
+  }
+  near /= 6.0;
+  let bank = max(d - near, 0.0) * 1.6;
+  // in a cleared furrow a film of sand is left, thicker toward the walls and in drifts along it, so the
+  // light is brightest where the finger pressed hardest
+  let furrow = 1.0 - smoothstep(0.0, 0.12, deep(q));
+  let film = (0.015 + 0.06 * noise(q / (34.0 * px)) + 0.03 * noise(q / (9.0 * px))) * furrow
+           + smoothstep(0.02, 0.10, deep(q)) * 0.05;
+  let t = d + bank + film;
+  // the light through it: thin sand glows grey, deep sand goes black, grain by grain (each grain a
+  // little denser or thinner, drifts of finer and coarser sand)
+  let grain = hash(floor(q / (2.0 * px)));
+  let clump = noise(q / (16.0 * px)) * 0.5 + noise(q / (60.0 * px)) * 0.5;
+  let thick = t * (0.7 + 0.6 * clump) * (0.75 + 0.5 * grain);
+  var through = exp(-thick * 4.5);
+  // the lamp's light bleeds a little past every cleared edge into the sand's first grains
+  var bleed = 0.0;
+  for (var i = 0; i < 8; i++) {
+    let a = f32(i) * 0.785 + 0.2;
+    bleed += exp(-deep(q + vec2<f32>(cos(a), sin(a)) * 9.0 * px) * 6.0);
+  }
+  through = max(through, bleed / 8.0 * 0.35 * (0.6 + 0.4 * grain));
   // the lamp under the glass: hot in the middle, falling off to the corners
   let r = length((fc.xy / p.size - vec2<f32>(0.5, 0.5)) * vec2<f32>(0.8, 1.0));
-  let lamp = 1.0 - 0.45 * r * r;
+  let lamp = 1.0 - 0.40 * r * r;
   // black-and-white film: the print's toe and shoulder, its grain
   let v = clamp(through * lamp, 0.0, 1.0);
-  let print = smoothstep(0.02, 1.05, v) + (hash(floor(fc.xy / (1.5 * px)) + p.drawing) - 0.5) * 0.05;
-  let tone = vec3<f32>(print) * vec3<f32>(1.0, 0.985, 0.96) + vec3<f32>(0.015);
+  let print = smoothstep(0.0, 1.0, pow(v, 0.9)) + (hash(floor(fc.xy / (1.5 * px)) + p.drawing) - 0.5) * 0.04;
+  let tone = vec3<f32>(print) * vec3<f32>(1.0, 0.985, 0.96) + vec3<f32>(0.012);
   return vec4<f32>(tone, 1.0);
 }
