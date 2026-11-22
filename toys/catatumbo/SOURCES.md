@@ -25,3 +25,16 @@ those results gave them. Catatumbo loads no data: the lake, the storm and its so
 The shore and its stilt-house lamps, the cloud, the colours, the eye's 60 m height over the water and
 the lens. The leader is slowed (a real one takes hundredths of a second) so it can be seen. The air's
 damping of the thunder's highs is a filter by distance, not a measured curve.
+
+## The look: an oscilloscope film (after the real method; the details drawn)
+
+- **Mary Ellen Bute, *Abstronic*** (New York, 1952, colour, 7 minutes; cinematography Ted Nemeth;
+  https://en.wikipedia.org/wiki/Mary_Ellen_Bute): her oscilloscope "a Precision Series ES-500A"; its
+  images "captured on film and then optically printed with other images and color filters"; in her
+  words they are "calligraphic", not raster, "photographed on motion picture film"
+  (https://www.centerforvisualmusic.org/ButePhotography.htm).
+- Here (`src/scope.rs`, `src/scope.wgsl`): the storm drawn as before, its light read into a grid, and
+  traced as a beam along five levels of that light, each level through its own colour; each bolt drawn
+  over the trace as one stroke of the beam; twenty-four frames a second.
+- **Drawn, not sourced:** tracing the scene's levels (Bute drove the beam with signals, not a picture),
+  the filters' colours, the glow and grain.

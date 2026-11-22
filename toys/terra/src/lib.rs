@@ -689,6 +689,12 @@ impl Toy for Terra {
         self.held_origins()
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        self.inside()
+            .then(|| self.room.as_ref().and_then(|r| r.style()))
+            .flatten()
+    }
+
     fn switches(&self) -> Vec<toy_kit::switches::Switch> {
         self.held_switches()
     }

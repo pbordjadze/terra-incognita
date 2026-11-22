@@ -706,6 +706,15 @@ impl Toy for Nazare {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Carla's Island",
+            maker: "Nelson Max",
+            place: "Lawrence Livermore Laboratory, California",
+            year: 1981,
+        })
+    }
+
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
             "Shallow water slows a long swell and bends it toward the shallows.",

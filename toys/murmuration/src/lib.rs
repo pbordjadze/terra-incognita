@@ -638,6 +638,10 @@ impl Toy for Murmuration {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        growth::ON.then_some(growth::STYLE)
+    }
+
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::lines(&[
                 "At dusk, thousands of starlings swirl together before they roost: today's dusk at Ham Wall, in Somerset.",

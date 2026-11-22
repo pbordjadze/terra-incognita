@@ -30,6 +30,7 @@ pub trait Room {
     fn demo(&self) -> Option<Demo>;
     fn rules(&self) -> Option<Rules>;
     fn origins(&self) -> Option<Rules>;
+    fn style(&self) -> Option<toy_kit::info::Style>;
     fn card_at_top(&self) -> bool;
     fn switches(&self) -> Vec<Switch>;
     fn set_switch(&mut self, i: usize, on: bool);
@@ -175,6 +176,9 @@ impl<T: Toy> Room for Inside<T> {
     }
     fn origins(&self) -> Option<Rules> {
         self.toy.origins()
+    }
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        self.toy.style()
     }
     fn card_at_top(&self) -> bool {
         self.toy.card_at_top(&self.ctx)

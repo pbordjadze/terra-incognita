@@ -238,6 +238,18 @@ impl Film {
         self.drawn = None;
     }
 
+    /// The drawing due at `t`; if none is (the last one still shows), shows it on `out` now and says
+    /// None, so a toy's draw is `let Some(d) = film.next(gpu, out, t) else { return };`.
+    pub fn next(&self, gpu: &Gpu, out: &wgpu::TextureView, t: f64) -> Option<i64> {
+        let d = self.due(t);
+        if d.is_none() {
+            let mut enc = gpu.device.create_command_encoder(&Default::default());
+            self.film(&mut enc, out);
+            gpu.queue.submit([enc.finish()]);
+        }
+        d
+    }
+
     /// The drawing due at `t`, if it isn't the one already made.
     pub fn due(&self, t: f64) -> Option<i64> {
         let d = (t * self.hz).floor() as i64;

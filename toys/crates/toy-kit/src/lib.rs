@@ -297,6 +297,11 @@ pub trait Toy: 'static {
     fn rules(&self) -> Option<info::Rules> {
         None
     }
+    /// The style from the history of animation the toy is drawn in ([`info::Style`]), credited in one line
+    /// at the foot of its sheet. None (the default): the toy's own look.
+    fn style(&self) -> Option<info::Style> {
+        None
+    }
     /// What the sheet's "Where this comes from" shows (`info`): where the rules came from (the real
     /// science and history behind them). None (the default) shows no such button.
     fn origins(&self) -> Option<info::Rules> {

@@ -444,6 +444,15 @@ impl Toy for Bore {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Little Tadpoles Looking for Mama",
+            maker: "Te Wei",
+            place: "Shanghai Animation Film Studio",
+            year: 1960,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "At Yanguan on China's Qiantang River the tide comes up the river as one wave: the bore.",
