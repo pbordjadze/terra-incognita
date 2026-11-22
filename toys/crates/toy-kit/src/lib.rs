@@ -17,8 +17,10 @@ pub mod backdrop;
 pub mod budget;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod check;
+pub mod chrome;
 pub mod field;
 pub mod film;
+pub mod frame;
 #[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
@@ -37,6 +39,8 @@ pub mod switches;
 pub mod web;
 
 pub use assets::{Assets, DirAssets, MemoryAssets};
+pub use chrome::{About, Haptic, Senses};
+pub use frame::Frame;
 #[cfg(feature = "globe")]
 pub use globe::Globe;
 pub use gpu::{Gpu, Offscreen};
@@ -195,7 +199,10 @@ pub struct Ctx {
     pub reduce_motion: bool,
     /// What the phone feels: its tilt and the magnetic field through it (`Sensors`), as the shell last said.
     pub sensors: Sensors,
-    haptic: bool,
+    /// The frame draws the chrome in its platform's own controls (`chrome::In::Frame`): the kit draws no
+    /// mark, and a host draws none of its own (Terra's Earth mark: the frame's back button is it).
+    pub native_chrome: bool,
+    haptics: Vec<Haptic>,
     show_info: bool,
     hide_info: bool,
 }
@@ -211,15 +218,26 @@ impl Ctx {
             night: false,
             reduce_motion: false,
             sensors: Sensors::default(),
-            haptic: false,
+            native_chrome: false,
+            haptics: Vec::new(),
             show_info: false,
             hide_info: false,
         }
     }
 
-    /// Asks the shell for one light haptic tap this frame.
+    /// Asks the frame for one light haptic tap (`Haptic::Tick`).
     pub fn haptic(&mut self) {
-        self.haptic = true;
+        self.feel(Haptic::Tick);
+    }
+
+    /// Asks the frame for a haptic of this kind (an intent: each platform plays it in its own way). At most
+    /// a few wait for the frame; the strongest are kept.
+    pub fn feel(&mut self, h: Haptic) {
+        self.haptics.push(h);
+        if self.haptics.len() > 4 {
+            self.haptics.sort_unstable_by(|a, b| b.cmp(a));
+            self.haptics.truncate(4);
+        }
     }
 
     /// Asks the host to open the info mark's demo now, as a first visit does (Terra, as a toy it holds
@@ -239,10 +257,10 @@ impl Ctx {
         std::mem::take(&mut self.hide_info)
     }
 
-    /// Whether a haptic tap was asked for since the last call, forgetting it (a host passes on the
-    /// taps of a toy it holds: `toys/terra`).
-    pub fn take_haptic(&mut self) -> bool {
-        std::mem::take(&mut self.haptic)
+    /// The haptics asked for since the last call, forgetting them (a host passes on those of a toy it
+    /// holds: `toys/terra`).
+    pub fn take_haptics(&mut self) -> Vec<Haptic> {
+        std::mem::take(&mut self.haptics)
     }
 
     /// Whether the demo was asked for since the last call, forgetting it.
@@ -373,6 +391,24 @@ pub trait Toy: 'static {
     fn label(&self, _ctx: &Ctx) -> Option<Label> {
         None
     }
+    /// What is on screen, in words: its name, its place and one line (Terra: the toy whose card is up or
+    /// open). The frame's sheet, a share and the screen reader say it. None (the default): nothing.
+    fn about(&self, _ctx: &Ctx) -> Option<About> {
+        None
+    }
+    /// The way back, if there is one now: its words for the screen reader ("Back to the Earth"). The
+    /// frame shows its own back button and takes the system's back gesture for it (`go_back`). None (the
+    /// default): there is nowhere to go back to, and the system's back leaves the app.
+    fn back(&self, _ctx: &Ctx) -> Option<String> {
+        None
+    }
+    /// The reader went back (`back`), at `t` (the frame's seconds).
+    fn go_back(&mut self, _ctx: &mut Ctx, _t: f64) {}
+    /// The senses the toy reads now (`chrome::Senses`); the frame keeps the others off. The default: a
+    /// shake only. A toy that reads `ctx.sensors` asks for its gravity, field or heading here.
+    fn senses(&self) -> Senses {
+        Senses::default()
+    }
     /// A toy whose picture is the ground seen from straight above, at a true scale, says where it lies
     /// ([`Above`]), so a globe holding it (Terra) can come down onto it under the fingers and hand over
     /// exactly: the last frame of the Earth and the toy's first are the same place at the same scale
@@ -492,7 +528,7 @@ impl AudioFile {
 /// Words a toy places (`Toy::label`): a box in points (left, top, width, height), how shown it is (0..1),
 /// and its lines: the first a heading, the second quieter, the rest plain; dark ink (on a light ground)
 /// or light.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct Label {
     pub at: [f64; 4],
     pub alpha: f64,
@@ -539,16 +575,8 @@ pub struct Host<T: Toy> {
     marks: info::Marks,
     /// The info demo's opening on a first visit (`info::First`).
     pub first_info: info::First,
-    /// The switches' lines while the sheet shows them (`switches`).
-    switches: switches::Panel,
-    /// The sheet's buttons (`sheet_more`).
-    more: std::ffi::CString,
-    /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
-    buttons: std::ffi::CString,
-    /// The toy's title as the shell reads it (`title_text`).
-    title: std::ffi::CString,
-    /// The toy's label as the shell reads it (`label_text`).
-    label: std::ffi::CString,
+    /// Whether the sheet hangs from the top (`Toy::card_at_top`, asked as it opened).
+    sheet_top: bool,
     /// Shakes told from the device's motion, and the rest after one (`shake`).
     shake: shake::Shake,
 }
@@ -565,12 +593,8 @@ impl<T: Toy> Host<T> {
             last_t: None,
             info: Default::default(),
             first_info: Default::default(),
-            switches: Default::default(),
             marks: Default::default(),
-            more: Default::default(),
-            buttons: Default::default(),
-            title: Default::default(),
-            label: Default::default(),
+            sheet_top: false,
             shake: Default::default(),
         };
         host.marks_step();
@@ -607,25 +631,6 @@ impl<T: Toy> Host<T> {
         }
     }
 
-    /// The toy's buttons, a line each: its label, a tab, x, a tab, y (points); valid until the next call.
-    pub fn buttons_text(&mut self) -> &std::ffi::CStr {
-        let text: String = self
-            .toy
-            .buttons(&self.ctx)
-            .into_iter()
-            .map(|(label, p)| {
-                format!(
-                    "{}\t{:.1}\t{:.1}\n",
-                    label.replace(['\t', '\n', '\0'], " "),
-                    p[0],
-                    p[1]
-                )
-            })
-            .collect();
-        self.buttons = std::ffi::CString::new(text).unwrap_or_default();
-        &self.buttons
-    }
-
     /// VoiceOver pressed button `i`.
     pub fn press(&mut self, i: usize, t: f64) {
         self.toy.press(&mut self.ctx, i, t);
@@ -639,20 +644,6 @@ impl<T: Toy> Host<T> {
     /// Hands the toy the sound file the reader chose.
     pub fn opened(&mut self, file: AudioFile) {
         self.toy.opened(&mut self.ctx, file);
-    }
-
-    /// The toy's quiet line (`Toy::title`), valid until the next call.
-    pub fn title_text(&mut self) -> Option<&std::ffi::CStr> {
-        let t = self.toy.title()?;
-        self.title = std::ffi::CString::new(t.replace('\0', " ")).unwrap_or_default();
-        Some(&self.title)
-    }
-
-    /// The toy's label (`Toy::label`, `Label::text`), valid until the next call.
-    pub fn label_text(&mut self) -> Option<&std::ffi::CStr> {
-        let l = self.toy.label(&self.ctx)?;
-        self.label = std::ffi::CString::new(l.text()).unwrap_or_default();
-        Some(&self.label)
     }
 
     /// The toy's named places, and the mark's as `"info"` (and `"rules"`, `"switches"`: one place now).
@@ -681,7 +672,6 @@ impl<T: Toy> Host<T> {
         }
         self.toy.update(&mut self.ctx, t, dt);
         self.first_info_step(t);
-        self.switches_step();
     }
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
@@ -731,11 +721,6 @@ impl<T: Toy> Host<T> {
         self.toy.settings(&mut self.ctx);
     }
 
-    /// Whether the toy asked for a haptic tap since the last call.
-    pub fn take_haptic(&mut self) -> bool {
-        std::mem::take(&mut self.ctx.haptic)
-    }
-
     /// Sound for the next `out.len() / channels` frames (silence without a synth or while locked).
     pub fn audio(synth: Option<&SharedSynth>, out: &mut [f32], channels: usize, rate: f64) {
         out.fill(0.0);
@@ -767,33 +752,20 @@ pub fn block_on<F: std::future::Future>(f: F) -> F::Output {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// The shell's text showing at a shot (the info line, the rules, the switches panel, the title), which the
-/// shell sets in the system's text and the frame lacks: tools/kit/shell_text.py draws it on the shot.
+/// The frame's chrome at a shot (`chrome::Chrome`: the demo's line, the sheet, the postcard, the title), which a
+/// frame sets in its platform's own controls and the toy's pixels lack: tools/kit/shell_text.py draws it on the
+/// shot as the iPhone's frame lays it out.
 pub(crate) fn shell_json<T: Toy>(
     host: &Host<T>,
     path: &std::path::Path,
     size: [u32; 2],
     ppp: f64,
 ) -> anyhow::Result<()> {
-    let title = host.toy.title();
-    let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
-    let switches = host.switches_text();
-    let more = host.sheet_more();
-    let label = host.toy.label(&host.ctx).map(|l| l.text());
-    if line.is_none()
-        && rules.is_none()
-        && origins.is_none()
-        && switches.is_none()
-        && title.is_none()
-        && label.is_none()
-    {
+    let c = host.chrome();
+    if c.caption.is_none() && c.sheet.is_none() && c.title.is_none() && c.label.is_none() {
         return Ok(());
     }
-    let s = |c: Option<&std::ffi::CStr>| {
-        serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()))
-    };
-    let j = serde_json::json!({ "size": size, "ppp": ppp, "line": s(line), "rules": s(rules),
-        "origins": s(origins), "switches": s(switches), "more": s(more), "label": label, "top": host.card_at_top(), "title": title });
+    let j = serde_json::json!({ "size": size, "ppp": ppp, "chrome": c });
     std::fs::write(path, j.to_string())?;
     Ok(())
 }

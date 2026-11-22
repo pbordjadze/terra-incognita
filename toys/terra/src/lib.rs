@@ -13,6 +13,7 @@ mod atlas;
 pub mod card;
 mod clock;
 pub mod doors;
+mod earth;
 mod mixer;
 pub mod rooms;
 mod veil;
@@ -36,6 +37,8 @@ fn earth_spot(points: [f64; 2]) -> [f64; 2] {
     [26.0, points[1] - 34.0]
 }
 const EARTH_REACH: f64 = 24.0;
+/// The way back from a toy, in words (the screen reader's, the frame's back button).
+const BACK: &str = "Back to the Earth";
 /// The opening's zoom: on a tall phone the Earth a little wider than the screen, so its lights are large
 /// (1.4, its height well inside); on a squarer screen (the iPad) the Earth just the screen's width, so no
 /// light opens cut by the frame or hidden past it (painting-company row 246: at 1.4 the 13-inch iPad's
@@ -241,59 +244,6 @@ impl Terra {
         self.veil.lay(ctx, target, &l);
     }
 
-    /// The Earth mark (a small globe: its rim, a meridian, the equator), on the marks' dark ground.
-    fn draw_earth_mark(&mut self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32) {
-        let k = ctx.ppp as f32;
-        let s = earth_spot(ctx.points());
-        let c = [s[0] as f32 * k, s[1] as f32 * k];
-        let lit = 0.62 * alpha;
-        let p = &mut self.painter;
-        p.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42 * alpha]);
-        p.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        p.line(
-            [c[0] - 6.9 * k, c[1]],
-            [c[0] + 6.9 * k, c[1]],
-            0.5 * k,
-            0.7,
-            [1.0, 1.0, 1.0, lit],
-        );
-        // the meridian: an ellipse's two halves, drawn as short strokes
-        let n = 14;
-        let mut prev: Option<[f32; 2]> = None;
-        for i in 0..=n {
-            let a = std::f32::consts::PI * (i as f32 / n as f32 - 0.5);
-            let q = [c[0] + a.cos() * 3.4 * k, c[1] + a.sin() * 7.2 * k];
-            if let Some(pp) = prev {
-                p.line(pp, q, 0.5 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-            }
-            prev = Some(q);
-        }
-        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
-        self.painter
-            .render(&ctx.gpu, &mut enc, target, [ctx.width, ctx.height], None);
-        ctx.gpu.queue.submit([enc.finish()]);
-    }
-
-    /// Inside: the Earth mark's finger (true if it was the mark's); lifted on it, the toy goes back into its card.
-    fn earth_mark_pointer(&mut self, ctx: &mut Ctx, e: &PointerEvent) -> bool {
-        let s = earth_spot(ctx.points());
-        let near = |k: f64| (e.x - s[0]).hypot(e.y - s[1]) < EARTH_REACH * k;
-        if e.phase == Phase::Down && self.earth_finger.is_none() && near(1.0) {
-            self.earth_finger = Some(e.id);
-            return true;
-        }
-        if self.earth_finger != Some(e.id) {
-            return false;
-        }
-        if matches!(e.phase, Phase::Up | Phase::Cancel) {
-            self.earth_finger = None;
-            if e.phase == Phase::Up && near(1.5) && matches!(self.state, State::Inside) {
-                self.leave(ctx, e.t);
-            }
-        }
-        true
-    }
-
     /// Whether this finger ends a pinch that took a globe toy out past its whole Earth (as the kit's
     /// hand's own over-pinch would fly it Home): pinched to below the whole Earth (zoom 0.8), it goes back
     /// into its card.
@@ -438,8 +388,8 @@ impl Toy for Terra {
         match self.state {
             State::Atlas => self.atlas_pointer(ctx, e),
             State::Inside => {
-                // the Earth mark is Terra's; everything else is the toy's
-                if self.earth_mark_pointer(ctx, &e) {
+                // the Earth mark is Terra's (unless the frame's back button is it); everything else is the toy's
+                if !ctx.native_chrome && self.earth_mark_pointer(ctx, &e) {
                     return;
                 }
                 let out = self.room.as_ref().is_some_and(|r| r.camera().is_some())
@@ -492,8 +442,8 @@ impl Toy for Terra {
         self.room_level
             .store((level as f32).to_bits(), Ordering::Relaxed);
         if let Some(r) = self.room.as_mut() {
-            if r.take_haptic() {
-                ctx.haptic();
+            for h in r.take_haptics() {
+                ctx.feel(h);
             }
         }
     }
@@ -505,14 +455,16 @@ impl Toy for Terra {
                 if let Some(r) = self.room.as_mut() {
                     r.draw(target);
                 }
-                self.draw_earth_mark(ctx, target, 1.0);
+                if !ctx.native_chrome {
+                    self.draw_earth_mark(ctx, target, 1.0);
+                }
             }
             _ => {
                 self.draw_atlas(ctx, target, 1.0 - 0.5 * g);
                 if self.card.is_some() {
                     self.draw_card(ctx, target);
                 }
-                if g > 0.0 {
+                if g > 0.0 && !ctx.native_chrome {
                     self.draw_earth_mark(ctx, target, ease((g - 0.6) / 0.4) as f32);
                 }
             }
@@ -644,7 +596,11 @@ impl Toy for Terra {
 
     fn buttons(&self, ctx: &Ctx) -> Vec<(String, [f64; 2])> {
         if self.inside() {
-            return vec![("Back to the Earth".into(), earth_spot(ctx.points()))];
+            // (where the frame draws its own back button, it offers it itself: `back`)
+            if ctx.native_chrome {
+                return Vec::new();
+            }
+            return vec![(BACK.into(), earth_spot(ctx.points()))];
         }
         self.button_list(ctx)
             .into_iter()
@@ -669,6 +625,47 @@ impl Toy for Terra {
 
     fn origins(&self) -> Option<Rules> {
         self.held_origins()
+    }
+
+    fn about(&self, _ctx: &Ctx) -> Option<toy_kit::About> {
+        // the toy whose card is up or open; on the bare Earth, nothing
+        self.room.as_ref()?;
+        let d = &self.life.doors[self.door];
+        Some(toy_kit::About {
+            name: d.name.into(),
+            place: d.place.into(),
+            line: d.line.into(),
+        })
+    }
+
+    fn back(&self, _ctx: &Ctx) -> Option<String> {
+        match self.state {
+            State::Inside => Some(BACK.into()),
+            // a card up on the Earth: back puts it away (Android's back gesture)
+            State::Atlas if self.card.is_some_and(|c| c.gone.is_none()) => {
+                Some("Put the card away".into())
+            }
+            _ => None,
+        }
+    }
+
+    fn go_back(&mut self, ctx: &mut Ctx, t: f64) {
+        match self.state {
+            State::Inside => self.leave(ctx, t),
+            State::Atlas => self.put_card_away(t),
+            _ => {}
+        }
+    }
+
+    fn senses(&self) -> toy_kit::Senses {
+        // the open toy's; on the Earth none (a shake there is nobody's)
+        match (&self.state, &self.room) {
+            (State::Inside, Some(r)) => r.senses(),
+            _ => toy_kit::Senses {
+                shake: false,
+                ..Default::default()
+            },
+        }
     }
 
     fn style(&self) -> Option<toy_kit::info::Style> {

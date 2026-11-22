@@ -197,7 +197,7 @@ pub async fn run<T: Toy>(canvas_id: &str, key: &str) -> Result<(), JsValue> {
                 host.draw(&view);
                 host.ctx.gpu.queue.present(frame);
             }
-            if host.take_haptic() {
+            if !host.ctx.take_haptics().is_empty() {
                 let _ = js_sys::Reflect::get(&window2.navigator(), &"vibrate".into())
                     .ok()
                     .and_then(|v| v.dyn_into::<js_sys::Function>().ok())

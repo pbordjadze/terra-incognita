@@ -51,7 +51,7 @@ echo "== swift"
 swiftc -O -target $STARGET -sdk "$SDK" \
   -I "$ROOT/toys/ios/Sources" -import-objc-header "$ROOT/toys/ios/Sources/toy.h" \
   -parse-as-library -module-name "$EXEC" \
-  "$ROOT/toys/ios/Sources/main.swift" "$LIB" \
+  "$ROOT"/toys/ios/Sources/*.swift "$LIB" \
   -framework UIKit -framework QuartzCore -framework Metal -framework CoreGraphics -framework Foundation \
   -framework AVFoundation -framework CoreMotion \
   -lc++ -o "$APP/$EXEC"

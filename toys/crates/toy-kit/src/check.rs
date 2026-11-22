@@ -585,7 +585,7 @@ impl<T: Toy> Run<T> {
                 }
                 What::Switch(i, on) => {
                     let n = self.host.toy.switches().len();
-                    if (self.strict && self.host.switches_text().is_none()) || i >= n {
+                    if (self.strict && self.host.info.rules().is_none()) || i >= n {
                         anyhow::bail!(
                             "event at t={}: switch {i}: the sheet must be open (tap \"switches\" first) and the toy has {n} rules",
                             events[it.ev].t
@@ -598,7 +598,7 @@ impl<T: Toy> Run<T> {
                     match e.show.as_deref() {
                         Some("demo") => self.host.open_info(it.t),
                         Some("origins") => {
-                            if self.strict && self.host.sheet_more().is_none() {
+                            if self.strict && self.host.info.rules().is_none() {
                                 anyhow::bail!("event at t={}: show origins: the sheet must be open (tap \"info\" first)", e.t);
                             }
                             self.host.open_origins();
@@ -807,7 +807,7 @@ pub fn play_with<T: Toy>(
         if cost > worst.0 {
             worst = (cost, t);
         }
-        let _ = host.take_haptic();
+        let _ = host.take_events();
         // the sound up to the frame's end: what this update started sounds from t, as on the device
         // (rendered up to t, it sounded a frame early)
         if plan.audio {
@@ -928,7 +928,7 @@ pub fn play_with<T: Toy>(
                     let t = f as f64 / fps;
                     run.dispatch(&plan.events, t)?;
                     run.host.update(t);
-                    let _ = run.host.take_haptic();
+                    let _ = run.host.take_events();
                     // the sound is pulled as the real run pulled it (a synth may share state with the toy)
                     if plan.audio {
                         let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(heard);
@@ -1206,7 +1206,7 @@ pub fn clip<T: Toy>(
         let t = f as f64 / fps;
         run.dispatch(&plan.events, t)?;
         run.host.update(t);
-        let _ = run.host.take_haptic();
+        let _ = run.host.take_events();
         // the sound up to the frame's end, so the clip's sound is as long as its frames
         let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(sound.len() / 2);
         let mut buf = vec![0.0f32; n * 2];

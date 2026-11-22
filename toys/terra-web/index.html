@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Terra on the web: what toys/ios/Sources/main.swift does on the iPhone, in HTML over a WebGPU canvas
-     (toys/terra-web/src/lib.rs exports the same calls). Built by tools/toys/web_build.sh; change both
-     shells together. -->
+<!-- Terra on the web: the web's frame, as toys/ios/Sources/main.swift is the iPhone's, in HTML over a WebGPU
+     canvas (toys/terra-web/src/lib.rs: the one frame core). It reads the chrome as data (toy-kit's chrome.rs)
+     and draws it here, and sends back what the reader did. Built by tools/toys/web_build.sh. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -253,20 +253,29 @@ function startSound() {
   audio.resume();
 }
 
-// ---- each frame: the picture, then the shell's text as main.swift's tick shows it
+// ---- each frame: the picture, what Terra asks (haptics), then the chrome when it changed (toy-kit's chrome.rs)
 function tick() {
   try { frame(); } catch (e) { console.error(e); say('Terra stopped here. ' + (e && e.message ? e.message : e)); return; }
   requestAnimationFrame(tick);
 }
+const now = () => performance.now() / 1000;
+const send = m => shell.send(JSON.stringify(m));
+// a haptic intent as a buzz's length (ms), where the browser can buzz at all
+const BUZZ = { tick: 8, soft: 12, firm: 18, thud: 30 };
+let chrome = null;
 function frame() {
   const [w, h, dpr] = size();
   if (w !== canvas.width || h !== canvas.height) { canvas.width = w; canvas.height = h; shell.resize(w, h, dpr); layout(); }
-  shell.frame(performance.now() / 1000, Date.now() / 1000);
-  if (shell.take_haptic() && navigator.vibrate) navigator.vibrate(8);
-  showTitle(shell.title() ?? null);
-  showCaption(shell.info_line() ?? null);
-  showCard(shell.rules_text() ?? shell.origins_text() ?? null, shell.switches_text() ?? null, shell.sheet_more() ?? null);
-  showLabel(shell.label() ?? null);
+  shell.frame(now(), Date.now() / 1000);
+  const ev = shell.events();
+  if (ev) for (const e of JSON.parse(ev)) if (e.event === 'haptic' && navigator.vibrate) navigator.vibrate(BUZZ[e.haptic] ?? 8);
+  const c = shell.chrome();
+  if (c === undefined || c === null) return;
+  chrome = JSON.parse(c);
+  showTitle(chrome.title ?? null);
+  showCaption(chrome.caption ?? null);
+  showCard(chrome.sheet ?? null);
+  showLabel(chrome.label ?? null);
   marks();
 }
 
@@ -300,89 +309,84 @@ function showCaption(text) {
   el.classList.add('on');
 }
 
-// the sheet: the rules (or the origins in their place), the switches a row each, a hairline and the buttons; at most
-// 480 wide, centred, its foot 60 above the screen's, or hung from the top. A tap off it (the canvas's) closes it.
-let cardText = null, cardSwitches = null, cardMore = null, cardTop = false;
-function showCard(text, switches, more) {
-  if (text === cardText && switches === cardSwitches && more === cardMore) return;
-  const opening = cardText === null, el = $('card');
-  if (text === null) {
-    cardText = cardSwitches = cardMore = null;
-    el.classList.remove('on'); setTimeout(() => { if (cardText === null) el.style.display = 'none'; }, 300); return;
+// the sheet: the rules (or the origins in their place), the style's credit, the switches a row each, a hairline and
+// the buttons; at most 480 wide, centred, its foot 60 above the screen's, or hung from the top. A tap off it (the
+// canvas's) closes it.
+let card = null, cardKey = null;
+function showCard(sheet) {
+  const opening = card === null, el = $('card');
+  if (sheet === null) {
+    card = cardKey = null;
+    el.classList.remove('on'); setTimeout(() => { if (card === null) el.style.display = 'none'; }, 300); return;
   }
-  if (text !== cardText || more !== cardMore || (switches === null) !== (cardSwitches === null)) {
-    const parts = text.split('\n\n');
+  // (rebuilt when its words change; the switches' states are only set)
+  const key = JSON.stringify([sheet.page, sheet.lines, sheet.note, sheet.style, sheet.demo, sheet.origins, sheet.switches.map(s => s.label)]);
+  if (key !== cardKey) {
     el.replaceChildren();
-    if (parts[0]) for (const line of parts[0].split('\n')) { const p = document.createElement('p'); p.textContent = line; el.append(p); }
-    const note = parts.slice(1).join('\n').trim();
-    if (note) for (const line of note.split('\n')) { const p = document.createElement('p'); p.className = 'note'; p.textContent = line; el.append(p); }
-    const sw = document.createElement('div'); sw.className = 'sws'; el.append(sw);
-    const names = { demo: 'Show me', origins: 'Where this comes from' };
-    const links = (more ?? '').split('\n').filter(m => names[m]);
+    for (const line of sheet.lines) { const p = document.createElement('p'); p.textContent = line; el.append(p); }
+    const notes = [...(sheet.note ? sheet.note.split('\n') : []), ...(sheet.style ? [sheet.style.credit] : [])];
+    for (const line of notes) { const p = document.createElement('p'); p.className = 'note'; p.textContent = line; el.append(p); }
+    const box = document.createElement('div'); box.className = 'sws'; el.append(box);
+    sheet.switches.forEach((sw, i) => {
+      const label = document.createElement('label'), span = document.createElement('span'), input = document.createElement('input');
+      label.className = 'sw'; input.type = 'checkbox'; input.setAttribute('role', 'switch');
+      input.addEventListener('change', () => send({ switch: { i, on: input.checked } }));
+      span.textContent = sw.label;
+      label.append(span, input); box.append(label);
+    });
+    const links = [];
+    if (sheet.page === 'rules' && sheet.demo) links.push(['Show me', () => send({ demo: { t: now() } })]);
+    if (sheet.page === 'rules' && sheet.origins) links.push(['Where this comes from', () => send('origins')]);
     if (links.length) {
       const row = document.createElement('div'); row.className = 'more';
-      for (const m of links) {
-        const b = document.createElement('button'); b.textContent = names[m];
-        b.addEventListener('click', () => m === 'demo' ? shell.demo_open(performance.now() / 1000) : shell.origins_open());
-        row.append(b);
+      for (const [name, act] of links) {
+        const b = document.createElement('button'); b.textContent = name; b.addEventListener('click', act); row.append(b);
       }
       el.append(row);
     }
-    el.setAttribute('aria-label', parts.join('. '));
+    el.setAttribute('aria-label', [...sheet.lines, ...notes].join('. '));
+    cardKey = key;
   }
-  cardText = text; cardMore = more; cardSwitches = switches;
   const box = el.querySelector('.sws');
-  const rows = (switches ?? '').split('\n').map(r => r.split('\t')).filter(r => r.length === 2);
-  if (box.children.length !== rows.length) {
-    box.replaceChildren();
-    rows.forEach((_, i) => {
-      const label = document.createElement('label'), span = document.createElement('span'), input = document.createElement('input');
-      label.className = 'sw'; input.type = 'checkbox'; input.setAttribute('role', 'switch');
-      input.addEventListener('change', () => shell.switch_set(i, input.checked));
-      label.append(span, input); box.append(label);
-    });
-  }
-  rows.forEach(([name, on], i) => {
+  sheet.switches.forEach((sw, i) => {
     const label = box.children[i];
-    label.firstChild.textContent = name;
-    label.className = on === '1' ? 'sw' : 'sw off';
-    label.lastChild.checked = on === '1';
+    label.className = sw.on ? 'sw' : 'sw off';
+    label.lastChild.checked = sw.on;
   });
-  if (opening) cardTop = shell.card_at_top();
+  card = sheet;
   el.style.display = 'block';
   layoutCard();
   if (opening) requestAnimationFrame(() => el.classList.add('on'));
 }
 function layoutCard() {
   const el = $('card');
-  if (cardText === null) return;
+  if (card === null) return;
   const w = Math.min(innerWidth - 32, 480), foot = innerHeight - 60, top = safe().top;
   el.style.width = w + 'px'; el.style.left = ((innerWidth - w) / 2) + 'px';
   el.style.maxHeight = (foot - top - 8) + 'px';
   el.style.height = 'auto';
-  el.style.top = (cardTop ? top + 8 : foot - el.offsetHeight) + 'px';
+  el.style.top = (card.top ? top + 8 : foot - el.offsetHeight) + 'px';
 }
 
 // words Terra places (its postcard): a box, an alpha and an ink, then a heading, a quieter line, plain lines
-let labelText = null;
-function showLabel(text) {
-  if (text === labelText) return;
-  const el = $('label'), lines = (text ?? '').split('\n').filter((l, i) => i === 0 || l);
-  const same = labelText !== null && text !== null && labelText.split('\n').filter(l => l).slice(1).join('\n') === lines.slice(1).join('\n');
-  labelText = text;
-  if (text === null) { el.style.opacity = 0; el.setAttribute('aria-hidden', 'true'); return; }
-  const [x, y, w, , a, dark] = lines[0].split('\t').map(Number);
-  if (!same) {
-    el.replaceChildren(...lines.slice(1).map((l, i) => {
+let labelWords = null;
+function showLabel(label) {
+  const el = $('label');
+  if (label === null) { labelWords = null; el.style.opacity = 0; el.setAttribute('aria-hidden', 'true'); return; }
+  const words = label.lines.join('\n');
+  if (words !== labelWords) {
+    el.replaceChildren(...label.lines.map((l, i) => {
       const d = document.createElement('div');
       d.className = i === 0 ? 'h' : 's'; d.textContent = l; d.style.opacity = [1, 0.6, 0.85][Math.min(i, 2)];
       return d;
     }));
+    labelWords = words;
   }
-  el.style.color = dark ? '#1c1c1e' : '#fff';
+  const [x, y, w] = label.at;
+  el.style.color = label.dark ? '#1c1c1e' : '#fff';
   el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px';
-  el.style.opacity = a;
-  el.setAttribute('aria-hidden', a > 0.5 ? 'false' : 'true');
+  el.style.opacity = label.alpha;
+  el.setAttribute('aria-hidden', label.alpha > 0.5 ? 'false' : 'true');
 }
 
 function layout() { layoutCard(); captionText = null; }
@@ -390,21 +394,16 @@ function layout() { layoutCard(); captionText = null; }
 // the marks and Terra's lights as buttons a screen reader can press (the picture draws them)
 let marksKey = '';
 function marks() {
-  const list = [];
-  for (const line of shell.buttons().split('\n')) {
-    const f = line.split('\t');
-    if (f.length === 3) list.push([f[0], +f[1], +f[2], i => shell.press(i, performance.now() / 1000), list.length]);
-  }
-  const named = [['About this', shell.info_spot(), () => shell.info_open(performance.now() / 1000)]];
-  for (const [label, p, act] of named) if (p) list.push([label, p[0], p[1], act, 0]);
+  const list = chrome.buttons.map((b, i) => [b.label, b.at[0], b.at[1], () => send({ press: { i, t: now() } })]);
+  if (chrome.mark.at) list.push(['About this', chrome.mark.at[0], chrome.mark.at[1], () => send({ mark: { t: now() } })]);
   const key = list.map(m => m[0] + Math.round(m[1] / 8) + ',' + Math.round(m[2] / 8)).join('|');
   if (key === marksKey) return;
   marksKey = key;
   const box = $('marks');
-  box.replaceChildren(...list.map(([label, x, y, act, i]) => {
+  box.replaceChildren(...list.map(([label, x, y, act]) => {
     const b = document.createElement('button');
     b.setAttribute('aria-label', label); b.style.left = x + 'px'; b.style.top = y + 'px';
-    b.addEventListener('click', () => act(i));
+    b.addEventListener('click', act);
     return b;
   }));
 }

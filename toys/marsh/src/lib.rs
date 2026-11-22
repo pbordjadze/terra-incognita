@@ -52,6 +52,15 @@ impl MagnetMarsh {
 }
 
 impl Toy for MagnetMarsh {
+    fn senses(&self) -> toy_kit::Senses {
+        // the field through the phone, or the compass where there is no field (`Sensors::field_on_screen`)
+        toy_kit::Senses {
+            shake: false,
+            gravity: false,
+            field: true,
+            heading: true,
+        }
+    }
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let size_pt = ctx.points();
         let (c, r, ry) = place(size_pt);

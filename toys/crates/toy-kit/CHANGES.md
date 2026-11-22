@@ -5,7 +5,20 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 ## v0.3.0 (unreleased)
 
-A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
+A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently, and a
+shell must move to the one frame core.
+
+- **One frame core, the chrome as data** (Nov 22, 2026: Terra native on every phone). `frame::Frame` drives a
+  toy on any platform's `wgpu::Surface` (the iPhone's `shell.rs`, the web's `toys/terra-web`, Android next);
+  everything around the toy is `chrome::Chrome` (its name and place, the mark, the sheet with its switches
+  and style's credit as fields, the demo's line, the postcard, the screen reader's buttons, the way back,
+  the senses it wants), read as JSON when it changes; `chrome::Out` carries haptics as intents
+  (`Ctx::feel(Haptic::Thud)`; `ctx.haptic()` is a tick) and a file asked for; the frame sends `chrome::In`
+  for what the reader did. New `Toy::about`, `back`/`go_back` (a frame's back button and Android's back
+  gesture) and `senses` (a frame runs only those: a shake by default). `In::Frame { native_chrome }`
+  stops the kit drawing its mark where the frame draws its own. The C ABI keeps the pixels, fingers,
+  senses and sound and replaces the twenty text calls with `toy_chrome`, `toy_events` and `toy_send`;
+  `Ctx::take_haptic` is `take_haptics`. `<shot>.shell.json` now holds the chrome.
 
 - **A film of a toy's scene** (`film::Film`): the toy draws its scene only when a new drawing is due, its own
   `fs_surface` reads it into a grid of cells (one R8 texel each) and its `fs_main` draws them once a drawing, shown every frame; with

@@ -1,31 +1,19 @@
-//! Terra on the web: the iPhone's library (`toys/terra`) on a canvas through WebGPU, with the iPhone
-//! shell's calls (`toys/ios/Sources/toy.h`) exported to JavaScript one for one, so `web/index.html` does
-//! what `main.swift` does (the demo's line, the sheet, the postcard's words, the title, the sound) in
-//! HTML. The data comes in from the page, fetched beside it (`tools/toys/web_build.sh`); the library
-//! fetches nothing.
+//! Terra on the web: the iPhone's library (`toys/terra`) on a canvas through WebGPU, on the one frame core
+//! (toy-kit's frame.rs) every platform shares, with its calls exported to JavaScript, so `index.html` is the
+//! web's frame as `main.swift` is the iPhone's: it reads the chrome as data (`chrome`, `events`) and draws it
+//! in HTML, and sends back what the reader did (`send`). The data comes in from the page, fetched beside it
+//! (`tools/toys/web_build.sh`); the library fetches nothing.
 #![cfg(target_arch = "wasm32")]
 
 use std::collections::HashMap;
 use terra::Terra;
-use toy_kit::{Ctx, Gpu, Host, MemoryAssets, Phase, PointerEvent, Toy};
+use toy_kit::{Frame, Host, MemoryAssets, Toy};
 use wasm_bindgen::prelude::*;
 
-/// Terra on a canvas.
+/// Terra on a canvas: the one frame core (toy-kit's frame.rs) on the browser's surface.
 #[wasm_bindgen]
 pub struct Shell {
-    /// (kept: in a browser, the device is lost once its instance is gone)
-    _instance: wgpu::Instance,
-    surface: wgpu::Surface<'static>,
-    config: wgpu::SurfaceConfiguration,
-    host: Host<Terra>,
-}
-
-fn text(c: Option<&std::ffi::CStr>) -> Option<String> {
-    c.map(|c| c.to_string_lossy().into_owned())
-}
-
-fn spot(p: Option<[f64; 2]>) -> Option<Vec<f64>> {
-    p.map(|p| p.to_vec())
+    frame: Frame<Terra>,
 }
 
 /// Starts Terra on `canvas` (`width` x `height` pixels at `dpr` pixels a point), its data the files
@@ -54,41 +42,24 @@ pub async fn start(
     let surface = instance
         .create_surface(wgpu::SurfaceTarget::Canvas(canvas))
         .map_err(|e| err(&e))?;
-    let gpu = Gpu::new(&instance, Some(&surface))
-        .await
-        .map_err(|e| err(&format!("{e:#}")))?;
-    let config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: gpu.format,
-        color_space: wgpu::SurfaceColorSpace::Srgb,
-        width: width.max(1),
-        height: height.max(1),
-        present_mode: wgpu::PresentMode::Fifo,
-        desired_maximum_frame_latency: 2,
-        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-        view_formats: vec![],
-    };
-    surface.configure(&gpu.device, &config);
     let data: HashMap<String, Vec<u8>> = names
         .into_iter()
         .zip(files.iter().map(|f| f.to_vec()))
         .collect();
-    let mut ctx = Ctx::new(
-        gpu,
-        Box::new(MemoryAssets(data)),
-        width.max(1),
-        height.max(1),
-        dpr,
-    );
-    (ctx.night, ctx.reduce_motion) = (night, reduce_motion);
-    let mut host = Host::<Terra>::new(ctx).map_err(|e| err(&format!("{e:#}")))?;
-    host.toy.settings(&mut host.ctx);
-    Ok(Shell {
-        _instance: instance,
+    let mut frame = Frame::<Terra>::start(
+        instance,
         surface,
-        config,
-        host,
-    })
+        width,
+        height,
+        dpr,
+        Box::new(MemoryAssets(data)),
+    )
+    .await
+    .map_err(|e| err(&format!("{e:#}")))?;
+    let h = &mut frame.host;
+    (h.ctx.night, h.ctx.reduce_motion) = (night, reduce_motion);
+    h.toy.settings(&mut h.ctx);
+    Ok(Shell { frame })
 }
 
 #[wasm_bindgen]
@@ -96,166 +67,77 @@ impl Shell {
     /// Opens the toy `id` a second after the first frame and stays in it (the page's `#<toy id>`);
     /// false if Terra has no such toy.
     pub fn open_toy(&mut self, id: &str) -> bool {
-        self.host.toy.open_toy(id)
+        self.frame.host.toy.open_toy(id)
     }
 
     pub fn resize(&mut self, width: u32, height: u32, dpr: f64) {
-        self.config.width = width.max(1);
-        self.config.height = height.max(1);
-        self.surface
-            .configure(&self.host.ctx.gpu.device, &self.config);
-        self.host.resize(width, height, dpr);
+        self.frame.resize(width, height, dpr);
     }
 
     /// A frame at `t` seconds (the page's monotonic clock); `now` is its wall clock.
     pub fn frame(&mut self, t: f64, now: f64) {
         toy_kit::set_wall_clock(now);
-        self.host.update(t);
-        match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(frame)
-            | wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
-                let view = frame.texture.create_view(&Default::default());
-                self.host.draw(&view);
-                self.host.ctx.gpu.queue.present(frame);
-            }
-            _ => self
-                .surface
-                .configure(&self.host.ctx.gpu.device, &self.config),
-        }
+        self.frame.frame(t);
     }
 
     /// A finger (or the mouse): phase 0 down, 1 move, 2 up, 3 cancel; points from the canvas's corner.
     pub fn pointer(&mut self, id: u32, phase: u32, x: f64, y: f64, t: f64) {
-        let phase = match phase {
-            0 => Phase::Down,
-            1 => Phase::Move,
-            2 => Phase::Up,
-            _ => Phase::Cancel,
-        };
-        self.host.pointer(PointerEvent {
-            id: id as u64,
-            phase,
-            x,
-            y,
-            t,
-        });
+        self.frame.pointer(id as u64, phase, x, y, t);
     }
 
     /// The device's own acceleration (g, gravity out; `devicemotion`'s `acceleration`) at `t` seconds: a
     /// few hard jolts are a shake, the open toy's.
     pub fn motion(&mut self, x: f64, y: f64, z: f64, t: f64) {
-        self.host.motion([x, y, z], t);
+        self.frame.motion([x, y, z], t);
     }
 
     /// What the phone feels: which way is down (g, the device's frame: `devicemotion`'s
     /// `accelerationIncludingGravity` turned round and divided by g) and the compass's heading (degrees from
     /// magnetic north); NaN where the browser gives none. A browser has no magnetic field.
     pub fn sense(&mut self, gx: f64, gy: f64, gz: f64, heading: f64) {
-        let g = [gx, gy, gz];
-        self.host.sense(toy_kit::Sensors {
-            gravity: g.iter().all(|v| v.is_finite()).then_some(g),
-            field: None,
-            heading: heading.is_finite().then_some(heading),
-        });
-    }
-
-    pub fn take_haptic(&mut self) -> bool {
-        self.host.take_haptic()
+        let nan = f64::NAN;
+        self.frame.sense([gx, gy, gz], [nan, nan, nan], heading);
     }
 
     pub fn set_night(&mut self, on: bool) {
-        self.host.set_night(on);
+        self.frame.host.set_night(on);
     }
 
     pub fn set_reduce_motion(&mut self, on: bool) {
-        self.host.set_reduce_motion(on);
+        self.frame.host.set_reduce_motion(on);
     }
 
     /// The page was away: the next frame's step is 0, not the time away.
     pub fn pause(&mut self) {
-        self.host.pause();
+        self.frame.pause();
     }
 
     /// What Terra keeps between visits (the page puts it in localStorage).
     pub fn save(&self) -> Option<String> {
-        self.host.toy.save()
+        self.frame.save()
     }
 
     pub fn restore(&mut self, s: &str) {
-        self.host.toy.restore(&mut self.host.ctx, s);
+        self.frame.restore(s);
     }
 
     /// Fills `out` with interleaved stereo at `rate` Hz (silence without a sound).
     pub fn audio(&self, out: &mut [f32], rate: f64) {
-        Host::<Terra>::audio(self.host.synth.as_ref(), out, 2, rate);
+        Host::<Terra>::audio(self.frame.host.synth.as_ref(), out, 2, rate);
     }
 
-    pub fn info_spot(&self) -> Option<Vec<f64>> {
-        spot(self.host.info_spot())
+    /// The chrome as JSON (toy-kit's chrome.rs), when it changed since the last call.
+    pub fn chrome(&mut self) -> Option<String> {
+        self.frame.chrome_json().map(str::to_string)
     }
 
-    pub fn info_line(&self) -> Option<String> {
-        text(self.host.info.line())
+    /// What Terra asks of the page (a JSON list of chrome.rs's `Out`), when anything.
+    pub fn events(&mut self) -> Option<String> {
+        self.frame.events_json()
     }
 
-    /// The mark's tap: the sheet opened or closed (or the demo, for a toy with a demo alone).
-    pub fn info_open(&mut self, t: f64) {
-        self.host.open_mark(t);
-    }
-
-    /// The sheet's "Show me".
-    pub fn demo_open(&mut self, t: f64) {
-        self.host.open_info(t);
-    }
-
-    pub fn rules_text(&self) -> Option<String> {
-        text(self.host.info.rules())
-    }
-
-    pub fn rules_open(&mut self) {
-        self.host.open_rules();
-    }
-
-    pub fn origins_text(&self) -> Option<String> {
-        text(self.host.info.origins())
-    }
-
-    pub fn origins_open(&mut self) {
-        self.host.open_origins();
-    }
-
-    /// The sheet's buttons, a line each ("demo", "origins"), while its rules show.
-    pub fn sheet_more(&self) -> Option<String> {
-        text(self.host.sheet_more())
-    }
-
-    pub fn switches_text(&self) -> Option<String> {
-        text(self.host.switches_text())
-    }
-
-    pub fn switch_set(&mut self, i: u32, on: bool) {
-        self.host.set_switch(i as usize, on);
-    }
-
-    /// Words Terra places (its postcard): the box, alpha and ink on a first line, then the lines.
-    pub fn label(&mut self) -> Option<String> {
-        text(self.host.label_text())
-    }
-
-    pub fn card_at_top(&self) -> bool {
-        self.host.card_at_top()
-    }
-
-    /// Terra's buttons (its lights, the Earth mark), a line each: label, a tab, x, a tab, y in points.
-    pub fn buttons(&mut self) -> String {
-        self.host.buttons_text().to_string_lossy().into_owned()
-    }
-
-    pub fn press(&mut self, i: u32, t: f64) {
-        self.host.press(i as usize, t);
-    }
-
-    pub fn title(&mut self) -> Option<String> {
-        text(self.host.title_text())
+    /// What the reader did in the page's controls (JSON: chrome.rs's `In`).
+    pub fn send(&mut self, json: &str) {
+        self.frame.send_json(json);
     }
 }

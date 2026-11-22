@@ -103,7 +103,14 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   - `check` (check.rs): the headless check. A plan of fingers (taps, drags, pinches, holds, raw
     down/move/up, a shake), its moments as PNG, a film of frames, the sound as WAV. Its header is the
     plan format.
-  - `ios_shell!(MyToy)`: the device's C ABI (`ios/Sources/toy.h`), one line in the toy's `lib.rs`.
+  - `frame` and `chrome`: the one frame core every platform's frame stands on (`Frame`, on any wgpu surface),
+    and everything around the toy as data (`Chrome`: its name and place, the mark, the sheet, the demo's line,
+    the postcard, the screen reader's buttons, the way back, the senses it wants), with haptics as intents
+    (`ctx.feel(Haptic::Thud)`) and the reader's answers back (`In`). The kit says what; each platform's
+    frame (`ios/`, `terra-web/`) draws it in its own controls. `Toy::about`, `back`/`go_back` and `senses`
+    feed it; a toy that reads `ctx.sensors` asks for them in `senses`.
+  - `ios_shell!(MyToy)`: the iPhone's C ABI over the frame core (`ios/Sources/toy.h`), one line in the toy's
+    `lib.rs`.
   - A host that links several toys (Terra) turns on the kit's `hosted` feature, which leaves each toy's own
     C ABI out, and exports its own with `ios_shell!(host MyHost)`; it drives the toys it holds through
     `Toy` as a shell does (`terra/src/rooms.rs`), on its own device and data.
@@ -113,7 +120,7 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     shell sets at the top (the song's name); `Toy::plays_music` puts the sound in the playback category
     (heard with the silent switch on).
   - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
-    mark); the shell reads them through `toy_buttons`. None by default.
+    mark); the frame reads them in the chrome's `buttons`. None by default.
 - `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a plain light in each toy's
   colour where it happens (`doors.rs`; lights that would touch gather into one ringed with their colours, and a
   touch comes nearer until they part). A touch on a light raises its card (`card.rs`, drawn by `veil.rs`): the

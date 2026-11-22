@@ -37,10 +37,11 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | The globe by day and night, its hand (drag, pinch, fling), project/unproject | `globe/` | ✓ | adrift-core, Nov 2 |
 | Real data: a manifest, files by name, the bundle or a directory | `assets.rs` | ✓ | |
 | Sound: a `Synth` on the audio thread | `lib.rs` | ✓ | |
-| The device's C ABI, `ios_shell!` | `shell.rs`, `ios.rs` | ✓ | |
-| A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptic` | `lib.rs` | ✓ | Terra, Nov 4 |
-| The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; `toy_switches_text`, `toy_switch_set`) | `switches.rs`, `info.rs`, `toys/ios`, `tools/kit/shell_text.py` | + | Murmuration and ten more, Nov 13; one sheet Nov 15; every globe toy Nov 16 (row 358) |
-| VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
+| The one frame core every platform stands on (`Frame`: a toy on any `wgpu::Surface`) and the chrome as data (`Chrome` out as JSON, `Out` events: haptics as intents and a file, `In` back: the sheet's controls, the way back; `Toy::about`, `back`, `go_back`, `senses`) | `frame.rs`, `chrome.rs` | ✓ | Terra on iPhone, web and Android, Nov 22 |
+| The iPhone's C ABI over the frame core, `ios_shell!` (`toy_chrome`, `toy_events`, `toy_send`) | `shell.rs`, `ios.rs` | ✓ | |
+| A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptics` | `lib.rs` | ✓ | Terra, Nov 4 |
+| The rules as switches, in the one mark's sheet (`Toy::switches`, `set_switch`; the chrome's `sheet.switches`, `In::Switch`) | `switches.rs`, `info.rs`, `chrome.rs`, `toys/ios`, `tools/kit/shell_text.py` | ✓ | Murmuration and ten more, Nov 13; one sheet Nov 15; every globe toy Nov 16 (row 358) |
+| Screen-reader buttons a toy names on screen (`Toy::buttons`, `press`; the chrome's `buttons`, `In::Press`) | `lib.rs`, `chrome.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
 | A toy's style from the history of animation, credited in one line at the foot of its sheet: "Drawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963." (`Toy::style`, `info::Style`; Terra passes its held toy's on) | `info.rs`, `lib.rs`, `toys/terra/src/rooms.rs` | ✓ | every styled toy, Nov 22 |
 | A film of a toy's scene: drawn only when due, read into a grid of cells, redrawn by the toy's own shader (`Film`) | `film.rs` | ✓ | The Wave's BEFLIX and Bats' pinscreen, Nov 21; Huddle's printout, Catatumbo's oscilloscope, Elkmont's engraving, Meander's sand, Nov 22 |

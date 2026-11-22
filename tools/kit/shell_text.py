@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
+"""The iPhone frame's chrome on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The demo's line, the sheet (the rules, their switches and buttons, or the origins in their place; toy-kit's
-info.rs, switches.rs), the toy's title line and its label (Terra's postcard) are set by the iOS shell in the
-system's text, so a check's frame lacks them; the check writes what was showing beside each shot as
-`<shot>.shell.json` (size, ppp, line, rules, origins, switches, more, label, top: the sheet hung from the top). This draws them as the shell lays them out, into
+The demo's line, the sheet (the rules, their style's credit, switches and buttons, or the origins in their
+place), the toy's title line and its label (Terra's postcard) are the frame's, set in the system's text, so a
+check's frame lacks them; the check writes the chrome showing beside each shot as `<shot>.shell.json` (size,
+ppp and `chrome`: toy-kit's chrome.rs as JSON). This draws them as the iPhone's frame lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
 
     python3 tools/kit/shell_text.py <check out dir> [...]     # every shot with a .shell.json under it
@@ -115,13 +115,12 @@ def sheet(img, text, k, top=False, switch_text=None, more=None):
         sheet_links(d, x0, w, y + 6, links, k)
 
 
-def label(img, text, k):
-    """A toy's own words (Toy::label): in its box, a heading (title 3, semibold), a quieter line (subheadline),
-    the rest plain (subheadline); dark ink or light, at the label's alpha."""
-    head, *lines = text.rstrip('\n').split('\n')
-    x, y, w, _h, a, dark = head.split('\t')
-    x, y, w, a = float(x), float(y), float(w), float(a)
-    ink = (28, 28, 30) if dark == '1' else (255, 255, 255)
+def label(img, lab, k):
+    """A toy's own words (Toy::label: its box, alpha, ink and lines): in its box, a heading (title 3, semibold),
+    a quieter line (subheadline), the rest plain (subheadline); dark ink or light, at the label's alpha."""
+    x, y, w, _h = lab['at']
+    a, lines = lab['alpha'], lab['lines']
+    ink = (28, 28, 30) if lab['dark'] else (255, 255, 255)
     fonts = [ImageFont.truetype(BOLD, round(20 * k)), ImageFont.truetype(FONT, round(15 * k)), ImageFont.truetype(FONT, round(15 * k))]
     alphas = [1.0, 0.6, 0.85]
     heights = [26, 20, 20]
@@ -184,21 +183,37 @@ def title(img, text, k):
     d.text(((W * k - tw) / 2, (SAFE_TOP + 14 + 4) * k), text, font=f, fill=(255, 255, 255, 140))
 
 
+def sheet_text(sh):
+    """The sheet's text as the frame sets it: the lines, then a blank line and the dimmer notes (the toy's own,
+    then its style's credit)."""
+    notes = ([sh['note']] if sh['note'] else []) + ([sh['style']['credit']] if sh.get('style') else [])
+    body = '\n'.join(sh['lines'])
+    return body + ('\n\n' + '\n'.join(notes) if notes else '')
+
+
+def draw(img, c, k):
+    """Everything the chrome `c` shows, over the shot."""
+    if c.get('label'):
+        label(img, c['label'], k)
+    sh = c.get('sheet')
+    if sh:
+        rules = sh['page'] == 'rules'
+        switches = ''.join(f"{s['label']}\t{1 if s['on'] else 0}\n" for s in sh['switches']) if rules else None
+        more = ('demo\n' if sh['demo'] else '') + ('origins\n' if sh['origins'] else '') if rules else None
+        sheet(img, sheet_text(sh), k, sh['top'], switches, more)
+    if c.get('title'):
+        title(img, c['title'], k)
+    if c.get('caption'):
+        caption(img, c['caption'], k)
+
+
 def main():
     for root in sys.argv[1:] or ['.']:
         for j in sorted(Path(root).rglob('*.shell.json')):
             s = json.loads(j.read_text())
             shot = j.with_name(j.name[: -len('.shell.json')] + '.png')
             img = Image.open(shot).convert('RGB')
-            if s.get('label'):
-                label(img, s['label'], s['ppp'])
-            if s.get('rules') is not None or s.get('origins'):
-                sheet(img, s.get('rules') or s.get('origins') or '', s['ppp'], s.get('top', False),
-                      s.get('switches') if s.get('rules') is not None else None, s.get('more'))
-            if s.get('title'):
-                title(img, s['title'], s['ppp'])
-            if s.get('line'):
-                caption(img, s['line'], s['ppp'])
+            draw(img, s['chrome'], s['ppp'])
             out = j.with_name(j.name[: -len('.shell.json')] + '.shell.png')
             img.save(out)
             print(out)

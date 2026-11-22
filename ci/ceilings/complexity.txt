@@ -61,7 +61,7 @@ toys/jam/src/lib.rs::pointer 128 29
 toys/jam/src/sound.rs::render 109 19
 toys/meander/src/bin/probe.rs::main 105 13
 toys/meander/src/sim.rs::step 102 11
-toys/meander/src/toy.rs::draw 291 29
+toys/meander/src/toy.rs::draw 255 29
 toys/meander/src/toy.rs::new 120 4
 toys/meander/src/toy.rs::pointer 110 20
 toys/murmuration/src/flock.rs::nearest 57 21
