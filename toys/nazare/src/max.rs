@@ -443,8 +443,6 @@ impl Max {
         table: &[[f32; 4]; 256],
     ) {
         let isize = self.ensure(gpu, size);
-        u.size[0] = isize[0] as f32;
-        u.size[1] = isize[1] as f32;
         // the angle one index pixel spans (rad), which the shader turns into its footprint on the sea
         u.phase[3] = 2.0 * u.fwd[3] / isize[1] as f32;
         gpu.queue

@@ -122,9 +122,10 @@ fn sea_smooth(q: vec2<f32>, foot: vec2<f32>) -> Sea {
 }
 
 // How much of a wave one pixel can carry: all of it while each wave covers four pixels or more on screen, none
-// under two (Nyquist), where its crests would only alias into bands. On screen a wave covers its length
-// foreshortened by the grazing angle, or, where it is steeper than the view is low and hides the next one's
-// back, its own height. `foot`: a pixel's width at this distance (m), the sine of the view's grazing angle.
+// under two (Nyquist), where its crests would only alias into bands. On screen a wave's crests repeat at its
+// length foreshortened by the grazing angle, until the view is lower than the waves are steep: then each
+// hides the next one's back, and what repeats on screen is each one's face, as tall as the wave. `foot`: a
+// pixel's width at this distance (m), the sine of the view's grazing angle.
 fn kept(foot: vec2<f32>, wavelength: f32, height: f32) -> f32 {
   let covers = max(wavelength * max(foot.y, 0.003), height);
   return 1.0 - smoothstep(0.25, 0.5, foot.x / max(covers, 1e-4));
@@ -195,7 +196,7 @@ fn wind_sea(q: vec2<f32>, d: vec3<f32>, t: f32, n: vec3<f32>, s: Sea) -> vec3<f3
     // a wave is foreshortened only as far as it runs along the view: its crests' spacing on screen
     let c = abs(dot(dir, run));
     let graze = 1.0 / length(vec2(c / max(foot.y, 0.003), sqrt(max(1.0 - c * c, 0.0))));
-    let w = kept(vec2(foot.x, graze), wavelength, 0.0);
+    let w = kept(vec2(foot.x, graze), wavelength, 2.0 * WIND_SLOPE / kw);
     let ph = kw * dot(dir, q) - sqrt(9.81 * kw) * u.eye.w + f32(i) * 2.39996;
     g += w * slope * cos(ph) * dir;
     lost += (1.0 - w) * 0.5 * slope * slope;
