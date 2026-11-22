@@ -98,6 +98,121 @@ impl Bore {
         });
     }
 
+    /// The moon eases to the age it was let go at.
+    fn ease_moon(&mut self, dt: f64) {
+        if self.drag.is_none() {
+            let to = age_moon(self.age);
+            let mut d = to - self.moon;
+            if d > 0.5 {
+                d -= 1.0;
+            } else if d < -0.5 {
+                d += 1.0;
+            }
+            self.moon = (self.moon + d * (dt * 6.0).min(1.0)).rem_euclid(1.0);
+        }
+    }
+
+    /// A cut: to the paper, the new tide, back.
+    fn run_cut(&mut self, t: f64) {
+        if let Some(c) = &mut self.cut {
+            let k = t - c.at;
+            if !c.swapped && k >= 0.45 {
+                c.swapped = true;
+                let to = c.to;
+                self.begin(to);
+            }
+            let k = t - self.cut.as_ref().map_or(t, |c| c.at);
+            self.fade = if k < 0.45 {
+                smooth(0.0, 0.45, k) as f32
+            } else {
+                1.0 - smooth(0.45, 1.25, k) as f32
+            };
+            if k > 1.25 {
+                self.cut = None;
+                self.fade = 0.0;
+            }
+        }
+    }
+
+    /// The spray where the front meets the stones (and where the crowd steps back from it), how hard it
+    /// slaps, and the promenade left wet.
+    fn splash(
+        &mut self,
+        ctx: &mut Ctx,
+        bore: Option<(Front, f64, f64)>,
+        dt: f64,
+    ) -> (Option<(f64, f64)>, f64) {
+        let mut burst = None;
+        let mut slap = 0.0;
+        if let Some((f, z, k)) = bore {
+            let level = f.behind;
+            let x = (view::WALL_TOP - level).max(0.0);
+            let zi = z + bow(x, z);
+            if zi > -20.0 && zi < 2500.0 {
+                let broken = smooth(1.2, 1.45, f.froude);
+                self.spray
+                    .burst([x, level, zi], f.height() * k, broken, dt, self.rate);
+                let near = (1.0 - zi.max(0.0) / 400.0).max(0.0);
+                burst = Some((zi, (f.height() * (0.5 + broken) * k).min(1.0)));
+                slap = (f.height() * (0.5 + broken) * k * near).min(1.0);
+                if zi < 40.0 && slap > 0.3 && !self.buzzed {
+                    self.buzzed = true;
+                    ctx.haptic();
+                }
+                if f.height() > 0.7 && broken > 0.5 && zi < 25.0 {
+                    self.wet = (self.wet + dt as f32 * 0.8).min(1.0);
+                }
+            }
+        } else {
+            self.buzzed = false;
+        }
+        self.wet = (self.wet - dt as f32 * 0.03).max(0.0);
+        (burst, slap)
+    }
+
+    /// The eye goes down to the rail as the bore comes close, and back up the stand once it's past.
+    fn follow(&mut self, bore: Option<(Front, f64, f64)>, dt: f64) {
+        let (want, zi) = match bore {
+            Some((_, z, k)) if self.passed.is_none() => (smooth(420.0, 90.0, z) * k, z),
+            Some(_) => (0.0, self.watch),
+            // a tide with no front: go down to the steps and watch the water climb them
+            None if self.passed.is_none() => (0.3, 60.0),
+            None => (0.0, self.watch),
+        };
+        let speed = if want > self.near { 0.5 } else { 0.45 };
+        self.near += (want - self.near).clamp(-speed * dt, speed * dt);
+        self.watch += (zi.max(-10.0) - self.watch) * (dt * 2.0).min(1.0);
+        if self.cut.as_ref().is_some_and(|c| c.swapped) {
+            self.near = 0.0;
+        }
+        self.cam = Camera::following(self.near, self.watch);
+    }
+
+    /// What's heard: the roar as it nears, its hiss as it breaks.
+    fn voice(&mut self, bore: Option<(Front, f64, f64)>, slap: f64) {
+        let (roar, hiss, pan) = match bore {
+            Some((f, z, k)) => {
+                let near = 1.0 / (1.0 + z.abs() / 900.0);
+                let broken = smooth(1.15, 1.45, f.froude);
+                (
+                    (f.height() * k * near * 0.9) as f32,
+                    (broken * k * near) as f32,
+                    (0.3 - 0.5 * near) as f32,
+                )
+            }
+            None => (0.0, 0.0, 0.0),
+        };
+        let crowd = 0.25 + roar.min(1.0) * 0.5;
+        let quiet = 1.0 - self.fade;
+        self.sound.set(
+            roar.min(1.0) * quiet,
+            hiss.min(1.0) * quiet,
+            crowd * quiet,
+            slap as f32 * quiet,
+            pan,
+        );
+    }
+
     /// The front, if the tide has one: where it is down the river from us (m) and how strong (0..1).
     fn bore(&self) -> Option<(Front, f64, f64)> {
         let f = self.front?;
@@ -208,35 +323,8 @@ impl Toy for Bore {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.t = t;
         let dt = dt.min(0.1);
-        if self.drag.is_none() {
-            let to = age_moon(self.age);
-            let mut d = to - self.moon;
-            if d > 0.5 {
-                d -= 1.0;
-            } else if d < -0.5 {
-                d += 1.0;
-            }
-            self.moon = (self.moon + d * (dt * 6.0).min(1.0)).rem_euclid(1.0);
-        }
-        // a cut: to the paper, the new tide, back
-        if let Some(c) = &mut self.cut {
-            let k = t - c.at;
-            if !c.swapped && k >= 0.45 {
-                c.swapped = true;
-                let to = c.to;
-                self.begin(to);
-            }
-            let k = t - self.cut.as_ref().map_or(t, |c| c.at);
-            self.fade = if k < 0.45 {
-                smooth(0.0, 0.45, k) as f32
-            } else {
-                1.0 - smooth(0.45, 1.25, k) as f32
-            };
-            if k > 1.25 {
-                self.cut = None;
-                self.fade = 0.0;
-            }
-        }
+        self.ease_moon(dt);
+        self.run_cut(t);
         // the river, at its pace
         self.rate += (self.pace() - self.rate) * (dt * 3.0).min(1.0);
         self.tide.run(dt * self.rate);
@@ -257,78 +345,18 @@ impl Toy for Bore {
         if next && self.cut.is_none() {
             self.cut_to(slot(self.on, self.age));
         }
-        // the spray where the front meets the stones, and the crowd stepping back from it
-        let mut burst = None;
-        let mut slap = 0.0;
-        if let Some((f, z, k)) = bore {
-            let level = f.behind;
-            let x = (view::WALL_TOP - level).max(0.0);
-            let zi = z + bow(x, z);
-            if zi > -20.0 && zi < 2500.0 {
-                let broken = smooth(1.2, 1.45, f.froude);
-                self.spray
-                    .burst([x, level, zi], f.height() * k, broken, dt, self.rate);
-                let near = (1.0 - zi.max(0.0) / 400.0).max(0.0);
-                burst = Some((zi, (f.height() * (0.5 + broken) * k).min(1.0)));
-                slap = (f.height() * (0.5 + broken) * k * near).min(1.0);
-                if zi < 40.0 && slap > 0.3 && !self.buzzed {
-                    self.buzzed = true;
-                    ctx.haptic();
-                }
-                if f.height() > 0.7 && broken > 0.5 && zi < 25.0 {
-                    self.wet = (self.wet + dt as f32 * 0.8).min(1.0);
-                }
-            }
-        } else {
-            self.buzzed = false;
-        }
-        self.wet = (self.wet - dt as f32 * 0.03).max(0.0);
+        let (burst, slap) = self.splash(ctx, bore, dt);
         let tide = &self.tide;
         self.spray.update(dt, self.rate, |x, z| {
             ground(x).max(tide.eta_at(YANGUAN - z))
         });
         self.crowd.update(t, dt, burst);
-        // the eye goes down to the rail as the bore comes close, and back up the stand once it's past
-        let (want, zi) = match bore {
-            Some((_, z, k)) if self.passed.is_none() => (smooth(420.0, 90.0, z) * k, z),
-            Some(_) => (0.0, self.watch),
-            // a tide with no front: go down to the steps and watch the water climb them
-            None if self.passed.is_none() => (0.3, 60.0),
-            None => (0.0, self.watch),
-        };
-        let speed = if want > self.near { 0.5 } else { 0.45 };
-        self.near += (want - self.near).clamp(-speed * dt, speed * dt);
-        self.watch += (zi.max(-10.0) - self.watch) * (dt * 2.0).min(1.0);
-        if self.cut.as_ref().is_some_and(|c| c.swapped) {
-            self.near = 0.0;
-        }
-        self.cam = Camera::following(self.near, self.watch);
+        self.follow(bore, dt);
         if let Some((f, z, k)) = bore {
             let broken = smooth(1.2, 1.45, f.froude);
             self.spray.roll(z, f.behind, f.height() * k, broken, dt);
         }
-        // what's heard: the roar as it nears, its hiss as it breaks
-        let (roar, hiss, pan) = match bore {
-            Some((f, z, k)) => {
-                let near = 1.0 / (1.0 + z.abs() / 900.0);
-                let broken = smooth(1.15, 1.45, f.froude);
-                (
-                    (f.height() * k * near * 0.9) as f32,
-                    (broken * k * near) as f32,
-                    (0.3 - 0.5 * near) as f32,
-                )
-            }
-            None => (0.0, 0.0, 0.0),
-        };
-        let crowd = 0.25 + roar.min(1.0) * 0.5;
-        let quiet = 1.0 - self.fade;
-        self.sound.set(
-            roar.min(1.0) * quiet,
-            hiss.min(1.0) * quiet,
-            crowd * quiet,
-            slap as f32 * quiet,
-            pan,
-        );
+        self.voice(bore, slap);
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
