@@ -5,7 +5,8 @@
 //! hillside, in for the lizards. painting-company row 257.
 //!
 //! The model is `sim.rs` (a stochastic cyclic automaton on the CPU, a few steps a second, each step's
-//! flips shown at their own moments); `hill.wgsl` draws everything from one texel a rock.
+//! flips shown at their own moments); `hill.wgsl` draws everything from one texel a rock, as John Whitney's
+//! *Permutations* drew its dots.
 
 pub mod sim;
 
@@ -18,7 +19,7 @@ const H: usize = 512;
 /// Steps of the rule a second.
 const STEP_HZ: f64 = 2.2;
 /// A rock's size at the opening, points; and how far a pinch goes.
-const OPEN_PT: f64 = 3.0;
+const OPEN_PT: f64 = 1.5;
 /// (the least is also never less than the hill filling the screen: it never shows twice)
 const MIN_PT: f64 = 1.1;
 const MAX_PT: f64 = 90.0;
@@ -439,6 +440,15 @@ impl Toy for Throats {
                 [s[0] * 0.7, s[1] * 0.55],
             )],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Permutations",
+            maker: "John Whitney",
+            place: "UCLA, Los Angeles",
+            year: 1968,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {

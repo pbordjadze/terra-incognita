@@ -49,7 +49,26 @@ it gave muddy patches, not arms.
 
 ## Drawn
 
-The hillside (soil, gravel, granite outcrops, sage, summer grass meadows, the afternoon sun from the
-upper left), the lizards' bodies, their running in and off, push-ups, the speed of the game, and the
-size of the hill (512 x 512 territories, a torus). A side-blotched lizard's throat is not seen from
-above: the toy shows each lizard's colour on its chin, shoulders and flanks.
+The speed of the game and the size of the hill (512 x 512 territories, a torus). Outcrops and shrubs hold
+no territory and are left black.
+
+## The look
+
+Drawn in the style of John Whitney's *Permutations* (UCLA, Los Angeles, 1968), made with Jack Citron on
+an IBM System/360 and its 2250 display.
+
+- "Architectures of color dots that develop pattern while displaying a kinetic rhythm", "constructed
+  entirely off the black-and-white monitor of a large computer system (IBM 360, IBM 2250 Display, written
+  in GRAF and FORTRAN)"; "color was added by editing with an optical printer" (Visual Music Archive,
+  *Permutations*). The 2250 could "control an external camera to film image sequences programmed by
+  punched cards" (Animation Studies blog, *Experiments in motion graphics, or when John Whitney met Jack
+  Citron and the IBM 2250*). "Recorded in black and white from the monitor of an IBM 360 mainframe…
+  Color was added afterwards" (Motionographer, *John Whitney: Permutations*).
+- So each territory is a dot of light on black (`hill.wgsl`), and each throat's colour is its own pass:
+  orange, blue and yellow dots are printed separately, each pass a little off the others, differently
+  every frame; 24 frames a second.
+
+**Drawn, not sourced:** the dots on a lattice that sways on two slow waves and swells a little as a slow
+pulse runs out across the field; a newcomer's dot swelling in and the loser's opening into a fading ring;
+close in, each dot a rosette of six turned to its lizard's heading; the dots' bloom and the print's grain;
+the three colours (the toy's own throats).
