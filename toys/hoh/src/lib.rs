@@ -15,7 +15,7 @@ use draw::{Fern, Scene, View, EYE};
 use forest::{Forest, Z0};
 use toy_kit::backdrop::BackdropParams;
 use toy_kit::field::Field;
-use toy_kit::info::{Demo, Rules, Stroke};
+use toy_kit::info::{Demo, Rules, Stroke, Style};
 use toy_kit::paint::Painter;
 use toy_kit::switches::Switch;
 use toy_kit::{Ctx, Phase, PointerEvent, Synth, Toy};
@@ -303,6 +303,15 @@ impl Toy for Hoh {
                 [0.85 * w, 0.66 * h],
             )],
         ))
+    }
+
+    fn style(&self) -> Option<Style> {
+        Some(Style {
+            name: "L'Idée",
+            maker: "Berthold Bartosch",
+            place: "Paris",
+            year: 1932,
+        })
     }
 
     fn rules(&self) -> Option<Rules> {

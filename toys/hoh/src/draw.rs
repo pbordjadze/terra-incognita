@@ -1,10 +1,11 @@
 //! The stand as the eye sees it, standing on the valley floor: the trunks rising out of the top of
 //! the picture into the canopy, the young trees' cones, the logs with their moss and root wads, the
 //! stilts, sword ferns, the light let down through a gap; far off, all of it goes into the mist.
-//! Painted far to near (toy-kit paint.rs); the floor and the mist are the field's (scene.wgsl).
+//! Painted far to near (toy-kit paint.rs), each thing cut from the card of its level (`card`, after
+//! Bartosch's *L'Idée*); the floor and the mist are the field's (scene.wgsl).
 
 use crate::forest::{Forest, Log, Tree, FALL_S, Z0};
-use toy_kit::paint::Painter;
+use toy_kit::paint::{Painter, Shape};
 
 /// The eye's height above the floor (m): standing on a low log.
 pub const EYE: f32 = 6.5;
@@ -61,6 +62,33 @@ fn rgba(c: [f32; 3], a: f32) -> [f32; 4] {
 }
 fn scale3(c: [f32; 3], k: f32) -> [f32; 3] {
     [c[0] * k, c[1] * k, c[2] * k]
+}
+
+/// Drawn as Berthold Bartosch made *L'Idée* (1932; SOURCES.md): cut-outs on up to four levels of glass,
+/// "several layers of different types of paper from semi-transparent to thick cardboard", lit from behind,
+/// so the nearest level is solid black card and each farther one a thinner paper, paler as more light comes
+/// through it. Its tone for a thing `z` metres off.
+pub const CARDS: [f32; 4] = [0.012, 0.17, 0.30, 0.47];
+pub fn level(z: f32) -> usize {
+    if z < 18.0 {
+        0
+    } else if z < 30.0 {
+        1
+    } else if z < 50.0 {
+        2
+    } else {
+        3
+    }
+}
+
+/// Cuts the shapes painted since `from` out of the card of their level: one flat tone, their own outline
+/// kept. Card is opaque, so what was drawn half see-through is cut solid; only the faintest stay faint.
+fn card(p: &mut Painter, from: usize, z: f32) {
+    let g = CARDS[level(z)];
+    for s in &mut p.shapes_over[from..] {
+        let a = (s.color[3] * 3.0).min(1.0);
+        s.color = [g * a, g * a, g * 1.04 * a, a];
+    }
 }
 
 pub fn hash(seed: u32, i: u32) -> f32 {
@@ -155,7 +183,10 @@ impl Scene<'_> {
             items.push((fe.z, Item::Fern(i)));
         }
         items.sort_by(|a, b| b.0.total_cmp(&a.0));
-        for (_, it) in &items {
+        // the light's lather is on the glass at the back: every cut-out comes in front of it
+        self.shafts(p);
+        for (z, it) in &items {
+            let from = p.shapes_over.len();
             match *it {
                 Item::Tree(i) => self.tree(p, &f.trees[i], None),
                 Item::Fall(i) => {
@@ -165,8 +196,8 @@ impl Scene<'_> {
                 Item::Log(i, u0, u1, top) => self.log(p, &f.logs[i], u0, u1, top),
                 Item::Fern(i) => self.fern(p, &self.ferns[i]),
             }
+            card(p, from, *z);
         }
-        self.shafts(p);
     }
 
     fn k(&self, z: f32) -> f32 {
@@ -551,7 +582,9 @@ impl Scene<'_> {
     fn shafts(&self, p: &mut Painter) {
         let f = self.forest;
         for (c, light) in f.cells() {
+            // none on the black card in front: the lather is on the glass behind it
             if light < 0.45
+                || level(c[1]) == 0
                 || c[1] > 55.0
                 || hash(((c[0] + 99.0) * 7.0) as u32, (c[1] * 13.0) as u32) > 0.18
             {
@@ -564,7 +597,18 @@ impl Scene<'_> {
             let top = [g[0] - 0.35 * self.view.horizon, -0.1 * self.view.horizon];
             let a = (light - 0.45) * 0.07 * (1.0 - fog(c[1]) * 0.6);
             let w = Forest::CELL * 0.35 * k;
-            p.glow(top, g, w, w * 2.0, [0.95, 0.97, 0.85, a]);
+            // lather on the glass at the back, lit from behind (the film's halos and fog): milky white,
+            // laid over the backdrop but under every cut-out, so the card in front stays black
+            let a = (a * 3.0).min(1.0);
+            p.shapes_over.push(Shape {
+                a: top,
+                b: g,
+                r: w,
+                ring: 0.0,
+                soft: w * 2.0,
+                _pad: 0.0,
+                color: [0.92 * a, 0.92 * a, 0.9 * a, a],
+            });
         }
         // a fall's dust and needles drifting down where it landed (the first seconds after)
         for fl in &f.falls {

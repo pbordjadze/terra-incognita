@@ -58,3 +58,26 @@ None of it recorded.
 - National Park Service, *Temperate Rain Forests*: https://www.nps.gov/olym/learn/nature/temperate-rain-forests.htm
 - Wikipedia, *Hoh Rainforest*: https://en.wikipedia.org/wiki/Hoh_Rainforest
 - Wikipedia, *Nurse log*: https://en.wikipedia.org/wiki/Nurse_log
+
+## The look
+
+Drawn in the style of Berthold Bartosch's *L'Idée* (*The Idea*, 1932), after Frans Masereel's woodcut novel.
+
+- "Bartosch used complicated techniques with multiple layers of superimposed animation"; "The film required
+  45,000 frames of up to four levels of animation each"; "Bartosch combined drawings with hinged cardboard
+  cutout characters"; "The eerie atmosphere recalls German Expressionist films" (Wikipedia, *The Idea (1932
+  film)*).
+- "The film's characters and backdrops were composed of several layers of different types of paper from
+  semi-transparent to thick cardboard." "Special effects like halos, smoke and fog were made with lather
+  spread on glass plates and lit from behind." "In 1930 Bartosch moved to Paris and created the 30 minute
+  film entitled 'L'Idée'" (Wikipedia, *Berthold Bartosch*.)
+- "with a lot of soft-focus, and milky effects"; "a multi-plane camera of his own design, using several glass
+  plates below each other" (Dr. Grob's Animation Review, *L'Idée*, 2017).
+- So the stand is cut, not painted (`draw.rs`): everything is set on one of four levels by its distance, the
+  nearest of black card, each farther one a thinner, paler paper with more of the light behind it coming
+  through; each shape keeps its outline and loses its colour. The light let down through the canopy, and the
+  mist far off, are lather on glass lit from behind (`scene.wgsl`, and the shafts' glows in `draw.rs`).
+
+**Drawn, not sourced:** the four tones and the distances that divide the levels, the torn edges between the
+floor's cards, the lather's texture and drift, the grain. The forest's colours (moss green, the mist) are
+no longer drawn.
