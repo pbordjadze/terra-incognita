@@ -19,6 +19,11 @@ struct U {
 const TAU: f32 = 6.2831853;
 const LAND_M: f32 = 200.0;
 const BREAK: f32 = 1.0;
+// the wind's chop: how many waves, each one's slope (amplitude × wavenumber), the way the wind blows (rad
+// from east: the evening's northwesterly, toward the south-southeast)
+const WIND_WAVES: i32 = 14;
+const WIND_SLOPE: f32 = 0.022;
+const WIND_TO: f32 = -1.2;
 
 struct VO { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs_main(@builtin(vertex_index) vi: u32) -> VO {
@@ -108,47 +113,52 @@ fn shape(u0: f32, lean: f32, ka: f32) -> vec3<f32> {
   return vec3(e + lip + 0.5 * ka * (2.0 * e * e - 1.0), front_face, behind);
 }
 
-fn sea_at(q: vec2<f32>, far: f32) -> Sea {
-  return sea_from(blocks(q), q, far);
+fn sea_at(q: vec2<f32>, foot: vec2<f32>) -> Sea {
+  return sea_from(blocks(q), q, foot);
 }
 
-fn sea_smooth(q: vec2<f32>, far: f32) -> Sea {
-  return sea_from(blocks_smooth(q), q, far);
+fn sea_smooth(q: vec2<f32>, foot: vec2<f32>) -> Sea {
+  return sea_from(blocks_smooth(q), q, foot);
 }
 
-fn sea_from(k: array<vec4<f32>, 3>, q: vec2<f32>, far: f32) -> Sea {
+// How much of a wave one pixel can carry: all of it while each wave covers four pixels or more on screen, none
+// under two (Nyquist), where its crests would only alias into bands. On screen a wave's crests repeat at its
+// length foreshortened by the grazing angle, until the view is lower than the waves are steep: then each
+// hides the next one's back, and what repeats on screen is each one's face, as tall as the wave. `foot`: a
+// pixel's width at this distance (m), the sine of the view's grazing angle.
+fn kept(foot: vec2<f32>, wavelength: f32, height: f32) -> f32 {
+  let covers = max(wavelength * max(foot.y, 0.003), height);
+  return 1.0 - smoothstep(0.25, 0.5, foot.x / max(covers, 1e-4));
+}
+
+fn foot_at(t: f32, graze: f32) -> vec2<f32> {
+  return vec2(t * u.phase.w, abs(graze));
+}
+
+fn sea_from(k: array<vec4<f32>, 3>, q: vec2<f32>, foot: vec2<f32>) -> Sea {
   var s: Sea;
   s.land = smoothstep(0.47, 0.53, k[0].a);
   let depth = select(800.0 * pow(min(k[0].a, 0.43) / 0.43, 2.0), 60.0 * k[1].a, k[1].a < 0.98);
   s.ground = select(depth, (k[0].a - 0.5) * 2.0 * LAND_M, s.land > 0.5);
   // the sets: a group of big waves every so often, at the group speed
   let g = atan2(k[2].g - 0.5, k[2].r - 0.5) / TAU;
-  let sets = 0.3 + 0.7 * pow(0.5 + 0.5 * cos(TAU * (g - u.phase.y)), 6.0);
-  // each train's phase now, its height (crest to trough, m) in this set, flattened with distance where the
-  // crests are finer than the screen shows
-  let fade = 1.0 - smoothstep(4000.0, 14000.0, far);
+  let sets = 0.45 + 0.55 * pow(0.5 + 0.5 * cos(TAU * (g - u.phase.y)), 6.0);
+  // each train's phase now and its height (crest to trough, m) in this set, kept only where a pixel can
+  // carry its crests (the local wavelength, shortened over the shallows)
+  let d = max(depth, 0.5);
+  let kk = u.phase.z / max(tanh(u.phase.z * d), 0.05);
   let ph1 = atan2(k[0].g - 0.5, k[0].r - 0.5);
   let ph2 = atan2(k[1].g - 0.5, k[1].r - 0.5);
-  let h1 = k[0].b * u.grid.w * sets * fade;
-  let h2 = k[1].b * u.grid.w * sets * fade;
-  let d = max(depth, 0.5);
+  let h1 = k[0].b * u.grid.w * sets * kept(foot, TAU / kk, k[0].b * u.grid.w * sets);
+  let h2 = k[1].b * u.grid.w * sets * kept(foot, TAU / kk, k[1].b * u.grid.w * sets);
   s.near = (h1 + h2) / (BREAK * d);
   let lean = clamp((s.near - 0.4) / 0.4, 0.0, 1.0);
-  let kk = u.phase.z / max(tanh(u.phase.z * d), 0.05);
   let w1 = shape(TAU * u.phase.x - ph1, lean, min(kk * h1 * 0.5, 0.4));
   let w2 = shape(TAU * u.phase.x - ph2, lean, min(kk * h2 * 0.5, 0.4));
   var z = 0.5 * h1 * w1.x + 0.5 * h2 * w2.x;
-  // the short swell the field can't carry: straight crests at the open sea's spacing, faded with distance
-  // before they alias
-  let short_fade = clamp(1.0 - far * length(u.size.xy) / 60.0, 0.0, 1.0);
+  // the short swell the field can't carry: straight crests at the open sea's spacing, kept as the trains are
+  let short_fade = kept(foot, TAU / max(length(u.size.xy), 1e-4), u.up.w * sets);
   z += 0.5 * u.up.w * sets * short_fade * cos(TAU * u.phase.x - dot(u.size.xy, q));
-  // Max's own texture: a few long-crested sinusoids of the wind's chop, fading with distance
-  // (smoothed off a standing face, where it would only streak it)
-  let chop_fade = (1.0 - 0.85 * lean * max(w1.y, w2.y)) / (1.0 + far / 400.0);
-  let tt = u.eye.w;
-  z += chop_fade * (0.25 * sin(dot(q, vec2(0.21, 0.07)) - 1.3 * tt)
-                  + 0.18 * sin(dot(q, vec2(0.09, 0.26)) - 1.1 * tt + 1.7)
-                  + 0.12 * sin(dot(q, vec2(-0.31, 0.19)) - 1.6 * tt + 4.1));
   s.crest = max(pow(max(w1.x, -1.0) * 0.5 + 0.5, 6.0) * step(2.0, h1), pow(max(w2.x, -1.0) * 0.5 + 0.5, 6.0) * step(2.0, h2));
   s.front = max(w1.y, w2.y);
   s.behind = max(w1.z * step(2.0, h1), w2.z * step(2.0, h2));
@@ -163,6 +173,36 @@ fn land_at(q: vec2<f32>) -> f32 {
 
 fn elevation_index(e: f32, base: f32) -> f32 {
   return base + clamp(floor(e / 50.0 * 63.0), 0.0, 63.0);
+}
+
+// The wind's chop, in the shading only: a spectrum of small waves (2 to 30 m, slopes of a light wind's sea)
+// spread about the wind, each moving at its own deep-water speed. Each is kept only as far as the pixel's
+// footprint along its direction can carry it; what the footprint averages away still tilts the sea toward the
+// eye, as a rough sea seen low shows the faces turned to it, so the distance greys toward the sky smoothly
+// instead of banding. Calmed on a standing face, where it would streak it.
+fn wind_sea(q: vec2<f32>, d: vec3<f32>, t: f32, n: vec3<f32>, s: Sea) -> vec3<f32> {
+  let run = normalize(d.xy + vec2(1e-6, 0.0));
+  let foot = foot_at(t, dot(d, n));
+  let lean = clamp((s.near - 0.4) / 0.4, 0.0, 1.0);
+  let slope = WIND_SLOPE * (1.0 - 0.85 * lean * s.front);
+  var g = vec2(0.0);
+  var lost = 0.0;
+  for (var i = 0; i < WIND_WAVES; i++) {
+    let f = f32(i) / f32(WIND_WAVES - 1);
+    let wavelength = 2.0 * pow(15.0, f);
+    let kw = TAU / wavelength;
+    let ang = WIND_TO + 1.05 * (2.0 * fract(f32(i) * 0.618034 + 0.31) - 1.0);
+    let dir = vec2(cos(ang), sin(ang));
+    // a wave is foreshortened only as far as it runs along the view: its crests' spacing on screen
+    let c = abs(dot(dir, run));
+    let graze = 1.0 / length(vec2(c / max(foot.y, 0.003), sqrt(max(1.0 - c * c, 0.0))));
+    let w = kept(vec2(foot.x, graze), wavelength, 2.0 * WIND_SLOPE / kw);
+    let ph = kw * dot(dir, q) - sqrt(9.81 * kw) * u.eye.w + f32(i) * 2.39996;
+    g += w * slope * cos(ph) * dir;
+    lost += (1.0 - w) * 0.5 * slope * slope;
+  }
+  g += 0.8 * sqrt(lost) * run;
+  return normalize(vec3(n.xy / n.z - g, 1.0));
 }
 
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
@@ -191,7 +231,8 @@ fn elevation_index(e: f32, base: f32) -> f32 {
       let p = eye + d * t;
       var sz = 0.0;
       // up close, filtered exactly (as the shading is), so a thin lip isn't stepped over
-      if (t < 400.0) { sz = sea_from(tap(p.xy / u.grid.z, 1.0), p.xy, t).z; } else { sz = sea_at(p.xy, t).z; }
+      let foot = foot_at(t, d.z);
+      if (t < 400.0) { sz = sea_from(tap(p.xy / u.grid.z, 1.0), p.xy, foot).z; } else { sz = sea_at(p.xy, foot).z; }
       if (p.z < sz) { hi = t; hit = true; break; }
       lo = t;
     }
@@ -203,15 +244,17 @@ fn elevation_index(e: f32, base: f32) -> f32 {
   for (var j = 0; j < 9; j++) {
     let m = 0.5 * (lo + hi);
     let p = eye + d * m;
-    if (p.z < sea_smooth(p.xy, m).z) { hi = m; } else { lo = m; }
+    if (p.z < sea_smooth(p.xy, foot_at(m, d.z)).z) { hi = m; } else { lo = m; }
   }
   let t = hi;
   let p = eye + d * t;
-  let s = sea_smooth(p.xy, t);
+  let foot = foot_at(t, d.z);
+  let s = sea_smooth(p.xy, foot);
   let e = clamp(t * 0.003, 0.4, 25.0);
-  let zx = sea_smooth(p.xy + vec2(e, 0.0), t).z - sea_smooth(p.xy - vec2(e, 0.0), t).z;
-  let zy = sea_smooth(p.xy + vec2(0.0, e), t).z - sea_smooth(p.xy - vec2(0.0, e), t).z;
-  let nrm = normalize(vec3(-zx / (2.0 * e), -zy / (2.0 * e), 1.0));
+  let zx = sea_smooth(p.xy + vec2(e, 0.0), foot).z - sea_smooth(p.xy - vec2(e, 0.0), foot).z;
+  let zy = sea_smooth(p.xy + vec2(0.0, e), foot).z - sea_smooth(p.xy - vec2(0.0, e), foot).z;
+  let swell_n = normalize(vec3(-zx / (2.0 * e), -zy / (2.0 * e), 1.0));
+  var nrm = swell_n;
   if (s.land > 0.5) {
     // the land: which ground (sand low, limestone where steep, scrub on top, the town's walls on the
     // headland's south side), then the angle of its normal toward the sun
@@ -226,7 +269,8 @@ fn elevation_index(e: f32, base: f32) -> f32 {
     idx = 128.0 + m * 16.0 + clamp(floor(lam * 15.99), 0.0, 15.0);
     return vec4(idx / 255.0, 0.0, 0.0, 1.0);
   }
-  // the sea: reflect, and see whether the reflection meets the land on its way to the sky
+  // the sea: the wind's chop on the swell, then reflect, and see whether the reflection meets the land on its way to the sky
+  nrm = wind_sea(p.xy, d, t, swell_n, s);
   let r = reflect(d, nrm);
   let rz = abs(r.z);
   var blocked = false;

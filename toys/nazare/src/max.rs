@@ -238,7 +238,7 @@ pub struct TraceU {
     /// toward the sun, and its glitter's width (cos)
     pub sun: [f32; 4],
     /// the swell's phase now (cycles), the sets' phase now (cycles), the open sea's wavenumber, the
-    /// turned-back train's share
+    /// angle an index pixel spans (rad; set by `render`)
     pub phase: [f32; 4],
     /// the floor's cells across, down, a cell (m), H_FULL
     pub grid: [f32; 4],
@@ -443,8 +443,8 @@ impl Max {
         table: &[[f32; 4]; 256],
     ) {
         let isize = self.ensure(gpu, size);
-        u.size[0] = isize[0] as f32;
-        u.size[1] = isize[1] as f32;
+        // the angle one index pixel spans (rad), which the shader turns into its footprint on the sea
+        u.phase[3] = 2.0 * u.fwd[3] / isize[1] as f32;
         gpu.queue
             .write_buffer(&self.trace_u, 0, bytemuck::bytes_of(&u));
         gpu.queue
