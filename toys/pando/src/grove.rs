@@ -237,9 +237,38 @@ impl Grove {
             })
             .collect();
         pen.path(p, &pts, true);
-        // the leaves inside: one mark to about every six points square of crown
+        // the stem going on up inside the crown, glimpsed between the leaves, and its first limbs
+        let sw = cam.len(s * 0.05);
+        if sw > 0.8 * ppp {
+            for k in 0..6u32 {
+                let y0 = 0.95 - k as f32 * 0.22;
+                if hash(tr.seed ^ (k * 7 + 3)) < 0.3 {
+                    continue;
+                }
+                let (u0, u1) = (y0, y0 - 0.13);
+                let w0 = sw * (0.6 + 0.4 * (u0 + 1.0) * 0.5);
+                let at =
+                    |u: f32| cam.pt([c[0] + s * tr.d * 0.3 + sway(0.5 - 0.5 * u), c[1] + u * hh]);
+                let (a, b) = (at(u0), at(u1));
+                for side in [-1.0f32, 1.0] {
+                    pen.line(p, [a[0] + side * w0, a[1]], [b[0] + side * w0 * 0.95, b[1]]);
+                }
+            }
+            for k in 0..3u32 {
+                let u = 0.4 - k as f32 * 0.45;
+                let side = if hash(tr.seed ^ (k * 11 + 5)) < 0.5 {
+                    -1.0
+                } else {
+                    1.0
+                };
+                let a = cam.pt([c[0] + sway(0.5 - 0.5 * u), c[1] + u * hh]);
+                let reach = cam.len(hw) * (0.45 + 0.2 * hash(tr.seed ^ (k * 13)));
+                pen.line(p, a, [a[0] + side * reach, a[1] - reach * 1.1]);
+            }
+        }
+        // the leaves inside: one mark to about every four and a half points square of crown
         let area = cam.len(hw) * cam.len(hh) * std::f32::consts::PI;
-        let marks = (area / (6.0 * ppp).powi(2)).min(160.0) as u32;
+        let marks = (area / (4.5 * ppp).powi(2)).min(260.0) as u32;
         if cam.len(hw) < 3.0 * ppp {
             return;
         }
@@ -248,7 +277,8 @@ impl Grove {
         for j in 0..marks {
             let hs = tr.seed.wrapping_add(j.wrapping_mul(7919));
             let ang = hash(hs) * std::f32::consts::TAU;
-            let rr = hash(hs ^ 0x5555).sqrt() * 0.8;
+            // denser toward the crown's middle, thinning at its edge
+            let rr = hash(hs ^ 0x5555).powf(0.8) * 0.85;
             let (ox, oy) = (ang.cos() * rr, ang.sin() * rr);
             let q = cam.pt([c[0] + ox * hw + sway(0.5 - 0.5 * oy), c[1] + oy * hh]);
             let freq = 3.0 + 2.0 * hash(hs ^ 0x77);
