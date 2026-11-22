@@ -36,6 +36,11 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let cx = u.p0.w;
   let drift = u.p1.w;
   let grain = (hash2(floor(px / 2.0)) - 0.5) * 0.03;
+  // the floor's depth and its derivative before the glass's branch (browsers' WGSL takes derivatives only
+  // in uniform control flow); below the horizon `dy` is at least 1
+  let dy = max(px.y - horizon, 1.0);
+  let z = f * eye / dy;
+  let fine = clamp(fwidth(z) * 0.3, 0.0, 1.0);
   if (px.y < horizon + 1.0) {
     // the light behind the glass, brightest high up where the canopy opens, the lather over it
     let up = clamp((horizon - px.y) / horizon, 0.0, 1.0);
@@ -50,8 +55,6 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     }
     return vec4<f32>(vec3<f32>(c + grain), 1.0);
   }
-  let dy = px.y - horizon;
-  let z = f * eye / dy;
   let x = (px.x - cx) * z / f;
   // the floor: paper cut to the level its distance puts it on, the edge torn, not ruled; never the
   // black card, which the logs, ferns and seedlings in front are cut from. Its far moss clumps are cut
@@ -59,7 +62,8 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let w = vec2<f32>(x, z);
   let lv = max(1, level(z + 4.0 * (noise2(vec2<f32>(x * 0.4, z * 0.1)) - 0.5) * (1.0 + z * 0.05)));
   var c = CARDS[lv];
-  let clump = noise2(w * 1.6) * 0.6 + noise2(w * 5.0 + vec2<f32>(1.3, 2.9)) * 0.4;
+  // (far off, where a clump is finer than a pixel, none: it would only shimmer)
+  let clump = mix(noise2(w * 1.6) * 0.6 + noise2(w * 5.0 + vec2<f32>(1.3, 2.9)) * 0.4, 0.5, fine);
   if (lv > 1 && lv < 3 && clump > 0.76) { c = CARDS[lv + 1]; }
   // where a gap lets light down, lather glows on the glass behind the floor's card: through the paper
   // levels, faintly through the nearest
