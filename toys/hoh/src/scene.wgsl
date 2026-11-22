@@ -1,7 +1,7 @@
-// The Hoh's floor and its mist (a toy-kit field: the grid is the light reaching the floor, a cell of
-// forest.rs's light grid each, in .x). Above the horizon, the stand going away into mist: trunks
-// fainter the farther, the canopy dark overhead. Below, the moss carpet in clumps, brighter where a
-// gap lets the light down, going into the same mist far off.
+// The Hoh's floor and the glass behind the stand (a toy-kit field: the grid is the light reaching the
+// floor, a cell of forest.rs's light grid each, in .x). Above the horizon, the back glass lit from
+// behind with lather on it and the farthest trunks cut from the palest paper. Below, the floor in the
+// paper of its level, its far moss clumps cut into the next, the lather showing where a gap lets light down.
 //   p0 = (horizon px, focal px, eye m, middle px)   p1 = (stand's half-width m, its nearest z m, cell m, mist drift)
 
 
@@ -53,11 +53,10 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let dy = px.y - horizon;
   let z = f * eye / dy;
   let x = (px.x - cx) * z / f;
-  // the floor: card cut to the level its distance puts it on, its moss clumps cut into the edge of the
-  // next level up (a lighter paper laid behind showing through)
+  // the floor: paper cut to the level its distance puts it on, the edge torn, not ruled; never the
+  // black card, which the logs, ferns and seedlings in front are cut from. Its far moss clumps are cut
+  // into the edge of the next level up (a lighter paper laid behind showing through)
   let w = vec2<f32>(x, z);
-  // the card's edge torn, not ruled
-  // the floor is paper, never the black card: the logs, ferns and seedlings are cut from that, in front
   let lv = max(1, level(z + 4.0 * (noise2(vec2<f32>(x * 0.4, z * 0.1)) - 0.5) * (1.0 + z * 0.05)));
   var c = CARDS[lv];
   let clump = noise2(w * 1.6) * 0.6 + noise2(w * 5.0 + vec2<f32>(1.3, 2.9)) * 0.4;

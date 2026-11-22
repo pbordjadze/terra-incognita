@@ -52,7 +52,7 @@ fn ribbon(w: vec2<f32>) -> i32 {
   return 2;
 }
 
-// The hornet, a ribbon of three white segments with black bands, its wings two light strokes.
+// The hornet, a ribbon of three white segments with black bands, its wings two white strokes.
 fn wasp(world: vec2<f32>) -> i32 {
   // drawn twice its size, a figure the raster can hold
   let q = rot(world - u.p0.yz, u.p0.w) / 4.0;
@@ -89,7 +89,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let lip = shp.y + (hash2(vec2<f32>(step_x, 1.0)) - 0.5) * 2.5 + 0.8;
   if (w.y < lip) { c = 0; }
   let h = wasp(w);
-  if (h == 1) { c = 1; }
+  if (h == 1) { c = 3; }
   if (h == 3) { c = 3; }
   if (h == 4) { c = 0; }
   var col = C_LIGHT;

@@ -67,8 +67,8 @@ pub fn balls(p: &mut Painter, b: &Beach, px: &dyn Fn([f32; 2]) -> [f32; 2], s: f
         if r <= 0.0 {
             continue;
         }
-        let run = (q.born / 3.0).floor();
-        let k = hash(run, (q.p[0] / 2.5).floor() * 7.0 + (q.p[1] / 2.5).floor());
+        // by its spoke, which a ball keeps when a finger pushes it
+        let k = hash(q.spoke * 57.3, 2.5);
         let col = BRIGHT[(k * BRIGHT.len() as f32) as usize % BRIGHT.len()];
         bead(p, px(q.p), r * s, col, melt);
     }

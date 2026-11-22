@@ -1,8 +1,8 @@
 //! The stand as the eye sees it, standing on the valley floor: the trunks rising out of the top of
 //! the picture into the canopy, the young trees' cones, the logs with their moss and root wads, the
-//! stilts, sword ferns, the light let down through a gap; far off, all of it goes into the mist.
-//! Painted far to near (toy-kit paint.rs), each thing cut from the card of its level (`card`, after
-//! Bartosch's *L'Idée*); the floor and the mist are the field's (scene.wgsl).
+//! stilts, sword ferns, the light let down through a gap. Painted far to near (toy-kit paint.rs), each
+//! thing cut from the card of its level (`card`, after Bartosch's *L'Idée*), so far off it is paler
+//! paper; the floor and the back glass are the field's (scene.wgsl).
 
 use crate::forest::{Forest, Log, Tree, FALL_S, Z0};
 use toy_kit::paint::{Painter, Shape};

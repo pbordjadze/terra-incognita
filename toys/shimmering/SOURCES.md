@@ -52,10 +52,9 @@ graphics language.
   paper as summarised by ballyalley.com and bitsavers' *Extended Memory Use in the ZGrass System*; other
   sources give 202 or 204 rows).
 - So the comb is drawn on a raster 320 pixels across, each pixel one sample of the scene in one of the four
-  colours, nothing smoothed (`comb.wgsl`). Each row of bees is one ribbon, a segment a bee: dark where it
+  colours, nothing smoothed (`comb.wgsl`). Every two rows of bees are one ribbon, a segment a bee: dark where it
   hangs, twisting to show a narrower white face where a bee has flipped, so a shimmering wave is a ribbon
   turning over.
 
-**Drawn, not sourced:** which grey is the ground (middle grey: the light one), the comb in black behind the
-ribbons, the overhang's stepped lip; the raster square and as tall as the screen (the UV-1's frame is 201
+**Drawn, not sourced:** which grey is the ground (middle grey: the light one), the overhang's stepped lip; the raster square and as tall as the screen (the UV-1's frame is 201
 rows on a 4:3 picture); the hornet as three white segments with black bands, twice its size.
