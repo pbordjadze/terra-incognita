@@ -1,0 +1,5 @@
+{
+  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id. It ships only inside Terra.",
+  "name": "The Silver Dragon",
+  "bundleIdentifier": "com.pbordjadze.toy.bore"
+}

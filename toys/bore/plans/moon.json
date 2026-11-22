@@ -1,0 +1,3 @@
+{ "_": "The moon dragged from full toward its last quarter: the scene goes to that day's tide, a neap, and the bore that comes is a low, unbroken ripple of whelps.", "size": [1179, 2556], "ppp": 3, "seconds": 18, "fps": 20,
+  "events": [ { "t": 1.0, "drag": [[206, 74], [290, 74]], "for": 0.8 } ],
+  "shots": [0.5, 1.6, 2.6, 6.0, 9.0, 11.0, 13.0, 17.0] }

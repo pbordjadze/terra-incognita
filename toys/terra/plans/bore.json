@@ -1,0 +1,55 @@
+{
+ "_": "The Silver Dragon (in Barchans' place on the map), its light over Yanguan on the Qiantang, where the tidal bore comes up the river. Touched, its card comes up with the toy playing in it; the card touched, it grows to the glass; the Earth mark, and the toy shrinks back into its card (row 355).",
+ "restore": "{\"camera\":{\"lon\":120.5,\"lat\":30.4,\"zoom\":1.4,\"roll\":0.0},\"known\":[\"fireflies\",\"swell\",\"murmuration\",\"meander\",\"throats\",\"bats\",\"huddle\",\"wave\",\"frost\",\"catatumbo\",\"bubblers\",\"barchans\",\"pando\",\"hoh\",\"moonroad\",\"biobay\"]}",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": "bore"
+  },
+  {
+   "t": 2.6,
+   "tap": "card"
+  },
+  {
+   "t": 8.0,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.9,
+   "name": "the-light"
+  },
+  {
+   "t": 2.2,
+   "name": "light-touched"
+  },
+  {
+   "t": 2.2,
+   "name": "card"
+  },
+  {
+   "t": 3.0,
+   "name": "opening"
+  },
+  {
+   "t": 6.5,
+   "name": "inside"
+  },
+  {
+   "t": 9.0,
+   "name": "back-to-card"
+  },
+  {
+   "t": 12.8,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0.5,
+  "to": 13,
+  "every": 0.1
+ }
+}

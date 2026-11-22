@@ -24,7 +24,7 @@ meander = { path = "../meander" }
 frost = { path = "../frost" }
 catatumbo = { path = "../catatumbo" }
 bubblers = { path = "../bubblers" }
-barchans = { path = "../barchans" }
+bore = { path = "../bore" }
 pando = { path = "../pando" }
 hoh = { path = "../hoh" }
 biobay = { path = "../biobay" }
