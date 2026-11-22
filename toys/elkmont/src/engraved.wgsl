@@ -80,7 +80,8 @@ fn wobble(q: vec2<f32>, s: f32) -> vec2<f32> {
   // the leader: black, a few flecks of dust and a hairline scratch that runs down the reel
   let dust = step(0.9993, hash(floor(fc.xy / (3.0 * px)) + p.drawing * 3.1)) * 0.5;
   let lane = hash(vec2<f32>(floor(p.drawing / 24.0), 1.0)) * p.size.x;
-  let hair = exp(-pow((fc.x - lane) / (1.2 * px), 2.0)) * 0.12 * (1.0 - p.a.y);
+  let off = (fc.x - lane) / (1.2 * px); // squared by hand: pow of a negative base is undefined
+  let hair = exp(-off * off) * 0.12 * (1.0 - p.a.y);
   let base = vec3<f32>(0.012, 0.011, 0.010);
   return vec4<f32>(base + c + vec3<f32>(dust + hair), 1.0);
 }
