@@ -5,7 +5,8 @@
 //! hillside, in for the lizards. painting-company row 257.
 //!
 //! The model is `sim.rs` (a stochastic cyclic automaton on the CPU, a few steps a second, each step's
-//! flips shown at their own moments); `hill.wgsl` draws everything from one texel a rock.
+//! flips shown at their own moments); `hill.wgsl` draws everything from one texel a rock, as John Whitney's
+//! *Permutations* drew its dots.
 
 pub mod sim;
 
@@ -130,6 +131,12 @@ impl Throats {
             }
         }
         best.1
+    }
+
+    /// The opening's size of a rock: never smaller than the hill filling a screen of `pts` points (as a
+    /// pinch is held to), so it never shows twice.
+    fn open_pt(pts: [f64; 2]) -> f64 {
+        OPEN_PT.max((pts[0] / W as f64).max(pts[1] / H as f64))
     }
 
     fn clamp_pt(&self, pt: f64) -> f64 {
@@ -282,7 +289,7 @@ impl Toy for Throats {
             texels: vec![[0.0; 4]; W * H],
             // (where the view opens is chosen once the hill has run ahead: `warm`)
             center: [W as f64 * 0.5, H as f64 * 0.5],
-            pt: OPEN_PT,
+            pt: Self::open_pt(pts),
             acc: 0.0,
             t: 0.0,
             fingers: Vec::new(),
@@ -318,7 +325,7 @@ impl Toy for Throats {
             }
         }
         let pts = self.size_pt;
-        self.center = Self::opening(&self.hill, [pts[0] / OPEN_PT, pts[1] / OPEN_PT]);
+        self.center = Self::opening(&self.hill, pts.map(|v| v / Self::open_pt(pts)));
         true
     }
 
@@ -475,6 +482,15 @@ impl Toy for Throats {
                 [s[0] * 0.7, s[1] * 0.55],
             )],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Permutations",
+            maker: "John Whitney",
+            place: "UCLA, Los Angeles",
+            year: 1968,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {

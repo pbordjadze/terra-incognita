@@ -265,7 +265,12 @@ pub enum Route {
 impl Info {
     /// Where the mark is, in points: the bottom right corner, clear of the home indicator.
     pub fn spot(points: [f64; 2]) -> [f64; 2] {
-        [points[0] - 26.0, points[1] - 34.0]
+        let m = Self::mark_scale(points);
+        [points[0] - 26.0 * m, points[1] - 34.0 * m]
+    }
+    /// The corner marks' size against a phone's: 1 to 600 points short side, 1.5 from 900 (a laptop's browser).
+    pub fn mark_scale(points: [f64; 2]) -> f64 {
+        (points[0].min(points[1]) / 600.0).clamp(1.0, 1.5)
     }
     /// A fingertip's reach for the mark, points.
     pub const REACH: f64 = 22.0;
@@ -319,7 +324,8 @@ impl Info {
 
     /// Routes a real finger: the mark's, the closing tap's, or the toy's. `m` says what the toy has.
     pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], m: Marks) -> Route {
-        let near = |s: [f64; 2]| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH;
+        let near =
+            |s: [f64; 2]| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH * Self::mark_scale(points);
         if self.taken.contains(&e.id) {
             if matches!(e.phase, Phase::Up | Phase::Cancel) {
                 self.taken.retain(|&i| i != e.id);
@@ -617,12 +623,12 @@ impl Info {
         let lit = if self.is_open() { 0.85 } else { 0.5 };
         let native = self.native;
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
-        let k = ppp as f32;
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
+        let (kp, k) = (ppp as f32, (ppp * Self::mark_scale(points)) as f32);
         // a soft dark ground so it reads on any scene, a small ring, and three dots (more, as iOS has it);
         // none where the frame draws its own (`native`)
         let s = Self::spot(points);
-        let c = [s[0] as f32 * k, s[1] as f32 * k];
+        let c = [s[0] as f32 * kp, s[1] as f32 * kp];
         if !native {
             painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
             painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
@@ -641,6 +647,7 @@ impl Info {
             painter.disc(d, 3.3 * k, 0.8, [0.0, 0.0, 0.0, 0.5]);
             painter.disc(d, 2.5 * k, 0.7, [0.96, 0.67, 0.24, 1.0]);
         }
+        let k = kp;
         if let Some((demo, at)) = &self.open {
             let el = self.now - at;
             for s in &demo.strokes {

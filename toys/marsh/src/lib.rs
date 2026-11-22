@@ -6,9 +6,10 @@
 //! compass (a desktop browser) north is the top of the screen.
 
 pub mod drop;
+pub mod plot;
+pub mod sc4020;
 
 use drop::{Drop, RULES};
-use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::paint::Painter;
 use toy_kit::switches::Switch;
 use toy_kit::{info, Ctx, Phase, PointerEvent, Toy};
@@ -25,8 +26,15 @@ const SETTLE: f32 = 0.15;
 
 pub struct MagnetMarsh {
     drop: Drop,
-    backdrop: Backdrop,
     painter: Painter,
+    /// The SC 4020's film, and the silt it plots on the glass.
+    film: toy_kit::film::Film,
+    silt: Vec<[f32; 2]>,
+    /// Each plotted cell's last places, one a frame.
+    trails: Vec<Vec<[f32; 2]>>,
+    /// The film frame (in threes) whose places were last added to the paths.
+    laid: Option<i64>,
+    reduce_motion: bool,
     fingers: Vec<(u64, [f32; 2])>,
     /// The field across the glass the cells feel, eased toward the phone's (µT, screen directions).
     b: [f32; 2],
@@ -65,10 +73,15 @@ impl Toy for MagnetMarsh {
         let size_pt = ctx.points();
         let (c, r, ry) = place(size_pt);
         let b = Self::phone_field(ctx);
+        let drop = Drop::new(c, r, ry, CELLS, b, SEED);
         Ok(MagnetMarsh {
-            drop: Drop::new(c, r, ry, CELLS, b, SEED),
-            backdrop: Backdrop::new(&ctx.gpu, "marsh", include_str!("drop.wgsl")),
+            silt: plot::silt(&drop),
+            trails: Vec::new(),
+            laid: None,
+            drop,
             painter: Painter::new(&ctx.gpu),
+            film: sc4020::new(&ctx.gpu, [ctx.width, ctx.height]),
+            reduce_motion: ctx.reduce_motion,
             fingers: Vec::new(),
             b,
             t: 0.0,
@@ -96,6 +109,8 @@ impl Toy for MagnetMarsh {
         }
         self.drop.um *= r0 / r;
         (self.drop.c, self.drop.r, self.drop.ry) = (c, r, ry);
+        self.silt = plot::silt(&self.drop);
+        self.trails.clear();
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -128,112 +143,40 @@ impl Toy for MagnetMarsh {
         for _ in 0..2 {
             self.drop.step(dt * 0.5, self.b, &poles);
         }
+        // each plotted cell's path gains a point every third film frame, whether or not a frame is drawn
+        let frame = (t * sc4020::FRAMES_HZ).floor() as i64 / plot::EVERY;
+        if self.laid != Some(frame) {
+            self.laid = Some(frame);
+            plot::lay(&mut self.trails, &self.drop);
+        }
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
-        let k = ctx.ppp as f32;
-        let d = &self.drop;
-        let m = (self.b[0] * self.b[0] + self.b[1] * self.b[1]).sqrt();
-        let params = BackdropParams {
-            time: self.t as f32,
-            scale: 1.0,
-            center: [0.0, 0.0],
-            p: [
-                d.c[0] * k,
-                d.c[1] * k,
-                d.r * k,
-                k,
-                (m / 60.0).min(1.0),
-                d.ry * k,
-                0.0,
-                0.0,
-            ],
-        };
-        let swim = d.on[1];
-        // the protists first, behind: big, dim, out of the field's reach
-        for f in &d.drifters {
-            let (dx, dy) = (f.a.cos(), f.a.sin());
-            let h = f.len * 0.5 * k;
-            let a = [f.p[0] * k - dx * h * 0.6, f.p[1] * k - dy * h * 0.6];
-            let b = [f.p[0] * k + dx * h * 0.6, f.p[1] * k + dy * h * 0.6];
-            self.painter
-                .glow(a, b, h * 0.35, 4.0 * k, [0.40, 0.55, 0.60, 0.1]);
-            // its edge: an oval outline, the light a dark field catches on a cell wall
-            let (nx, ny) = (-dy, dx);
-            let edge = |j: usize| {
-                let t = j as f32 / 24.0 * std::f32::consts::TAU;
-                let (u, v) = (t.cos() * h * 0.8, t.sin() * h * 0.4);
-                [f.p[0] * k + dx * u + nx * v, f.p[1] * k + dy * u + ny * v]
-            };
-            for j in 0..24 {
-                self.painter.glow(
-                    edge(j),
-                    edge(j + 1),
-                    0.4 * k,
-                    2.5 * k,
-                    [0.6, 0.75, 0.8, 0.2],
-                );
-            }
-        }
-        for c in &d.cells {
-            let wob = 0.35 * c.phase.sin();
-            let (dx, dy) = ((c.a + wob).cos(), (c.a + wob).sin());
-            let head = [c.p[0] * k, c.p[1] * k];
-            // out of the plane of focus a cell is a dimmer, softer blur
-            let soft = (0.9 + 8.0 * c.blur) * k;
-            let g = c.glint * (1.0 - 0.85 * c.blur);
-            if swim {
-                // the streak a long exposure would leave: a quarter second of its swim
-                let len = c.v * 0.25 * k;
-                let tail = [head[0] - dx * len, head[1] - dy * len];
-                self.painter.glow(
-                    tail,
-                    head,
-                    0.45 * k,
-                    soft * 1.3,
-                    [0.45, 0.72, 1.0, 0.45 * g],
-                );
-            }
-            if c.spiral {
-                // a spirillum: a long corkscrew, seen as a wave
-                let (nx, ny) = (-dy, dx);
-                let mut prev = head;
-                for j in 1..=6 {
-                    let u = j as f32 / 6.0;
-                    let w = (u * 9.0 + c.phase * 2.0).sin() * 0.8 * k;
-                    let p = [
-                        head[0] - dx * u * 7.0 * k + nx * w,
-                        head[1] - dy * u * 7.0 * k + ny * w,
-                    ];
-                    self.painter
-                        .glow(prev, p, 0.35 * k, soft, [0.8, 0.92, 1.0, 0.7 * g]);
-                    prev = p;
-                }
-            } else {
-                // a coccus: a short rod, its magnetite chain scattering bright
-                // out of focus it blurs to a round smudge, not a dash
-                let rod = 0.9 * k * (1.0 - c.blur).max(0.0);
-                self.painter.glow(
-                    [head[0] - dx * rod, head[1] - dy * rod],
-                    [head[0] + dx * rod, head[1] + dy * rod],
-                    0.5 * k,
-                    soft,
-                    [0.82, 0.93, 1.0, 0.85 * g],
-                );
-            }
-        }
-        // the finger's magnet: a warm soft glow where the pole is held over the drop
-        for f in &self.fingers {
-            let p = [f.1[0] * k, f.1[1] * k];
-            self.painter
-                .glow(p, p, 18.0 * k, 26.0 * k, [1.0, 0.7, 0.45, 0.07]);
-        }
+        let gpu = &ctx.gpu;
         let size = [ctx.width, ctx.height];
-        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
-        self.backdrop
-            .render(&ctx.gpu, &mut enc, target, size, &params);
-        self.painter.render(&ctx.gpu, &mut enc, target, size, None);
-        ctx.gpu.queue.submit([enc.finish()]);
+        self.film.resize(gpu, size);
+        self.reduce_motion = ctx.reduce_motion;
+        // a frame plotted and photographed 24 times a second
+        let Some(f) = self.film.next(gpu, target, self.t) else {
+            return;
+        };
+        let fingers: Vec<[f32; 2]> = self.fingers.iter().map(|f| f.1).collect();
+        plot::plot(
+            &mut self.painter,
+            &self.drop,
+            &self.trails,
+            &self.silt,
+            &fingers,
+            ctx.ppp as f32,
+        );
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        let scene = &self.film.scene.clone();
+        self.painter
+            .render(gpu, &mut enc, scene, size, Some([0.0, 0.0, 0.0, 1.0]));
+        self.film
+            .read(gpu, &mut enc, f, sc4020::values(self.reduce_motion));
+        self.film.film(&mut enc, target);
+        gpu.queue.submit([enc.finish()]);
     }
 
     fn anchors(&self) -> Vec<(String, [f64; 2])> {
@@ -257,6 +200,15 @@ impl Toy for MagnetMarsh {
             "Marsh bacteria steer north. Your finger is a magnet.",
             vec![info::Stroke::hold(0.4, 2.4, at)],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Force, Mass and Motion",
+            maker: "Frank W. Sinden",
+            place: "Bell Labs, New Jersey",
+            year: 1965,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {

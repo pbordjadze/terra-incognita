@@ -608,9 +608,10 @@ impl<T: Toy> Host<T> {
         self.first_info.finger(&e);
         if e.phase == Phase::Down && self.info.is_open() {
             let pts = self.toy.buttons(&self.ctx);
+            let reach = info::Info::mark_scale(self.ctx.points());
             if pts
                 .iter()
-                .any(|(_, p)| (e.x - p[0]).hypot(e.y - p[1]) <= info::Info::REACH)
+                .any(|(_, p)| (e.x - p[0]).hypot(e.y - p[1]) <= info::Info::REACH * reach)
             {
                 self.info.close();
                 self.toy.pointer(&mut self.ctx, e);

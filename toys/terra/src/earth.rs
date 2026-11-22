@@ -12,6 +12,7 @@ impl Terra {
         let k = ctx.ppp as f32;
         let s = earth_spot(ctx.points());
         let c = [s[0] as f32 * k, s[1] as f32 * k];
+        let k = k * toy_kit::info::Info::mark_scale(ctx.points()) as f32;
         let lit = 0.62 * alpha;
         let p = &mut self.painter;
         p.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42 * alpha]);
@@ -43,7 +44,8 @@ impl Terra {
     /// Inside: the Earth mark's finger (true if it was the mark's); lifted on it, the toy goes back into its card.
     pub(crate) fn earth_mark_pointer(&mut self, ctx: &mut Ctx, e: &PointerEvent) -> bool {
         let s = earth_spot(ctx.points());
-        let near = |k: f64| (e.x - s[0]).hypot(e.y - s[1]) < EARTH_REACH * k;
+        let m = toy_kit::info::Info::mark_scale(ctx.points());
+        let near = |k: f64| (e.x - s[0]).hypot(e.y - s[1]) < EARTH_REACH * m * k;
         if e.phase == Phase::Down && self.earth_finger.is_none() && near(1.0) {
             self.earth_finger = Some(e.id);
             return true;

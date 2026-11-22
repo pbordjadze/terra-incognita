@@ -7,6 +7,7 @@
 //! and comes again. A finger pressed on the land leans it toward that side, as a hand pressing a tray's edge; with no
 //! sense of tilt (a desktop browser) it is the only way to steer.
 
+pub mod ip;
 pub mod land;
 
 use land::{Land, RULES, TILT, TILT_MAX};
@@ -44,6 +45,8 @@ fn clamp(v: [f32; 2]) -> [f32; 2] {
 pub struct Delta {
     land: Land,
     field: Field,
+    /// The Image Processor the land is seen through.
+    film: toy_kit::film::Film,
     cells: Vec<[f32; 4]>,
     /// The phone's lean, eased (screen directions, the sine of the tilt).
     lean: [f32; 2],
@@ -127,6 +130,7 @@ impl Toy for Delta {
         let d = Delta {
             land: Land::new(GRID[0], GRID[1], SEED),
             field,
+            film: ip::new(&ctx.gpu, [ctx.width, ctx.height]),
             cells: vec![[0.0; 4]; GRID[0] * GRID[1]],
             lean: [0.0, 0.0],
             fingers: Vec::new(),
@@ -173,6 +177,11 @@ impl Toy for Delta {
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
+        // a video frame thirty times a second
+        let Some(f) = self.film.next(&ctx.gpu, target, self.t) else {
+            return;
+        };
         let l = &self.land;
         for (i, c) in self.cells.iter_mut().enumerate() {
             let y = (i / l.w) as f32;
@@ -205,8 +214,12 @@ impl Toy for Delta {
         };
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+        let scene = &self.film.scene.clone();
         self.field
-            .render(&ctx.gpu, &mut enc, target, size, &params, true);
+            .render(&ctx.gpu, &mut enc, scene, size, &params, true);
+        self.film
+            .read(&ctx.gpu, &mut enc, f, ip::values(self.t, ctx.reduce_motion));
+        self.film.film(&mut enc, target);
         ctx.gpu.queue.submit([enc.finish()]);
     }
 
@@ -216,6 +229,15 @@ impl Toy for Delta {
             "The Okavango in flood. Tilt the phone, or press.",
             vec![info::Stroke::hold(0.4, 2.6, [s[0] * 0.8, s[1] * 0.55])],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "the Sandin Image Processor",
+            maker: "Dan Sandin",
+            place: "University of Illinois at Chicago",
+            year: 1973,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {
