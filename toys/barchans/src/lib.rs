@@ -276,6 +276,15 @@ impl Toy for Barchans {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Little Tadpoles Looking for Mama",
+            maker: "Te Wei",
+            place: "Shanghai Animation Film Studio",
+            year: 1960,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "South of Tarfaya, in Morocco, crescent dunes walk across the bare desert floor, small ones faster than big.",

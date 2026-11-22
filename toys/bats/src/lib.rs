@@ -463,6 +463,15 @@ impl Toy for Bats {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Night on Bald Mountain",
+            maker: "Alexandre Alexeieff and Claire Parker",
+            place: "Paris",
+            year: 1933,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "At dusk, millions of free-tailed bats climb out of Bracken Cave, in the Texas Hill Country, circling up in a column and streaming away to feed.",

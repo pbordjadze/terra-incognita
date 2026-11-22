@@ -20,6 +20,14 @@ use toy_kit::Ctx;
 
 /// The Growth look on (this branch's preview) or the dusk as it was.
 pub const ON: bool = true;
+
+/// The style, credited at the foot of the sheet (`Toy::style`).
+pub const STYLE: toy_kit::info::Style = toy_kit::info::Style {
+    name: "Growth",
+    maker: "Yoichiro Kawaguchi",
+    place: "Tokyo",
+    year: 1983,
+};
 const REEDS: usize = 90;
 const SEGS: usize = 12;
 /// A near bird's parts (growth_density.wgsl's PARTS): body, head, tail, and two blades a wing.
