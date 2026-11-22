@@ -222,6 +222,10 @@ impl Grove {
             );
             for j in 0..n {
                 let hseed = tr.seed.wrapping_add(j.wrapping_mul(7919));
+                // the plotter draws a cluster as a pen dot, and only some of them, so the crown is a stipple
+                if hash(hseed ^ 0xD07) >= crate::plotter::DOTS_KEPT {
+                    continue;
+                }
                 let ang = hash(hseed) * std::f32::consts::TAU;
                 // most of the leaves are at the crown's surface
                 let rr = hash(hseed ^ 0x5555).powf(0.3);

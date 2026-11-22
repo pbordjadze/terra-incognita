@@ -19,7 +19,7 @@ const FAINT: f32 = 0.25;
 /// outlined: the pen dots it, and only some of them, so a crown is stippled inside the outline of its
 /// body rather than packed with circles.
 const DOT: f32 = 60.0;
-const DOTS_KEPT: f32 = 0.45;
+pub const DOTS_KEPT: f32 = 0.45;
 
 fn hash(p: [f32; 2]) -> f32 {
     let h = (p[0] * 12.9898 + p[1] * 78.233).sin() * 43_758.547;
@@ -52,15 +52,14 @@ pub fn ink(painter: &mut Painter, size: [f32; 2], ppp: f32, grove: bool) {
         }
         let len = ((s.b[0] - s.a[0]).powi(2) + (s.b[1] - s.a[1]).powi(2)).sqrt();
         if grove && s.ring <= 0.0 && s.r * 2.0 < DOT * pen && len < s.r * 0.5 {
-            // a small leaf cluster: a dot of the pen, or nothing
-            if hash(s.a) < DOTS_KEPT {
-                painter.shapes_over.push(Shape {
-                    r: pen * 0.9,
-                    soft: 0.75,
-                    color: premul(INK, 1.0),
-                    ..s
-                });
-            }
+            // a small leaf cluster: a dot of the pen (the grove draws only DOTS_KEPT of them, chosen by
+            // their seeds, so the stipple holds still as they sway)
+            painter.shapes_over.push(Shape {
+                r: pen * 0.9,
+                soft: 0.75,
+                color: premul(INK, 1.0),
+                ..s
+            });
             continue;
         }
         if s.ring <= 0.0 {
@@ -96,12 +95,13 @@ fn eyes(painter: &mut Painter, s: &Shape, len: f32, pen: f32) {
     let n = [-d[1], d[0]];
     let count = (len / (s.r * 9.0)).min(8.0) as usize;
     for i in 0..count {
-        let f = (i as f32 + 0.3 + 0.4 * hash([s.a[0] + i as f32, s.a[1]])) / count as f32;
+        // placed by their number along the stem, not by where it is on the screen, so they hold still
+        let f = (i as f32 + 0.3 + 0.4 * hash([i as f32, 1.0])) / count as f32;
         let c = [
             s.a[0] + (s.b[0] - s.a[0]) * f,
             s.a[1] + (s.b[1] - s.a[1]) * f,
         ];
-        let w = s.r * (0.5 + 0.4 * hash([c[1], c[0]]));
+        let w = s.r * (0.5 + 0.4 * hash([i as f32, 2.0]));
         // an aspen's eye is a dark chevron where a branch fell: two strokes meeting below the scar
         let apex = [c[0] + d[0] * w * 0.45, c[1] + d[1] * w * 0.45];
         for side in [-1.0f32, 1.0] {
