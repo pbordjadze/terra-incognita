@@ -7,6 +7,7 @@
 
 pub mod grove;
 pub mod leaf;
+pub mod plotter;
 pub mod skin;
 pub mod sound;
 pub mod stem;
@@ -549,6 +550,7 @@ impl Toy for Pando {
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         self.backdrop
             .render(&ctx.gpu, &mut enc, target, sz, &params);
+        plotter::ink(&mut self.painter, size, ppp, matches!(scale, Scale::Grove));
         self.painter.render(&ctx.gpu, &mut enc, target, sz, None);
         ctx.gpu.queue.submit([enc.finish()]);
     }
@@ -615,6 +617,15 @@ impl Toy for Pando {
             Stroke::drag(0.4, 1.0, [0.15 * w, 0.62 * h], [0.85 * w, 0.52 * h])
         };
         Some(Demo::new(line, vec![stroke]))
+    }
+
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "Hummingbird",
+            maker: "Charles Csuri and James Shaffer",
+            place: "Ohio State University, Columbus",
+            year: 1967,
+        })
     }
 
     fn rules(&self) -> Option<Rules> {
