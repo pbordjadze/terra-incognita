@@ -9,6 +9,7 @@
 //! hex grid; the pane keeps who holds each patch of glass (the mask) and what the finished crystals
 //! left (the field), and how deep the glaze is (where a melt froze smooth), which `draw` (pane.wgsl) lights. painting-company row 218.
 
+mod keys;
 mod layout;
 mod readback;
 mod sound;
@@ -115,7 +116,7 @@ struct Look {
     fs: f32,
     field_w: f32,
     field_h: f32,
-    lamp: f32,
+    key: f32,
     frame: f32,
     bar: f32,
 }
@@ -204,6 +205,7 @@ pub struct Frost {
     readback: readback::Readback,
     binds: [wgpu::BindGroup; 2],
     draw_bind: wgpu::BindGroup,
+    keys: keys::Keys,
     grow: wgpu::ComputePipeline,
     claim: wgpu::ComputePipeline,
     seed: wgpu::ComputePipeline,
@@ -546,7 +548,7 @@ impl Toy for Frost {
         let field = gpu.buffer(&wgpu::BufferDescriptor {
             label: Some("frost field"),
             size: (field_side * field_side) as u64 * 4,
-            usage: st,
+            usage: st | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
         let glaze = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -644,20 +646,8 @@ impl Toy for Frost {
 
         toy_kit::step("frost: the window's pipeline");
         let draw_layout = layout::draw(dev);
-        let draw_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("frost draw"),
-            layout: &draw_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: look.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: field.as_entire_binding(),
-                },
-            ],
-        });
+        let keys = keys::Keys::new(gpu, &field);
+        let draw_bind = keys.bind(dev, &draw_layout, &look);
         let draw_shader = gpu.shader("frost pane", include_str!("pane.wgsl"));
         let draw = gpu.fullscreen_pipeline("frost pane", &draw_shader, &[&draw_layout], None);
         toy_kit::step("frost: made");
@@ -671,6 +661,7 @@ impl Toy for Frost {
             readback,
             binds,
             draw_bind,
+            keys,
             grow,
             claim,
             seed,
@@ -1147,6 +1138,7 @@ impl Toy for Frost {
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         let look = Look {
             size: [ctx.width as f32, ctx.height as f32],
             ppp: ctx.ppp as f32,
@@ -1155,14 +1147,13 @@ impl Toy for Frost {
             fs: FS,
             field_w: self.field_side as f32,
             field_h: self.field_side as f32,
-            lamp: 1.0,
+            key: self.keys.turn(&mut enc, self.time),
             frame: FRAME as f32,
             bar: (self.pane[1] * BAR_AT) as f32,
         };
         ctx.gpu
             .queue
             .write_buffer(&self.look, 0, bytemuck::bytes_of(&look));
-        let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("frost"),
@@ -1210,6 +1201,15 @@ impl Toy for Frost {
                 [at[0] - 90.0, at[1] + 140.0],
             )],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Metadata",
+            maker: "Peter Foldès",
+            place: "National Research Council of Canada",
+            year: 1971,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {

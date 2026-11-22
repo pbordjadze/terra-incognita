@@ -42,3 +42,30 @@ What is real, what is drawn, and from where (painting-company row 218).
 - The sound: a crackle as many clicks a second as cells freezing (frost growing is all but silent;
   this is its growth made audible), and a faint cold air. Synthesised, no recordings. The haptic
   ticks follow the same count.
+
+## The look
+
+Drawn in the style of Peter Foldès' *Metadata* (1971), made on the key-frame animation system of the
+National Research Council of Canada, the system he went on to use for *Hunger* (1974). Sources, quoted
+only from pages fetched on November 22, 2026:
+
+- Wikipedia, *Hunger (1974 film)* (https://en.wikipedia.org/wiki/Hunger_(1974_film)): "Foldes developed a
+  computer animation application in collaboration with the National Research Council Canada (NRC) in
+  1969"; Nestor Burtnyk "and physicist Marceli Wein programmed a "key frame animation" package to create
+  animated sequences from key frames"; "Foldes' first film using Burtnyk's program was a 1971 computer key
+  frame animated short experimental film involving freehand drawings called *Metadata*"; the technique
+  "allowed object shape modification and line interpolation techniques"; "Stylistically, the short film's
+  line drawings dissolve and reshape to form various images."
+- SIGGRAPH's history archive, *Metadata* (https://history.siggraph.org/animation-video-pod/metadata-by-foldes/):
+  "Images were drawn by means of a mouse, an early precursor of a graphic tablet"; 16 mm film.
+
+So, as the system worked: an artist's key drawings, and the computer's drawings between them. Here the
+automaton is the artist: every 0.2 s the ice it has grown is taken as a key drawing, and every frame the
+window shows the drawing between the last two (`keys.rs`), its lines the frost's edge and the contours of
+its age, one pen weight, white on the night (`pane.wgsl`). The night outside and the window's frame stay
+as they were.
+
+**Drawn, not sourced:** how often a key is taken; that the in-between is made by interpolating the two
+keys' fields, so a line slides between its places, rather than point to point along each line as the
+NRC's program did; the pen's width and white ink on a dark ground (the sources don't give the films'
+colours); the frosted glass a little paler inside the ice.

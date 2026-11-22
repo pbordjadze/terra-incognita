@@ -1,6 +1,7 @@
 // Frost: the window, every pixel. Outside, Oymyakon's winter night (a clear sky, the snow, the larches
-// on the far bank, all drawn); on the glass the ice the automaton grew (frost.wgsl's field), lit by
-// the cabin's lamp behind the reader.
+// on the far bank, all drawn); on the glass the ice the automaton grew (frost.wgsl's field), drawn in
+// line as Peter Foldès drew on the NRC's key-frame system (keys.rs, SOURCES.md): the frost's edge and
+// the contours of its age, each frame the drawing between the last two key drawings.
 
 struct Look {
   size: vec2<f32>,   // pixels
@@ -10,13 +11,18 @@ struct Look {
   fs: f32,           // field texels a point
   field_w: f32,
   field_h: f32,
-  lamp: f32,
+  key: f32,     // how far between the two key drawings
   frame: f32,   // points
   bar: f32,     // the crossbar's middle, points from the top
 };
 
 @group(0) @binding(0) var<uniform> L: Look;
-@group(0) @binding(1) var<storage, read> field: array<f32>;
+@group(0) @binding(1) var<storage, read> key_a: array<f32>;
+@group(0) @binding(2) var<storage, read> key_b: array<f32>;
+// the cabin's lamp, always lit
+const LAMP = 1.0;
+// pixels a point
+var<private> LP: f32 = 3.0;
 
 struct VO { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
@@ -41,7 +47,9 @@ fn noise(p: vec2<f32>) -> f32 {
 fn texel(x: i32, y: i32) -> f32 {
   let cx = clamp(x, 0, i32(L.field_w) - 1);
   let cy = clamp(y, 0, i32(L.field_h) - 1);
-  return field[cy * i32(L.field_w) + cx];
+  // the in-between: the computer's drawing between the two key drawings
+  let i = cy * i32(L.field_w) + cx;
+  return mix(key_a[i], key_b[i], L.key);
 }
 
 // the field between its texels
@@ -119,12 +127,13 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 }
 
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
+  LP = L.ppp;
   let p = i.uv * L.pane;
   var c = night(p);
   // the lamp behind the reader, a faint warm reflection low on the glass
   let lamp_at = vec2<f32>(L.pane.x * 0.18, L.pane.y * 1.05);
   let ld = length((p - lamp_at) / L.pane.x);
-  c += vec3<f32>(0.060, 0.034, 0.014) * exp(-ld * ld * 2.2) * L.lamp;
+  c += vec3<f32>(0.060, 0.034, 0.014) * exp(-ld * ld * 2.2) * LAMP;
 
   // the ice
   let s = ice_at(p);
@@ -138,47 +147,37 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
     c += vec3<f32>(0.010, 0.012, 0.015) * (0.4 + 0.6 * sheen) * wet;
     c += vec3<f32>(0.30, 0.31, 0.32) * line * wet;
   }
-  let cover = smoothstep(0.98, 1.02, s);
-  if cover > 0.0 {
-    // the ice's edge: where the cover changes within a point (thin new ice, the branches' rims)
-    let e = 0.8;
-    let cx = smoothstep(0.98, 1.02, ice_at(p + vec2<f32>(e, 0.0))) - smoothstep(0.98, 1.02, ice_at(p - vec2<f32>(e, 0.0)));
-    let cy = smoothstep(0.98, 1.02, ice_at(p + vec2<f32>(0.0, e))) - smoothstep(0.98, 1.02, ice_at(p - vec2<f32>(0.0, e)));
-    let rim = clamp(length(vec2<f32>(cx, cy)), 0.0, 1.0);
-    // the age of the ice: the earliest (the spines) has taken the most from the air
-    // a rim lit from the lamp (low, to the left) is brighter than one turned away
-    let toward = clamp(dot(normalize(vec2<f32>(cx, cy) + vec2<f32>(1e-5, 0.0)), normalize(vec2<f32>(0.55, -0.8))), -1.0, 1.0);
-    let cool = vec3<f32>(0.66, 0.78, 0.93);
-    let milky = vec3<f32>(0.93, 0.95, 0.98);
-    // ridges and hollows: the ice's water against its surroundings' (the spines and ribs froze first)
-    let r2 = 2.4;
-    let around = 0.25 * (ice_at(p + vec2<f32>(r2, 0.0)) + ice_at(p - vec2<f32>(r2, 0.0)) + ice_at(p + vec2<f32>(0.0, r2)) + ice_at(p - vec2<f32>(0.0, r2)));
-    let ridge = clamp((s - max(around, 1.0)) * 6.0, -1.0, 1.0);
-    // the age of the ice, read over a few points (the glass's flaws make it speckle cell by cell):
-    // the earliest (the spines) has taken the most from the air
-    let sm = 0.35 * s + 0.65 * around;
-    let age = clamp(log(1.0 + max(sm - 1.0, 0.0) * 30.0) / 3.0, 0.0, 1.0);
-    var ice = mix(cool, milky, age) * (0.95 + 0.06 * ridge);
-    ice = mix(ice, vec3<f32>(1.0), rim * (0.55 + 0.45 * toward));
-    // the lamp warms the ice low on the glass
-    let warm = exp(-ld * ld * 1.6) * L.lamp;
-    ice *= mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
-    // a few facets catch the lamp: sparks that come and go slowly
-    let g = floor(p * 1.5);
-    let h = hash2(g);
-    if h > 0.985 {
-      let tw = 0.5 + 0.5 * sin(L.time * (0.7 + 1.5 * hash2(g + 2.0)) + h * 60.0);
-      ice += vec3<f32>(1.0, 0.97, 0.9) * pow(tw, 6.0) * 0.9 * age;
-    }
-    let a = cover * clamp(mix(0.46, 0.82, age * age) + rim * 0.45, 0.0, 0.92);
-    c = mix(c, ice, a);
+  // the ice in line: its edge, and the contours of its age (the spines and ribs froze first, so
+  // their contours run along them), one pen weight, chalk-white on the night
+  let e = 0.7;
+  let gx = ice_at(p + vec2<f32>(e, 0.0)) - ice_at(p - vec2<f32>(e, 0.0));
+  let gy = ice_at(p + vec2<f32>(0.0, e)) - ice_at(p - vec2<f32>(0.0, e));
+  let grad = max(length(vec2<f32>(gx, gy)) / (2.0 * e), 1e-4);
+  let r2 = 2.4;
+  let around = 0.25 * (ice_at(p + vec2<f32>(r2, 0.0)) + ice_at(p - vec2<f32>(r2, 0.0)) + ice_at(p + vec2<f32>(0.0, r2)) + ice_at(p - vec2<f32>(0.0, r2)));
+  let sm = 0.35 * s + 0.65 * around;
+  let px = 1.0 / LP;
+  // the pen: about two thirds of a point wide, its edge a pixel soft
+  let w = 0.33;
+  let edge = 1.0 - smoothstep(w - px, w + px, abs(s - 1.0) / grad);
+  var ages = 0.0;
+  for (var k = 0; k < 3; k++) {
+    let lv = 1.0 + 0.06 * exp2(f32(k) * 1.4);
+    ages = max(ages, 1.0 - smoothstep(w * 0.8 - px, w * 0.8 + px, abs(sm - lv) / grad));
   }
+  let cover = smoothstep(0.98, 1.02, s);
+  // inside the ice the night shows a little paler, as through frosted glass
+  c = mix(c, c * 1.4 + vec3<f32>(0.035, 0.04, 0.05), cover);
+  let ink = vec3<f32>(0.90, 0.93, 0.97);
+  let warm = exp(-ld * ld * 1.6) * LAMP;
+  let chalk = ink * mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
+  c = mix(c, chalk, max(edge * 0.95, ages * 0.75 * cover));
   // a breath of condensation low on the glass, before the frost: the faintest grey veil
   c += vec3<f32>(0.018, 0.020, 0.024) * smoothstep(0.5, 1.0, p.y / L.pane.y);
   // the wood over all of it
   let d = wood_depth(p);
   if d > -1.5 {
-    let w = wood(p, d, exp(-ld * ld * 1.2) * L.lamp);
+    let w = wood(p, d, exp(-ld * ld * 1.2) * LAMP);
     // a soft shadow on the glass beside the wood
     if d < 0.0 {
       c *= 0.6 + 0.4 * smoothstep(-1.5, 0.0, -d - 0.0) ;
