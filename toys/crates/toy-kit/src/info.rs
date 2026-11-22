@@ -631,12 +631,11 @@ impl Info {
         }
         let lit = if self.is_open() { 0.85 } else { 0.5 };
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
-        let k = ppp as f32;
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
+        let (kp, k) = (ppp as f32, (ppp * Self::mark_scale(points)) as f32);
         // a soft dark ground so it reads on any scene, a small ring, and three dots (more, as iOS has it)
         let s = Self::spot(points);
-        let c = [s[0] as f32 * k, s[1] as f32 * k];
-        let k = k * Self::mark_scale(points) as f32;
+        let c = [s[0] as f32 * kp, s[1] as f32 * kp];
         painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
         painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
         for i in -1..=1 {
@@ -653,7 +652,7 @@ impl Info {
             painter.disc(d, 3.3 * k, 0.8, [0.0, 0.0, 0.0, 0.5]);
             painter.disc(d, 2.5 * k, 0.7, [0.96, 0.67, 0.24, 1.0]);
         }
-        let k = ppp as f32;
+        let k = kp;
         if let Some((demo, at)) = &self.open {
             let el = self.now - at;
             for s in &demo.strokes {
