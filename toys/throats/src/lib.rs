@@ -266,7 +266,9 @@ impl Toy for Throats {
         let shader = gpu.shader("hill", include_str!("hill.wgsl"));
         let pipeline = gpu.fullscreen_pipeline("hill", &shader, &[&bgl], None);
         let pts = ctx.points();
-        let center = Self::opening(&hill, [pts[0] / OPEN_PT, pts[1] / OPEN_PT]);
+        // never smaller than the hill filling the screen (as a pinch is held to): it never shows twice
+        let open = OPEN_PT.max((pts[0] / W as f64).max(pts[1] / H as f64));
+        let center = Self::opening(&hill, [pts[0] / open, pts[1] / open]);
         Ok(Throats {
             hill,
             tex,
@@ -275,7 +277,7 @@ impl Toy for Throats {
             pipeline,
             texels: vec![[0.0; 4]; W * H],
             center,
-            pt: OPEN_PT,
+            pt: open,
             acc: 0.0,
             t: 0.0,
             fingers: Vec::new(),
