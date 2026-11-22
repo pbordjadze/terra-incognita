@@ -20,6 +20,11 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let eye = u.p0.z;
   let cx = u.p0.w;
   let drift = u.p1.w;
+  // the floor's depth and its derivative before the mist's branch (browsers' WGSL takes derivatives only in
+  // uniform control flow); below the horizon `dy` is at least 1, as it was
+  let dy = max(px.y - horizon, 1.0);
+  let z = f * eye / dy;
+  let fine = clamp(fwidth(z) * 0.3, 0.0, 1.0);
   if (px.y < horizon + 1.0) {
     // the mist beyond, brightening upward to the canopy's glow, and trunks going into it
     let up = clamp((horizon - px.y) / horizon, 0.0, 1.0);
@@ -38,15 +43,12 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     c = mix(c, vec3<f32>(0.78, 0.82, 0.74), m * 0.18 * (1.0 - up * 0.5));
     return vec4<f32>(c, 1.0);
   }
-  let dy = px.y - horizon;
-  let z = f * eye / dy;
   let x = (px.x - cx) * z / f;
   let w = vec2<f32>(x, z);
   // moss clumps, small and large; litter showing between
   let n1 = noise2(w * 1.6);
   let n2 = noise2(w * 0.45 + vec2<f32>(3.1, 7.7));
   let n3 = noise2(w * 5.0 + vec2<f32>(1.3, 2.9));
-  let fine = clamp(fwidth(z) * 0.3, 0.0, 1.0);
   let clump = mix(n1 * 0.6 + n3 * 0.4, 0.5, fine);
   var c = mix(vec3<f32>(0.16, 0.25, 0.08), vec3<f32>(0.30, 0.42, 0.13), clump);
   c = mix(c, vec3<f32>(0.22, 0.17, 0.10), smoothstep(0.62, 0.8, n2) * 0.18);

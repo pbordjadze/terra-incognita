@@ -27,20 +27,22 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   // the sky: deep blue-black, warm with the city's light toward the horizon
   let h = max(d.y, 0.0);
   var c = mix(vec3<f32>(0.16, 0.09, 0.07), vec3<f32>(0.010, 0.012, 0.030), smoothstep(0.0, 0.35, h));
+  // the ground's streets before the sky's branch: browsers' WGSL takes derivatives only in uniform control flow
+  // (above the horizon `t` is clamped, and none of it is used)
+  let t = eye.y / max(-d.y, 1e-4);
+  let g = eye.xz + d.xz * t;
+  // streets: a grid, a little turned, with avenues every so often
+  let q = vec2<f32>(g.x * 0.96 + g.y * 0.28, -g.x * 0.28 + g.y * 0.96);
+  let block = 60.0;
+  let cell = q / block;
+  // distance to the nearest street, metres (streets run between the blocks)
+  let fq = (0.5 - abs(fract(cell) - 0.5)) * block;
+  let street = min(fq.x, fq.y);
+  let w = max(fwidth(street), 0.3);
   if (d.y < 0.0) {
-    let t = eye.y / -d.y;
-    let g = eye.xz + d.xz * t;
     // the stadium's own dark roof and walls round the bowl
     // (its corners' radius: bowl.rs's CORNER pushed out as far as the half-width is past HALF[0], 44 m)
     let e = rrect(g, u.p1.xy, u.p1.x - 16.0);
-    // streets: a grid, a little turned, with avenues every so often
-    let q = vec2<f32>(g.x * 0.96 + g.y * 0.28, -g.x * 0.28 + g.y * 0.96);
-    let block = 60.0;
-    let cell = q / block;
-    // distance to the nearest street, metres (streets run between the blocks)
-    let fq = (0.5 - abs(fract(cell) - 0.5)) * block;
-    let street = min(fq.x, fq.y);
-    let w = max(fwidth(street), 0.3);
     // the street's glow, and its lamps every 25 m along it
     let along = select(q.x, q.y, fq.x < fq.y);
     let lamp = 1.0 - smoothstep(0.0, 2.2 * w + 1.0, length(vec2<f32>(street, (0.5 - abs(fract(along / 25.0) - 0.5)) * 25.0)));
