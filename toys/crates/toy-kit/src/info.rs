@@ -625,8 +625,7 @@ impl Info {
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
         let (kp, k) = (ppp as f32, (ppp * Self::mark_scale(points)) as f32);
-        // a soft dark ground so it reads on any scene, a small ring, and three dots (more, as iOS has it);
-        // none where the frame draws its own (`native`)
+        // a soft dark ground, a small ring, three dots (as iOS has it); none where the frame draws its own
         let s = Self::spot(points);
         let c = [s[0] as f32 * kp, s[1] as f32 * kp];
         if !native {
