@@ -32,7 +32,8 @@ pub struct Chrome {
     pub label: Option<Label>,
     /// One quiet line at the top (`Toy::title`: Screw's song).
     pub title: Option<String>,
-    /// What a screen reader should offer as buttons (`Toy::buttons`), by index for `In::Press`.
+    /// What a screen reader should offer as buttons (`Toy::buttons`), by index for `In::Press`; only while one
+    /// runs (`In::Reader`).
     pub buttons: Vec<Button>,
     /// The way back, if there is one now (Terra in a toy: "Back to the Earth"), its words for the screen
     /// reader: the frame's back button, the system's back gesture (`In::Back`).
@@ -200,8 +201,12 @@ pub enum In {
     Switch { i: usize, on: bool },
     /// A screen reader pressed `buttons[i]`.
     Press { i: usize, t: f64 },
-    /// The way back (`Chrome::back`): the frame's back button or the system's back gesture.
+    /// The way back (`Chrome::back`): the frame's back button or the system's back gesture. With the sheet or
+    /// the demo showing, it closes that instead.
     Back { t: f64 },
+    /// A screen reader is running (or stopped): only then does the chrome carry `buttons`, which move every
+    /// frame as Terra's lights do.
+    Reader { on: bool },
 }
 
 // the chrome's side of the host
@@ -250,12 +255,15 @@ impl<T: Toy> Host<T> {
             caption: self.info.line().map(str::to_string),
             label: self.toy.label(&self.ctx),
             title: self.toy.title(),
-            buttons: self
-                .toy
-                .buttons(&self.ctx)
-                .into_iter()
-                .map(|(label, at)| Button { label, at })
-                .collect(),
+            buttons: if self.reader {
+                self.toy
+                    .buttons(&self.ctx)
+                    .into_iter()
+                    .map(|(label, at)| Button { label, at })
+                    .collect()
+            } else {
+                Vec::new()
+            },
             back: self.toy.back(&self.ctx),
             music: self.toy.plays_music(),
             senses: self.toy.senses(),
@@ -292,11 +300,14 @@ impl<T: Toy> Host<T> {
             In::Switch { i, on } => self.set_switch(i, on),
             In::Press { i, t } => self.press(i, t),
             In::Back { t } => {
+                // back closes what shows first (the sheet, the demo), as the platforms' back does
                 if self.info.is_open() {
                     self.info.close();
+                } else {
+                    self.toy.go_back(&mut self.ctx, t);
                 }
-                self.toy.go_back(&mut self.ctx, t);
             }
+            In::Reader { on } => self.reader = on,
         }
     }
 

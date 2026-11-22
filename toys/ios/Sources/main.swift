@@ -171,6 +171,11 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         center.addObserver(forName: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { toy_set_reduce_motion(shell, UIAccessibility.isReduceMotionEnabled) }
         }
+        // the toy's buttons (Terra's lights) come in the chrome only while VoiceOver runs: they move every frame
+        tell(["reader": ["on": UIAccessibility.isVoiceOverRunning]])
+        center.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.tell(["reader": ["on": UIAccessibility.isVoiceOverRunning]])
+        }
         let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
         l.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
         l.add(to: .main, forMode: .common)
@@ -389,7 +394,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     }
 
     @objc func switchChanged(_ toggle: UISwitch) {
-        tell(["switch": ["i": toggle.tag, "on": toggle.isOn]])
+        tell(["switch": ["i": toggle.tag, "on": toggle.isOn] as [String: Any]])
     }
 
     /// The sheet's buttons ("demo", "origins", a line each), made or updated.
@@ -693,7 +698,7 @@ final class ButtonElement: UIAccessibilityElement {
     }
     override func accessibilityActivate() -> Bool {
         guard let view = accessibilityContainer as? ToyView else { return false }
-        view.tell(["press": ["i": index, "t": CACurrentMediaTime()]])
+        view.tell(["press": ["i": index, "t": CACurrentMediaTime()] as [String: Any]])
         UIAccessibility.post(notification: .layoutChanged, argument: nil)
         return true
     }

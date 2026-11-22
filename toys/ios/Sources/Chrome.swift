@@ -66,7 +66,12 @@ extension ToyView {
     /// The chrome, if it changed since the last frame.
     func readChrome() -> Chrome? {
         guard let shell, let p = toy_chrome(shell) else { return nil }
-        return try? JSONDecoder().decode(Chrome.self, from: Data(String(cString: p).utf8))
+        do {
+            return try JSONDecoder().decode(Chrome.self, from: Data(String(cString: p).utf8))
+        } catch {
+            toyLog("chrome: \(error)")
+            return nil
+        }
     }
 
     /// What the toy asks now: each haptic played as iOS plays its kind, the Files picker for a file.

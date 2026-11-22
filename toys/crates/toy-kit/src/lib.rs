@@ -577,6 +577,8 @@ pub struct Host<T: Toy> {
     pub first_info: info::First,
     /// Whether the sheet hangs from the top (`Toy::card_at_top`, asked as it opened).
     sheet_top: bool,
+    /// A screen reader runs (`chrome::In::Reader`): the chrome carries the toy's buttons.
+    reader: bool,
     /// Shakes told from the device's motion, and the rest after one (`shake`).
     shake: shake::Shake,
 }
@@ -595,6 +597,7 @@ impl<T: Toy> Host<T> {
             first_info: Default::default(),
             marks: Default::default(),
             sheet_top: false,
+            reader: false,
             shake: Default::default(),
         };
         host.marks_step();

@@ -658,10 +658,11 @@ impl Toy for Terra {
     }
 
     fn senses(&self) -> toy_kit::Senses {
-        // the open toy's; on the Earth none (a shake there is nobody's)
-        match (&self.state, &self.room) {
-            (State::Inside, Some(r)) => r.senses(),
-            _ => toy_kit::Senses {
+        // the held toy's, while its card is up (live) or it is open; on the bare Earth none (a shake there is
+        // nobody's)
+        match &self.room {
+            Some(r) => r.senses(),
+            None => toy_kit::Senses {
                 shake: false,
                 ..Default::default()
             },
