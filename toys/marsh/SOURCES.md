@@ -1,7 +1,7 @@
 # Magnet Marsh: sources
 
 What the toy follows and what it draws. It loads no data: the drop and its bacteria are made by code
-(src/drop.rs, src/drop.wgsl). The field is the one the phone feels.
+(src/drop.rs; plotted by src/plot.rs, filmed by src/sc4020.rs). The field is the one the phone feels.
 
 ## The place
 
@@ -40,3 +40,29 @@ What the toy follows and what it draws. It loads no data: the drop and its bacte
 - The water's turning of a cell (rotational diffusion, 0.18 rad² a second) and the chain's moment (kT/m at
   3 µT) are chosen within the published range so the alignment reads, not measured for one species.
 - The finger's magnet is a pole of 900 µT at 30 points, a strong fridge magnet's.
+
+## The look
+
+Drawn in the style of Frank W. Sinden's *Force, Mass and Motion* (Bell Labs, Murray Hill, New Jersey, 1965),
+a film of bodies moving under force laws, made on the laboratory's Stromberg-Carlson SC 4020 microfilm
+recorder.
+
+- **The film:** "Computer-animated film 'Force, Mass and Motion'", Frank W. Sinden, 1965 (ETHW, *Timeline of
+  Early Digital-Graphics Innovations at Bell Telephone Laboratories*). It "demonstrates how gravity-like
+  forces and inertia affect bodies with various initial velocities", and was "produced using the standard
+  SC4020 camera without pin registration" (content-animation.acorn-web-design-wantage.co.uk, *early
+  examples*). "Most of the films show the jitter on the image due to the lack of pin registration in the
+  Bell Labs camera" (the same site, *early films*).
+- **The machine** (*S-C 4020 Computer Recorder Information Manual*, August 1964, bitsavers.org): a point
+  "can be positioned to any of 1024 positions vertically or 1024 positions horizontally"; "the vector
+  generator makes it possible to connect any two addressable points with a straight line made up of line
+  segments… The maximum vector length is 1/16th of maximum deflection"; a 35 mm or 16 mm camera
+  "positioned above the tube face". So here every mark is a straight vector or a point: the drop's rim a
+  96-sided polygon, a spirillum a chain of six, a protist a 20-sided outline (`plot.rs`); the frame is read
+  at 1024 positions across and each frame sits off in the gate by a little, differently every frame
+  (`sc4020.wgsl`; none with Reduce Motion).
+
+**Drawn, not sourced:** white lines on black (no source found gives the screening print's polarity); the
+beam's width, the halation and the grain; the second, fainter ring inside the rim; a cell out of focus
+plotted dimmer; one cell in three plotted, each with its places of the last six eighths of a second left as
+points behind it; the finger's pole as a circle and a cross; 24 frames a second.

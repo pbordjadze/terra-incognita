@@ -6,64 +6,12 @@
 //   p0 = (scale, horizon px, twist, swing)   p1 = (ppp, a, b, c)
 //   leaf: (a, b) the blade's base, c its length (px); skin: (a, b) the finger's shade, c its depth.
 
-fn sky(px: vec2<f32>, horizon: f32) -> vec3<f32> {
-  let h = u.size.y;
-  let y = px.y / h;
-  let hz = horizon / h;
-  let top = vec3<f32>(0.18, 0.25, 0.42);
-  let mid = vec3<f32>(0.78, 0.62, 0.55);
-  let low = vec3<f32>(0.98, 0.78, 0.52);
-  var c = mix(top, mid, smoothstep(0.0, hz * 0.75, y));
-  c = mix(c, low, smoothstep(hz * 0.55, hz, y));
-  // the sun just down behind the ridge on the left
-  let d = length((px - vec2<f32>(-0.05 * u.size.x, horizon * 0.93)) / vec2<f32>(u.size.x, h * 0.55));
-  c += vec3<f32>(0.35, 0.22, 0.08) * exp(-d * d * 6.0);
-  return c;
-}
 
 fn ridge(x: f32, k: f32) -> f32 {
   return 0.5 * noise2(vec2<f32>(x * 0.004 + k * 7.0, k)) + 0.3 * noise2(vec2<f32>(x * 0.013 + k * 3.0, k + 2.0)) + 0.2 * noise2(vec2<f32>(x * 0.05, k + 5.0));
 }
 
-fn grove(px: vec2<f32>) -> vec3<f32> {
-  let horizon = u.p0.y;
-  let h = u.size.y;
-  var c = sky(px, horizon);
-  // three ridges of the Fishlake Plateau, farthest palest; dark firs on the nearest
-  let cols = array<vec3<f32>, 3>(vec3<f32>(0.55, 0.47, 0.55), vec3<f32>(0.36, 0.34, 0.38), vec3<f32>(0.20, 0.22, 0.21));
-  for (var k = 0; k < 3; k++) {
-    let kf = f32(k);
-    let top = horizon - h * (0.07 - 0.015 * kf) * ridge(px.x, kf);
-    let firs = select(0.0, h * 0.006 * noise2(vec2<f32>(px.x * 0.35, 9.0)), k == 2);
-    if (px.y > top - firs) {
-      c = cols[k];
-    }
-  }
-  if (px.y > horizon) {
-    // the floor between the stems: shade, fallen gold, deeper as it comes near
-    let near = clamp((px.y - horizon) / (h - horizon), 0.0, 1.0);
-    let floor = mix(vec3<f32>(0.62, 0.45, 0.26), vec3<f32>(0.20, 0.14, 0.08), pow(near, 0.5));
-    let speck = noise2(px * 0.02) * 0.5 + noise2(px * 0.07) * 0.5;
-    c = floor * (0.8 + 0.4 * speck);
-    // far off, the crowns run together into one gold
-    c = mix(c, vec3<f32>(0.92, 0.70, 0.36), exp(-(px.y - horizon) / (h * 0.06)) * 0.9);
-  }
-  return c;
-}
 
-fn bokeh(px: vec2<f32>, dark: f32) -> vec3<f32> {
-  let p = px / u.size.x;
-  let t = u.time * 0.03;
-  let g = noise2(p * 2.5 + vec2<f32>(t, 0.0)) * 0.6 + noise2(p * 5.0 - vec2<f32>(0.0, t)) * 0.4;
-  let sky = smoothstep(0.62, 0.8, noise2(p * 1.8 + vec2<f32>(3.0, t * 0.5)));
-  let trunks = smoothstep(0.82, 0.9, noise2(vec2<f32>(p.x * 7.0, 0.5 + p.y * 0.15)));
-  var c = mix(vec3<f32>(0.42, 0.30, 0.14), vec3<f32>(0.98, 0.72, 0.28), g);
-  c = mix(c, vec3<f32>(0.62, 0.74, 0.90), sky * 0.8);
-  c = mix(c, vec3<f32>(0.88, 0.88, 0.80), trunks * 0.6);
-  let y = px.y / u.size.y;
-  c *= mix(1.0, 0.45, y * dark);
-  return c;
-}
 
 // An aspen leaf's outline: nearly round, a short sharp tip, the base squared off, fine round teeth.
 // `q` in leaf lengths from the blade's middle, y toward the tip.
@@ -107,7 +55,39 @@ fn veins(q: vec2<f32>) -> f32 {
   return v;
 }
 
-fn leaf(px: vec2<f32>) -> vec4<f32> {
+
+
+// The plotter's ink on its paper (plotter.rs): `line` is how much of a pen line covers this pixel.
+const PAPER: vec3<f32> = vec3<f32>(0.96, 0.95, 0.91);
+const INK: vec3<f32> = vec3<f32>(0.08, 0.08, 0.10);
+fn pen(d: f32) -> f32 {
+  // d: distance from the line's middle, pixels; the pen's width in points
+  let w = 0.55 * u.p1.x * 0.5;
+  return smoothstep(w + 0.75, w - 0.75, abs(d));
+}
+
+// The grove drawn: the horizon, the three ridges' lines (the firs' ragged one nearest).
+fn grove_lines(px: vec2<f32>) -> f32 {
+  let horizon = u.p0.y;
+  let h = u.size.y;
+  var l = pen(px.y - horizon);
+  for (var k = 0; k < 3; k++) {
+    let kf = f32(k);
+    let x0 = px.x;
+    let top = horizon - h * (0.07 - 0.015 * kf) * ridge(x0, kf);
+    let firs = select(0.0, h * 0.006 * noise2(vec2<f32>(x0 * 0.35, 9.0)), k == 2);
+    // the line's distance measured down the page, steepened where the profile is
+    let dx = 1.5;
+    let t1 = horizon - h * (0.07 - 0.015 * kf) * ridge(x0 + dx, kf) - select(0.0, h * 0.006 * noise2(vec2<f32>((x0 + dx) * 0.35, 9.0)), k == 2);
+    let slope = (t1 - (top - firs)) / dx;
+    let d = (px.y - (top - firs)) / sqrt(1.0 + slope * slope);
+    if (px.y < horizon + 1.0) { l = max(l, pen(d)); }
+  }
+  return l;
+}
+
+// The leaf drawn: its edge, the midrib and the side veins (the fine net is left out).
+fn leaf_lines(px: vec2<f32>) -> f32 {
   let base = u.p1.yz;
   let len = u.p1.w;
   let twist = u.p0.z;
@@ -116,37 +96,21 @@ fn leaf(px: vec2<f32>) -> vec4<f32> {
   let cs = cos(-swing);
   let sn = sin(-swing);
   d = vec2<f32>(d.x * cs - d.y * sn, d.x * sn + d.y * cs);
-  let ct = cos(twist);
-  let face = max(abs(ct), 0.03);
+  let face = max(abs(cos(twist)), 0.03);
   var q = vec2<f32>(d.x / face, d.y) / len;
-  // the blade's middle a little under half its length below the base, so the base meets the stalk
   q = vec2<f32>(q.x, q.y - 0.36);
   let r = leaf_r(q);
-  let edge = r - length(q);
-  let aa = 1.5 / (len * face);
-  let inside = smoothstep(-aa, aa, edge);
-  if (inside <= 0.0) {
-    return vec4<f32>(0.0);
+  let edge = (r - length(q)) * len * face;
+  var l = pen(edge);
+  if (edge > 0.0) {
+    let v = veins(q);
+    l = max(l, smoothstep(0.62, 0.78, v) * step(0.5, v));
   }
-  // light through the leaf: the sun behind it and to the upper right
-  let toward = clamp(1.25 - length(px - vec2<f32>(u.size.x * 0.75, u.size.y * 0.42)) / (u.size.y * 0.55), 0.35, 1.25);
-  let front = ct >= 0.0;
-  var col = select(vec3<f32>(0.90, 0.85, 0.62), vec3<f32>(0.99, 0.70, 0.12), front);
-  col *= toward * (0.55 + 0.45 * abs(ct));
-  // green lingers along the veins near the base
-  let v = veins(q);
-  let green = exp(-pow(length(q - vec2<f32>(0.0, -0.45)) / 0.35, 2.0)) * 0.35;
-  col = mix(col, vec3<f32>(0.45, 0.55, 0.12) * toward, green * (0.4 + v));
-  col = mix(col, select(vec3<f32>(0.96, 0.94, 0.80), vec3<f32>(1.0, 0.92, 0.55), front) * toward, v * 0.45);
-  // the leaf's own grain
-  col *= 0.94 + 0.08 * noise2(q * 90.0) + 0.05 * noise2(q * 17.0);
-  // a darker rim where the blade thins to its teeth
-  col *= 0.82 + 0.18 * smoothstep(0.0, 0.02, edge);
-  return vec4<f32>(col * inside, inside);
+  return l;
 }
 
-// The skin of the leaf under the lens: interlocking cells, bright walls, the finger's shade.
-fn skin(px: vec2<f32>) -> vec3<f32> {
+// The skin drawn: the walls between its cells, and a finger's shade over them.
+fn skin_lines(px: vec2<f32>) -> f32 {
   let ppp = u.p1.x;
   let cell = 52.0 * ppp;
   let w = px + vec2<f32>(noise2(px / (cell * 0.45)) - 0.5, noise2(px / (cell * 0.45) + vec2<f32>(7.0, 3.0)) - 0.5) * cell * 0.55;
@@ -154,7 +118,8 @@ fn skin(px: vec2<f32>) -> vec3<f32> {
   let i = floor(g);
   var d1 = 9.0;
   var d2 = 9.0;
-  var id = vec2<f32>(0.0);
+  var s1 = vec2<f32>(0.0);
+  var s2 = vec2<f32>(9.0);
   for (var y = -1; y <= 1; y++) {
     for (var x = -1; x <= 1; x++) {
       let o = vec2<f32>(f32(x), f32(y));
@@ -162,42 +127,42 @@ fn skin(px: vec2<f32>) -> vec3<f32> {
       let dd = length(g - s);
       if (dd < d1) {
         d2 = d1;
+        s2 = s1;
         d1 = dd;
-        id = i + o;
+        s1 = s;
       } else if (dd < d2) {
         d2 = dd;
+        s2 = s;
       }
     }
   }
-  let wall = 1.0 - smoothstep(0.0, 0.05, d2 - d1);
-  let tone = 0.86 + 0.16 * hash2(id + vec2<f32>(1.7, 2.9));
-  var c = vec3<f32>(0.93, 0.70, 0.27) * tone;
-  // each cell a little domed: lighter in its middle
-  c *= 0.84 + 0.2 * smoothstep(0.0, 0.5, d2 - d1);
-  c = mix(c, vec3<f32>(1.0, 0.92, 0.66), wall * 0.65);
-  // a few oil drops of the autumn leaf's yellow in the cells
-  let drop = smoothstep(0.06, 0.03, length(g - id - vec2<f32>(0.5 + 0.2 * hash2(id), 0.5)));
-  c = mix(c, vec3<f32>(1.0, 0.82, 0.25), drop * 0.5);
-  let sh = u.p1.w * exp(-dot(px - u.p1.yz, px - u.p1.yz) / pow(130.0 * ppp, 2.0));
-  return c * (1.0 - 0.62 * sh);
+  // the true distance to the wall between the two nearest (their bisector), so the pen keeps its width
+  // where walls meet
+  let wall = (d2 * d2 - d1 * d1) / (2.0 * max(length(s2 - s1), 1e-4));
+  var l = pen(wall * cell);
+  // the finger's shade, hatched as a plotter shades: diagonal strokes, crossed where it is deepest
+  let dsh = (px - u.p1.yz) / (130.0 * ppp);
+  let sh = u.p1.w * exp(-dot(dsh, dsh));
+  let gap = 7.0 * ppp;
+  let h1 = abs(fract((px.x + px.y) / gap) - 0.5) * gap;
+  let h2 = abs(fract((px.x - px.y) / gap) - 0.5) * gap;
+  l = max(l, pen(h1) * step(0.25, sh));
+  l = max(l, pen(h2) * step(0.6, sh));
+  return l;
 }
 
 fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let mode = u.p0.x;
-  var c = vec3<f32>(0.0);
+  var l = 0.0;
   if (mode < 0.5) {
-    c = grove(world);
+    l = grove_lines(world);
   } else if (mode < 1.5) {
-    c = bokeh(world, 0.4);
+    // one stem: the grove behind it is out of the drawing
+    l = 0.0;
   } else if (mode < 2.5) {
-    let b = bokeh(world * 0.6, 0.9) * 0.62;
-    let l = leaf(world);
-    c = b * (1.0 - l.a) + l.rgb;
+    l = leaf_lines(world);
   } else {
-    c = skin(world);
+    l = skin_lines(world);
   }
-  // a soft darkening at the corners
-  let v = (px / u.size - 0.5) * vec2<f32>(1.0, 0.7);
-  c *= 1.0 - 0.5 * dot(v, v);
-  return vec4<f32>(c, 1.0);
+  return vec4<f32>(mix(PAPER, INK, l), 1.0);
 }

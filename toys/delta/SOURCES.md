@@ -1,7 +1,7 @@
 # The Delta: sources
 
 What the toy follows and what it draws. It loads no data: the land and its water are made by code
-(src/land.rs, src/land.wgsl). The tilt is the phone's.
+(src/land.rs, src/land.wgsl), seen through src/ip.rs. The tilt is the phone's.
 
 ## The place
 
@@ -36,3 +36,28 @@ What the toy follows and what it draws. It loads no data: the land and its water
 - **The time is pressed.** The flood that takes months to cross the delta crosses the screen in seconds,
   and the screen shows about 14 by 30 km of the fan.
 - The colours, the trees and the low sun are drawn, not measured.
+
+## The look
+
+Drawn in the style of the Sandin Image Processor (Dan Sandin, University of Illinois at Chicago Circle,
+first played in public in 1973), an analog computer for video that Sandin gave away for others to build.
+
+- **The machine:** "In 1971 to 1974 he designed and built the Image Processor, an analog computer for video
+  image processing", modelled on the Moog synthesizer's modules ("I just went through all the Moog
+  modules…"); "It took me about a full year to build it before it was running even in black and white"
+  (*Eigenwelt der Apparatewelt*, Ars Electronica 1992 catalogue). Its first performance was on January 23,
+  1973 (Video History Project, *Sandin Image Processor: excerpts*).
+- **What is followed** (the same two sources): the camera processor "takes a black and white video signal";
+  the Amplitude Classifier gives "8 discrete 'digital' channels… corresponding to 8 contiguous grey levels
+  evenly spaced from black to white"; "wiring from the Amplitude Classifier through the adder/mixers to the
+  color encoder results in a 'threshold based colorizer'"; the Differentiator's "shorter time constants
+  respond to sharp horizontal edges". So the land, drawn as before, is turned to a grey signal, inverted,
+  cut into eight levels, and each level keyed to its own colour; rises along a line light white
+  (`ip.wgsl`).
+
+**Drawn, not sourced:** the eight colours chosen (the player chose them; here the dry sand is dark, the wet
+grass violet, the water's fringe magenta (a second keyer: only next to water), the water cyan and white,
+the trees dark green); the inverter before the classifier; the
+threshold's slow drift, the lines' time-base wobble, the chroma's lag, the raster's dark lines and the
+tape's snow (none with Reduce Motion, except the raster); 260 picture elements across and 30 frames a
+second.

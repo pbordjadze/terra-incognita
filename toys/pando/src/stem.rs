@@ -4,7 +4,7 @@
 //! twist is a spring with little damping, kicked by the wind's turbulence, so a gust sets the whole
 //! tree flickering, and a calm lets it settle to a tremble.
 
-use crate::grove::{tone, with, PALE};
+use crate::pen::Pen;
 use crate::wind::hash;
 use crate::Cam;
 use std::f32::consts::{PI, TAU};
@@ -248,7 +248,7 @@ impl Stem {
     /// The leaf under a screen point (screen widths), if any is near.
     pub fn hit(&self, q: [f32; 2], aspect: f32) -> Option<usize> {
         let mut best: Option<(usize, f32)> = None;
-        for (i, l) in self.leaves.iter().enumerate() {
+        for (i, l) in self.leaves.iter().enumerate().filter(|(_, l)| drawn(l)) {
             let (_, m) = self.blade(l, aspect);
             let d = ((q[0] - m[0]).powi(2) + (q[1] - m[1]).powi(2)).sqrt() / l.blade;
             if d < 1.6 && best.is_none_or(|b| d < b.1) {
@@ -258,122 +258,134 @@ impl Stem {
         best.map(|b| b.0)
     }
 
+    /// The stem drawn with the plotter's pen (`pen.rs`): the trunk's two edges over paper, the bark's
+    /// eyes as lenses, each branch a pair of lines narrowing to a twig's single one, and every leaf its
+    /// own outline (the leaf frame's, foreshortened by its twist) over paper, so nearer ones hide farther.
     pub fn draw(&self, p: &mut Painter, cam: &Cam, w: f32, aspect: f32, ppp: f32, fade: f32) {
         let px = |q: [f32; 2]| cam.pt([q[0] * w, q[1] * w]);
         let len = |r: f32| cam.len(r * w);
-        // the trunk: chalk white with a greenish cast, shaded on its right
-        // (one long stroke a layer, so no joins show)
+        let pen = Pen::new(ppp, fade);
         let (a, b) = (
             self.moved(self.trunk[0], aspect),
             self.moved(self.trunk[self.trunk.len() - 1], aspect),
         );
         let r = 0.07;
-        for (off, wid, col) in [
-            (0.0, 1.0, [0.80, 0.82, 0.74]),
-            (0.45, 0.5, [0.68, 0.71, 0.63]),
-            (0.62, 0.3, [0.58, 0.61, 0.54]),
-            (-0.42, 0.35, [0.90, 0.91, 0.84]),
-        ] {
-            p.line(
-                px([a[0] + r * off, a[1]]),
-                px([b[0] + r * off, b[1]]),
-                len(r * wid),
-                len(if off == 0.0 { 0.003 } else { 0.02 }),
-                with(col, fade),
-            );
+        pen.paper(p, px(a), px(b), len(r));
+        for side in [-1.0f32, 1.0] {
+            pen.line(p, px([a[0] + r * side, a[1]]), px([b[0] + r * side, b[1]]));
         }
-        // the black eyes left where lower branches were shed
+        // the black eyes left where lower branches were shed: a lens across the bark, a line through it
         for (c, s) in &self.scars {
             let c = self.moved(*c, aspect);
-            // a dark eye: a lens across the bark, thickest in its middle, its ends drooping a little
-            let mut last = None;
-            for i in 0..=8 {
-                let u = -1.0 + i as f32 / 4.0;
-                let q = [c[0] + u * s * 0.85, c[1] + s * 0.12 * u.abs()];
-                if let Some(l) = last {
-                    let th = s * 0.15 * (1.0 - u * u).max(0.0) + 0.002;
-                    p.line(
-                        px(l),
-                        px(q),
-                        len(th),
-                        len(0.002),
-                        [0.10, 0.09, 0.08, 0.92 * fade],
-                    );
-                }
-                last = Some(q);
-            }
+            let lens = |u: f32, k: f32| {
+                px([
+                    c[0] + u * s * 0.85,
+                    c[1] + s * 0.12 * u.abs() + k * s * 0.15 * (1.0 - u * u),
+                ])
+            };
+            let top: Vec<[f32; 2]> = (0..=8).map(|i| lens(-1.0 + i as f32 / 4.0, -1.0)).collect();
+            let bottom: Vec<[f32; 2]> = (0..=8).map(|i| lens(1.0 - i as f32 / 4.0, 1.0)).collect();
+            pen.path(p, &[top, bottom].concat(), true);
+            pen.path(p, &[lens(-0.7, 0.0), lens(0.7, 0.0)], false);
         }
         for pts in &self.branches {
             for j in 0..pts.len() - 1 {
                 let r = 0.016 * (1.0 - j as f32 / pts.len() as f32) + 0.003;
-                p.line(
+                let (q0, q1) = (
                     px(self.moved(pts[j], aspect)),
                     px(self.moved(pts[j + 1], aspect)),
-                    len(r),
-                    len(0.002),
-                    [0.42, 0.38, 0.33, fade],
                 );
+                double(p, &pen, q0, q1, len(r));
             }
         }
         for (a, b) in &self.twigs {
-            p.line(
-                px(self.moved(*a, aspect)),
-                px(self.moved(*b, aspect)),
-                len(0.0035),
-                len(0.0015),
-                [0.46, 0.41, 0.34, fade],
-            );
+            pen.line(p, px(self.moved(*a, aspect)), px(self.moved(*b, aspect)));
         }
-        for l in &self.leaves {
+        for l in self.leaves.iter().filter(|l| drawn(l)) {
             let a = self.moved(l.anchor, aspect);
             let (base, mid) = self.blade(l, aspect);
-            p.line(
-                px(a),
-                px(base),
-                len(0.002),
-                len(0.001).max(0.5 * ppp),
-                [0.60, 0.48, 0.24, fade],
-            );
-            draw_blade(p, l, &|q| px(q), &|r| len(r), base, mid, fade);
+            pen.line(p, px(a), px(base));
+            draw_blade(p, &pen, l, &|q| px(q), &|r| len(r), base, mid);
         }
     }
 }
 
-/// A blade seen with its twist: a round leaf foreshortened across its stalk's line, gold face or pale
-/// back, its brightness by how squarely it faces the low sun.
+/// Whether a leaf is drawn: the pen draws about half of them, so a spray reads leaf by leaf (and only
+/// those can be touched).
+fn drawn(l: &Leaf) -> bool {
+    crate::wind::hash(l.seed ^ 0x5EED) < 0.5
+}
+
+/// A limb of width `r` (px): paper between its two edges, or one line when it is thinner than the pen
+/// can draw two.
+fn double(p: &mut Painter, pen: &Pen, a: [f32; 2], b: [f32; 2], r: f32) {
+    let l = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2))
+        .sqrt()
+        .max(1e-3);
+    if r < 1.5 * pen.w {
+        pen.line(p, a, b);
+        return;
+    }
+    let n = [-(b[1] - a[1]) / l * r, (b[0] - a[0]) / l * r];
+    pen.paper(p, a, b, r);
+    pen.line(p, [a[0] + n[0], a[1] + n[1]], [b[0] + n[0], b[1] + n[1]]);
+    pen.line(p, [a[0] - n[0], a[1] - n[1]], [b[0] - n[0], b[1] - n[1]]);
+}
+
+/// An aspen leaf's outline (the leaf frame's, `leaf_r` in scene.wgsl): nearly round, a short sharp tip,
+/// the base squared off; `t` the angle from the tip, in leaf lengths from the blade's middle.
+fn leaf_r(t: f32) -> f32 {
+    let mut r = 0.5 * (1.0 + 0.10 * t.cos()) * (1.0 - 0.06 * (2.0 * t).cos());
+    r *= 1.0 + 0.30 * (-(t / 0.16) * (t / 0.16)).exp();
+    let b = (t.abs() - std::f32::consts::PI) / 0.5;
+    r * (1.0 - 0.14 * (-b * b).exp())
+}
+
+/// A blade seen with its twist: its outline foreshortened across its stalk's line, over paper; the
+/// midrib while it faces us, and the pale back's raised side veins when it has turned over.
 fn draw_blade(
     p: &mut Painter,
+    pen: &Pen,
     l: &Leaf,
     px: &dyn Fn([f32; 2]) -> [f32; 2],
     len: &dyn Fn(f32) -> f32,
     base: [f32; 2],
     mid: [f32; 2],
-    fade: f32,
 ) {
     let c = l.twist.cos();
     let face = c.abs().max(0.08);
     let half = l.blade * 0.5;
-    let r = half * face;
     let d = [(mid[0] - base[0]) / half, (mid[1] - base[1]) / half];
-    let reach = (half - r).max(0.0) * 0.92;
-    let a = [mid[0] - d[0] * reach, mid[1] - d[1] * reach];
-    let b = [mid[0] + d[0] * reach, mid[1] + d[1] * reach];
-    let col = if c >= 0.0 {
-        let g = tone(l.seed);
-        let lit = 0.55 + 0.5 * face;
-        [g[0] * lit, g[1] * lit, g[2] * lit]
-    } else {
-        let lit = 0.75 + 0.25 * face;
-        [PALE[0] * lit, PALE[1] * lit, PALE[2] * lit]
+    let n = [-d[1], d[0]];
+    let at = |x: f32, y: f32| {
+        // (x across, y along toward the tip) in leaf lengths from the blade's middle
+        let (x, y) = (x * face * l.blade, y * l.blade);
+        px([mid[0] + d[0] * y + n[0] * x, mid[1] + d[1] * y + n[1] * x])
     };
-    p.line(px(a), px(b), len(r), len(0.002), with(col, fade));
-    // its midrib, seen while it faces us
-    let rib = [
-        col[0] * 0.78,
-        col[1] * 0.74,
-        col[2] * 0.7,
-        0.7 * face * fade,
-    ];
-    let end = [mid[0] + d[0] * half * 0.9, mid[1] + d[1] * half * 0.9];
-    p.line(px(base), px(end), len(0.0012), len(0.001), rib);
+    let r = half * face;
+    let reach = (half - r).max(0.0) * 0.9;
+    pen.paper(
+        p,
+        px([mid[0] - d[0] * reach, mid[1] - d[1] * reach]),
+        px([mid[0] + d[0] * reach, mid[1] + d[1] * reach]),
+        len(r * 0.95),
+    );
+    let pts: Vec<[f32; 2]> = (0..20)
+        .map(|i| {
+            let t = -std::f32::consts::PI + i as f32 / 20.0 * std::f32::consts::TAU;
+            let rr = leaf_r(t);
+            at(rr * t.sin(), rr * t.cos())
+        })
+        .collect();
+    pen.path(p, &pts, true);
+    if face > 0.3 {
+        pen.line(p, at(0.0, -0.45), at(0.0, 0.5));
+        if c < 0.0 {
+            for (y, s) in [(-0.3f32, 0.32f32), (-0.05, 0.28)] {
+                for side in [-1.0f32, 1.0] {
+                    pen.line(p, at(0.0, y), at(side * s, y + 0.18));
+                }
+            }
+        }
+    }
 }
