@@ -61,8 +61,8 @@ only from pages fetched on November 22, 2026:
 
 So, as the system worked: an artist's key drawings, and the computer's drawings between them. Here the
 automaton is the artist: every 0.2 s the ice it has grown is taken as a key drawing, and every frame the
-window shows the drawing between the last two (`keys.rs`), its lines the frost's edge and the contours of
-its age, one pen weight, white on the night (`pane.wgsl`). The night outside and the window's frame stay
+window shows the drawing between the last two (`keys.rs`), each spine, branch and needle one stroke along
+its ridge (where it froze first), one pen weight, white on the night (`pane.wgsl`). The night outside and the window's frame stay
 as they were.
 
 **Drawn, not sourced:** how often a key is taken; that the in-between is made by interpolating the two
