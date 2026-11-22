@@ -48,3 +48,14 @@ What is measured, what is modelled, what is drawn (painting-company row 218).
   clearing to black water in a few decades, its ends silting shut, then narrowing to marsh and fading.
 - The flecks of light riding the current, the ring where a neck breaks, the struck notes and the haptic
   tap at a cutoff: a way to see and feel the event, not measured things.
+
+## The look: sand on a lightbox (after the real method; the details drawn)
+
+- **Caroline Leaf, *Sand, or Peter and the Wolf*** (Harvard, 1969): "made by pouring sand on a light box
+  and manipulating the shapes frame-by-frame", beach sand spread on a lightbox
+  (https://en.wikipedia.org/wiki/Caroline_Leaf; 1969 per Annecy's archive).
+- Here (`src/sand.rs`, `src/sand.wgsl`): the floodplain drawn as before and read as the depth of sand,
+  the river cleared to the glass, the lakes swept thin, the forest deep; the lamp let through grain by
+  grain, a rim of heaped sand along each cleared edge; twelve frames a second, each photographed twice.
+- **Drawn, not sourced:** the depths, the grain's size, the rim, the lamp's falloff, the print's tone
+  (black and white, as her film was).

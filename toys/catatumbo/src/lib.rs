@@ -8,6 +8,7 @@
 //! painting-company row 327.
 
 pub mod bolt;
+pub mod scope;
 pub mod sound;
 
 use bolt::{Bolt, Brewer, Rng, CELL_M, NZ};
@@ -66,6 +67,8 @@ struct Strike {
 }
 
 pub struct Catatumbo {
+    /// the film the storm is traced into (`scope`)
+    film: toy_kit::film::Film,
     painter: Painter,
     sky: Backdrop,
     thunder: Thunder,
@@ -339,6 +342,7 @@ impl Toy for Catatumbo {
         thunder.rain(1.0);
         Ok(Catatumbo {
             painter: Painter::new(&ctx.gpu),
+            film: scope::new(&ctx.gpu, [ctx.width, ctx.height]),
             sky,
             thunder,
             strikes: Vec::new(),
@@ -355,6 +359,7 @@ impl Toy for Catatumbo {
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
+        self.film.resize(&ctx.gpu, [ctx.width, ctx.height]);
         self.size_pt = ctx.points();
     }
 
@@ -429,7 +434,12 @@ impl Toy for Catatumbo {
         });
     }
 
-    fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
+    fn draw(&mut self, ctx: &mut Ctx, out: &wgpu::TextureView) {
+        // a new frame twenty-four times a second, traced on the tube and filmed
+        let Some(d) = self.film.next(&ctx.gpu, out, self.t) else {
+            return;
+        };
+        let target = &self.film.scene.clone();
         let ppp = ctx.ppp;
         let t = self.t;
         let hy = self.horizon();
@@ -476,8 +486,11 @@ impl Toy for Catatumbo {
         self.strikes = strikes;
         let size = [ctx.width, ctx.height];
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+        // the sky and lake traced on the tube; the bolts drawn over the trace as the beam's own strokes
         self.sky.render(&ctx.gpu, &mut enc, target, size, &params);
+        self.film.read(&ctx.gpu, &mut enc, d, scope::values());
         self.painter.render(&ctx.gpu, &mut enc, target, size, None);
+        self.film.film(&mut enc, out);
         ctx.gpu.queue.submit([enc.finish()]);
     }
 
@@ -491,6 +504,15 @@ impl Toy for Catatumbo {
             "Lake Maracaibo's storm. Touch the water.",
             vec![info::Stroke::tap(0.5, [s[0] * 0.55, s[1] * 0.72])],
         ))
+    }
+
+    fn style(&self) -> Option<info::Style> {
+        Some(info::Style {
+            name: "Abstronic",
+            maker: "Mary Ellen Bute",
+            place: "New York",
+            year: 1952,
+        })
     }
 
     fn rules(&self) -> Option<info::Rules> {
@@ -564,7 +586,7 @@ impl Catatumbo {
                 let (qa, qb) = (px(pa, ppp), px(pb, ppp));
                 let violet = [0.62, 0.52, 1.0, alpha * 0.22];
                 let p = ppp as f32;
-                self.painter.glow(qa, qb, 0.0, r * 9.0 * p, violet);
+                self.painter.glow(qa, qb, 0.0, r * 3.5 * p, violet);
                 // the core: opaque and drawn over while bright, so the joints don't bead where the
                 // segments' caps overlap; dim, a soft glow with no hard core (which would bead too)
                 let v = if core { alpha.min(1.0) } else { alpha * 0.8 };

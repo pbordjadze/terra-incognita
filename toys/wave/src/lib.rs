@@ -441,6 +441,15 @@ impl Toy for Wave {
         ))
     }
 
+    fn style(&self) -> Option<toy_kit::info::Style> {
+        Some(toy_kit::info::Style {
+            name: "BEFLIX",
+            maker: "Ken Knowlton",
+            place: "Bell Labs, New Jersey",
+            year: 1963,
+        })
+    }
+
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::lines(&[
             "A Mexican wave in Estadio Azteca. It takes a few dozen at once to start one, and after a lap or two people tire of it and it dies.",

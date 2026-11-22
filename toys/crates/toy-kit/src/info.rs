@@ -11,6 +11,10 @@
 //!   and "Where this comes from" (`Toy::origins`, a [`Rules`] too, the science and history behind the
 //!   rules), which takes the sheet's place.
 //!
+//! A toy drawn in a style from the history of animation says whose (`Toy::style`, a [`Style`]): one dimmer
+//! line at the foot of the rules, "Drawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963." (Paul,
+//! Nov 22 2026: "have it say somewhere in the toy what the style is").
+//!
 //! A toy with a demo alone has no sheet: its mark plays the demo. The demo also opens by itself on a first
 //! visit (`First`). Under Reduce Motion the ghost rests where the gesture starts, still, with the line, and
 //! no touch is played. A toy may hang the sheet from the top instead (`Toy::card_at_top`), to keep it off
@@ -159,6 +163,38 @@ impl Rules {
             t.push_str(&self.note);
         }
         t.replace('\0', "")
+    }
+}
+
+/// The style a toy is drawn in, from the history of animation (`Toy::style`): the film or process it
+/// follows, who made it, where and when. Shown as one line at the foot of the sheet's rules.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Style {
+    /// The film or process ("BEFLIX", "Growth", "the pinscreen").
+    pub name: &'static str,
+    /// Who made it ("Ken Knowlton").
+    pub maker: &'static str,
+    /// Where ("Bell Labs, New Jersey").
+    pub place: &'static str,
+    pub year: u16,
+}
+
+impl Style {
+    /// The sheet's line: "Drawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963."
+    pub fn credit(&self) -> String {
+        format!(
+            "Drawn in the style of {}: {}, {}, {}.",
+            self.name, self.maker, self.place, self.year
+        )
+    }
+    /// The rules with the credit at their foot (under any note of their own).
+    pub fn under(&self, mut rules: Rules) -> Rules {
+        rules.note = if rules.note.is_empty() {
+            self.credit()
+        } else {
+            format!("{}\n{}", rules.note, self.credit())
+        };
+        rules
     }
 }
 
@@ -420,7 +456,10 @@ impl<T: crate::Toy> crate::Host<T> {
             return;
         }
         // (a toy with switches and no rules of its own: the sheet is its switches alone)
-        let r = self.toy.rules().unwrap_or_else(|| Rules::lines(&[]));
+        let mut r = self.toy.rules().unwrap_or_else(|| Rules::lines(&[]));
+        if let Some(s) = self.toy.style() {
+            r = s.under(r);
+        }
         self.info.show_rules(Some(r));
     }
 
@@ -718,6 +757,24 @@ mod tests {
             Route::Taken
         ));
         assert!(!info.is_open());
+    }
+
+    #[test]
+    fn a_style_is_credited_under_the_rules() {
+        let s = Style {
+            name: "BEFLIX",
+            maker: "Ken Knowlton",
+            place: "Bell Labs, New Jersey",
+            year: 1963,
+        };
+        let r = s.under(Rules::lines(&["a"]));
+        assert_eq!(
+            r.text(),
+            "a\n\nDrawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963."
+        );
+        assert!(s.under(Rules::new(&["a"], "n")).text().ends_with(
+            "n\nDrawn in the style of BEFLIX: Ken Knowlton, Bell Labs, New Jersey, 1963."
+        ));
     }
 
     #[test]
