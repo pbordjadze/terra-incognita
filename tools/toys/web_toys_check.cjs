@@ -30,7 +30,7 @@ function ids() {
   for (const id of given.length ? given : ids()) {
     const p = await b.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 1 });
     const bad = new Set();
-    let shader = false;
+    let shader = false; // (or a page that never started)
     p.on('pageerror', e => bad.add('pageerror: ' + String(e).split('\n')[0]));
     p.on('console', m => {
       const t = m.text();
@@ -43,11 +43,15 @@ function ids() {
     try {
       await p.goto(url + '#' + id);
       await p.waitForFunction(() => getComputedStyle(document.getElementById('loading')).opacity === '0', null, { timeout: 120000 });
-      // the link raises the toy's card a second in; its button then opens it
+      // a page that never started (no WebGPU, or the library stopped) says so in #status: a failure, not "clean"
+      const status = await p.evaluate(() => { const s = document.getElementById('status'); return s.style.display === 'block' ? s.textContent : ''; });
+      if (status) { bad.add('status: ' + status); shader = true; throw new Error('the page did not start'); }
+      // the link raises the toy's card a second in; its button then opens it (some toys' links open them
+      // straight away, so a card that never rose is only noted)
       const open = () => p.evaluate(() => { const b = [...document.querySelectorAll('#marks button')].find(b => /^Open /.test(b.getAttribute('aria-label') || '')); if (b) b.click(); return !!b; });
-      let t = 0;
-      while (!(await open()) && t < 30) { await p.waitForTimeout(1000); t++; }
-      if (t >= 30) state = 'card never rose';
+      let opened = false;
+      for (let t = 0; t < 30 && !(opened = await open()); t++) await p.waitForTimeout(1000);
+      if (!opened) state = 'card never rose';
       await p.waitForTimeout(10000);
       await p.screenshot({ path: path.join(dir, id + '.png'), timeout: 120000 });
     } catch (e) { state = 'failed: ' + e.message.split('\n')[0]; }
