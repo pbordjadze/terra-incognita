@@ -272,8 +272,7 @@ impl Toy for Throats {
         let shader = gpu.shader("hill", include_str!("hill.wgsl"));
         let pipeline = gpu.fullscreen_pipeline("hill", &shader, &[&bgl], None);
         let pts = ctx.points();
-        let open = Self::open_pt(pts);
-        let center = Self::opening(&hill, [pts[0] / open, pts[1] / open]);
+        let center = Self::opening(&hill, pts.map(|v| v / Self::open_pt(pts)));
         Ok(Throats {
             hill,
             tex,
@@ -282,7 +281,7 @@ impl Toy for Throats {
             pipeline,
             texels: vec![[0.0; 4]; W * H],
             center,
-            pt: open,
+            pt: Self::open_pt(pts),
             acc: 0.0,
             t: 0.0,
             fingers: Vec::new(),
