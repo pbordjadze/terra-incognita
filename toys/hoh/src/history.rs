@@ -25,6 +25,14 @@ fn clear_of(p: [f32; 2], room: f32) -> bool {
 }
 
 pub fn opening(seed: u64) -> Forest {
+    let mut f = begin(seed);
+    let mut next = 0;
+    while !years(&mut f, &mut next, usize::MAX) {}
+    f
+}
+
+/// The opening's old growth planted, its history not yet run (`years`).
+pub fn begin(seed: u64) -> Forest {
     let mut f = Forest::new(seed);
     // the old growth: giants some nine metres apart, none where a chosen giant will lie
     let mut at: Vec<[f32; 2]> = Vec::new();
@@ -48,8 +56,17 @@ pub fn opening(seed: u64) -> Forest {
     f.year = START as f64;
     // only the chosen giants fall in the history, so the first look is clear
     f.natural = false;
-    let mut next = 0;
-    while f.year < 0.0 {
+    f
+}
+
+/// Up to `n` years of the opening's history (`next`: the chosen giants felled so far); true once it has
+/// run to now and the forest is as it opens.
+pub fn years(f: &mut Forest, felled: &mut usize, n: usize) -> bool {
+    let mut next = *felled;
+    for _ in 0..n {
+        if f.year >= 0.0 {
+            break;
+        }
         while next < FELLED.len() && f.year as f32 >= FELLED[next].0 {
             let (_, a, d, h) = FELLED[next];
             f.plant(a[0], a[1], h, 0.0);
@@ -61,9 +78,13 @@ pub fn opening(seed: u64) -> Forest {
         // what fell by itself in those years is long down
         f.tick(FALL_S);
     }
+    *felled = next;
+    if f.year < 0.0 {
+        return false;
+    }
     f.landed.clear();
     f.started = 0;
     f.natural = true;
     f.year = 0.0;
-    f
+    true
 }
