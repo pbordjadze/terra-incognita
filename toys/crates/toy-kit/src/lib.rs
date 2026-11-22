@@ -17,6 +17,7 @@ pub mod backdrop;
 pub mod budget;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod check;
+mod clock;
 pub mod field;
 pub mod film;
 #[cfg(feature = "globe")]
@@ -37,6 +38,9 @@ pub mod switches;
 pub mod web;
 
 pub use assets::{Assets, DirAssets, MemoryAssets};
+#[cfg(target_arch = "wasm32")]
+pub use clock::set_wall_clock;
+pub use clock::{wall_clock, work_clock};
 #[cfg(feature = "globe")]
 pub use globe::Globe;
 pub use gpu::{Gpu, Offscreen};
@@ -65,31 +69,6 @@ pub fn set_log(path: std::path::PathBuf) {
             log(&format!("panic at {at}: {msg}"));
         }));
     }
-}
-
-/// Seconds since 1970 by the wall clock. A browser's WebAssembly has no clock of its own (std's
-/// `SystemTime::now` panics there), so on wasm32 the web shell sets it each frame (`set_wall_clock`).
-pub fn wall_clock() -> f64 {
-    #[cfg(target_arch = "wasm32")]
-    {
-        f64::from_bits(WALL.load(std::sync::atomic::Ordering::Relaxed))
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs_f64())
-            .unwrap_or(0.0)
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-static WALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// The page's clock (JavaScript's `Date.now() / 1000`), for `wall_clock` on wasm32.
-#[cfg(target_arch = "wasm32")]
-pub fn set_wall_clock(secs: f64) {
-    WALL.store(secs.to_bits(), std::sync::atomic::Ordering::Relaxed);
 }
 
 /// Where else the log's lines go: a browser's console (stderr goes nowhere in a browser's
@@ -270,6 +249,16 @@ pub trait Toy: 'static {
     /// lives here (GPU compute too), never in `draw`, so a headless check that draws only some frames
     /// sees the same world.
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64);
+    /// One slice of the work `new` leaves for later: a simulation run ahead so the toy opens already
+    /// going, a field solved. True once none is left (the default: nothing to do). Keep a slice to a few
+    /// milliseconds on a phone: a browser's WebAssembly has one thread, so work done in one go freezes
+    /// the page (a friend's trace, November 22: three seconds on a touch of Murmuration's light). The kit's
+    /// shell runs every slice before the first frame (`Host::new`), so a toy on its own and its headless
+    /// check see what they always did; Terra runs as many as fit in each frame while the toy's card rises
+    /// (`warm_budget`), and shows the toy once they are done.
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        true
+    }
     /// Draws the frame into `target` (format `ctx.gpu.format`), every pixel.
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView);
     /// The toy's sound, once, at start: it runs on the audio thread from then on (talk to it through
@@ -552,6 +541,7 @@ impl<T: Toy> Host<T> {
     pub fn new(mut ctx: Ctx) -> anyhow::Result<Host<T>> {
         step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
+        while !toy.warm(&mut ctx) {}
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         let mut host = Host {
             ctx,

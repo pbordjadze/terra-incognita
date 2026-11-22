@@ -18,6 +18,10 @@ impl Assets for Shared {
 
 /// A toy as Terra drives it.
 pub trait Room {
+    /// One slice of what the toy left to do before it shows (`Toy::warm`); true once it is ready. Until
+    /// then it hears no finger and its time does not run.
+    fn warm(&mut self) -> bool;
+    fn ready(&self) -> bool;
     fn pointer(&mut self, e: PointerEvent);
     fn update(&mut self, t: f64);
     fn draw(&mut self, target: &wgpu::TextureView);
@@ -51,6 +55,7 @@ pub struct Inside<T: Toy> {
     ctx: Ctx,
     toy: T,
     last_t: Option<f64>,
+    ready: bool,
 }
 
 /// A new context on the same device and data, the screen's size and settings.
@@ -85,6 +90,7 @@ pub fn open<T: Toy + 'static>(
         ctx,
         toy,
         last_t: None,
+        ready: false,
     }))
 }
 
@@ -122,10 +128,24 @@ impl<T: Toy> Room for Inside<T> {
     fn seen_from_above(&self) -> Option<toy_kit::Above> {
         self.toy.seen_from_above(&self.ctx)
     }
+    fn warm(&mut self) -> bool {
+        if !self.ready {
+            self.ready = self.toy.warm(&mut self.ctx);
+        }
+        self.ready
+    }
+    fn ready(&self) -> bool {
+        self.ready
+    }
     fn pointer(&mut self, e: PointerEvent) {
-        self.toy.pointer(&mut self.ctx, e);
+        if self.ready {
+            self.toy.pointer(&mut self.ctx, e);
+        }
     }
     fn update(&mut self, t: f64) {
+        if !self.ready {
+            return;
+        }
         let dt = match self.last_t {
             Some(l) => (t - l).clamp(0.0, 0.1),
             None => 0.0,
@@ -134,7 +154,9 @@ impl<T: Toy> Room for Inside<T> {
         self.toy.update(&mut self.ctx, t, dt);
     }
     fn draw(&mut self, target: &wgpu::TextureView) {
-        self.toy.draw(&mut self.ctx, target);
+        if self.ready {
+            self.toy.draw(&mut self.ctx, target);
+        }
     }
     fn resize(&mut self, width: u32, height: u32, ppp: f64) {
         (self.ctx.width, self.ctx.height, self.ctx.ppp) = (width.max(1), height.max(1), ppp);
@@ -193,7 +215,57 @@ impl<T: Toy> Room for Inside<T> {
     }
 }
 
+/// Seconds of a frame the held toy's warming may take (`Toy::warm`): the Earth keeps turning, its card rising,
+/// at about the screen's rate.
+const WARM_BUDGET: f64 = 0.010;
+/// Seconds a toy that came ready after its card rose takes to fade into the card's picture.
+const FADE: f64 = 0.35;
+
+/// The held toy's warming, as Terra shows it.
+#[derive(Default)]
+pub struct Warming {
+    /// When it came ready, if not at once.
+    late: Option<f64>,
+    /// The card was touched to go in before the toy was ready.
+    pub go_in: bool,
+}
+
+impl Warming {
+    /// How dark the card's picture is held over the toy now (1 not ready, 0 shown).
+    pub fn dark(&self, ready: bool, t: f64) -> f32 {
+        match (ready, self.late) {
+            (false, _) => 1.0,
+            (true, Some(t0)) => 1.0 - crate::card::ease((t - t0) / FADE) as f32,
+            (true, None) => 0.0,
+        }
+    }
+}
+
 impl crate::Terra {
+    /// The held toy's warming, as much as fits in this frame (`WARM_BUDGET`; all of it in the headless
+    /// check, which has no `work_clock`); `first` in the frame its card was raised, when ready at once means
+    /// shown at once. Once ready, a touch that asked to go in meanwhile takes the reader in.
+    pub(crate) fn warm_room(&mut self, t: f64, first: bool) {
+        let Some(r) = self.room.as_mut() else { return };
+        if r.ready() {
+            return;
+        }
+        let start = toy_kit::work_clock();
+        while !r.warm() {
+            if let (Some(a), Some(b)) = (start, toy_kit::work_clock()) {
+                if b - a >= WARM_BUDGET {
+                    return;
+                }
+            }
+        }
+        if !first {
+            self.warming.late = Some(t);
+        }
+        if std::mem::take(&mut self.warming.go_in) {
+            self.open_card(t);
+        }
+    }
+
     /// The toy has opened and settled: on its first opening since launch its demo plays by itself
     /// (`Ctx::show_info`).
     pub(crate) fn settle_inside(&mut self, ctx: &mut Ctx) {

@@ -90,6 +90,9 @@ pub struct Terra {
     room_sound: Arc<Mutex<Option<Box<dyn Synth>>>>,
     room_level: Arc<AtomicU32>,
     room: Option<Box<dyn Room>>,
+    /// The held toy's readiness (`rooms::Warming`): when it came ready, if after its card rose, and a touch
+    /// that asked to go in before.
+    warming: rooms::Warming,
     /// The light whose toy is held (its card up, or open).
     door: usize,
     seen: std::collections::HashSet<usize>, // toys opened since launch: a first opening shows its demo
@@ -228,8 +231,21 @@ impl Terra {
     fn draw_card(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         let (g, rise) = self.growth();
         let Some(r) = self.room.as_mut() else { return };
+        let ready = r.ready();
         let view = self.veil.view(ctx);
         r.draw(view);
+        // (a toy not yet ready shows its card's picture dark, of its colour; then fades in)
+        let dark = self.warming.dark(ready, self.t);
+        if dark > 0.0 {
+            let tint = self.life.doors[self.door].tint;
+            let (w, h) = (ctx.width as f32, ctx.height as f32);
+            let ink = [tint[0] * 0.12, tint[1] * 0.12, tint[2] * 0.12, dark];
+            self.painter.disc([w / 2.0, h / 2.0], w.hypot(h), 0.0, ink);
+            let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+            self.painter
+                .render(&ctx.gpu, &mut enc, view, [ctx.width, ctx.height], None);
+            ctx.gpu.queue.submit([enc.finish()]);
+        }
         let l = card::lay(
             ctx.points(),
             ctx.ppp,
@@ -405,6 +421,7 @@ impl Toy for Terra {
             room_sound: Arc::new(Mutex::new(None)),
             room_level: Arc::new(AtomicU32::new(0f32.to_bits())),
             room: None,
+            warming: Default::default(),
             door: 0,
             seen: Default::default(),
             state: State::Atlas,
@@ -464,6 +481,7 @@ impl Toy for Terra {
             self.globe.camera = held;
         }
         self.life.update(t, dt);
+        self.warm_room(t, false);
         if let Some(r) = self.room.as_mut() {
             r.sense(ctx.sensors);
             r.update(t);

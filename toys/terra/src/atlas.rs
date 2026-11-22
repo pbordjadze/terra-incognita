@@ -128,11 +128,15 @@ impl Terra {
             }
         };
         room.settings(ctx.night, ctx.reduce_motion);
-        room.update(t);
         *self.room_sound.lock().unwrap() = room.synth();
         // (another card up gives way at once: one toy is held at a time)
         let risen = self.card.is_some_and(|c| c.gone.is_none());
         self.room = Some(room);
+        self.warming = Default::default();
+        self.warm_room(t, true);
+        if let Some(r) = self.room.as_mut() {
+            r.update(t);
+        }
         self.door = i;
         self.card = Some(Up {
             t0: if risen { t - card::RISE * 0.5 } else { t },
@@ -193,6 +197,11 @@ impl Terra {
     /// The card's picture grows to the glass: in.
     pub(crate) fn open_card(&mut self, t: f64) {
         if self.room.is_none() || !matches!(self.state, State::Atlas) {
+            return;
+        }
+        // (a toy still warming goes in once it is ready: `warm_room`)
+        if self.room.as_ref().is_some_and(|r| !r.ready()) {
+            self.warming.go_in = true;
             return;
         }
         self.flight = None;

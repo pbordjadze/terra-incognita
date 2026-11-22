@@ -62,7 +62,15 @@ pub struct Throats {
     next_colour: u8,
     last_haptic: f64,
     size_pt: [f64; 2],
+    /// Steps of the hill still to run ahead before it is shown (`Toy::warm`).
+    run_ahead: usize,
 }
+
+const SEED: u64 = 0x7A11_5EED;
+
+/// The hill run ahead at the opening, kept for the next (the same every time: a second opening is ready
+/// at once).
+static OPENING: std::sync::Mutex<Option<Hill>> = std::sync::Mutex::new(None);
 
 impl Throats {
     fn world(&self, p: [f64; 2]) -> [f64; 2] {
@@ -132,7 +140,7 @@ impl Throats {
 
 impl Toy for Throats {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let hill = Hill::new(W, H, 0x7A11_5EED);
+        let hill = Hill::seeded(W, H, SEED);
         let gpu = &ctx.gpu;
         let tex = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("rocks"),
@@ -265,7 +273,6 @@ impl Toy for Throats {
         let shader = gpu.shader("hill", include_str!("hill.wgsl"));
         let pipeline = gpu.fullscreen_pipeline("hill", &shader, &[&bgl], None);
         let pts = ctx.points();
-        let center = Self::opening(&hill, [pts[0] / OPEN_PT, pts[1] / OPEN_PT]);
         Ok(Throats {
             hill,
             tex,
@@ -273,7 +280,8 @@ impl Toy for Throats {
             bind,
             pipeline,
             texels: vec![[0.0; 4]; W * H],
-            center,
+            // (where the view opens is chosen once the hill has run ahead: `warm`)
+            center: [W as f64 * 0.5, H as f64 * 0.5],
             pt: OPEN_PT,
             acc: 0.0,
             t: 0.0,
@@ -283,7 +291,35 @@ impl Toy for Throats {
             next_colour: sim::ORANGE,
             last_haptic: -1.0,
             size_pt: pts,
+            run_ahead: sim::WARM,
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        if self.run_ahead == 0 {
+            return true;
+        }
+        // (the same every time: the last opening's, if the toy has opened before)
+        let last = (self.run_ahead == sim::WARM)
+            .then(|| OPENING.lock().ok().and_then(|o| o.clone()))
+            .flatten();
+        if let Some(h) = last {
+            self.hill = h;
+            self.run_ahead = 0;
+        } else {
+            self.hill.step();
+            self.run_ahead -= 1;
+            if self.run_ahead > 0 {
+                return false;
+            }
+            self.hill.settle();
+            if let Ok(mut o) = OPENING.lock() {
+                *o = Some(self.hill.clone());
+            }
+        }
+        let pts = self.size_pt;
+        self.center = Self::opening(&self.hill, [pts[0] / OPEN_PT, pts[1] / OPEN_PT]);
+        true
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {

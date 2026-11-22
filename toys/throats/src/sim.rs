@@ -38,6 +38,7 @@ pub fn beater(k: u8) -> u8 {
     (k + 1) % 3 + 1
 }
 
+#[derive(Clone)]
 pub struct Rng(pub u64);
 #[allow(clippy::should_implement_trait)] // next() is a number generator's step, not an Iterator's
 impl Rng {
@@ -71,6 +72,7 @@ pub struct Flip {
     pub at: f32,
 }
 
+#[derive(Clone)]
 pub struct Hill {
     pub w: usize,
     pub h: usize,
@@ -103,6 +105,13 @@ pub const RULES: [&str; 2] = ["Lose to what beats you", "Only when outnumbered"]
 
 impl Hill {
     pub fn new(w: usize, h: usize, seed: u64) -> Hill {
+        let mut hill = Hill::seeded(w, h, seed);
+        hill.warm(WARM);
+        hill
+    }
+
+    /// The hill as it is seeded, not yet run ahead (`warm`, or `step` `WARM` times then `settle`).
+    pub fn seeded(w: usize, h: usize, seed: u64) -> Hill {
         let n = w * h;
         let mut hill = Hill {
             w,
@@ -121,7 +130,6 @@ impl Hill {
             on: [true; 2],
         };
         hill.seed_pinwheels(seed);
-        hill.warm(WARM);
         hill
     }
 
@@ -130,6 +138,11 @@ impl Hill {
         for _ in 0..steps {
             self.step();
         }
+        self.settle();
+    }
+
+    /// After the steps run ahead: every flip still waiting shown, and every rock as if long held.
+    pub fn settle(&mut self) {
         let rest: Vec<Flip> = std::mem::take(&mut self.pending);
         for f in rest {
             self.show(f);
@@ -159,18 +172,10 @@ impl Hill {
                 centres.push((cx, cy, turn, hand));
             }
         }
+        let near = Nearest::new(&centres, nx, ny, w, h);
         for y in 0..self.h {
             for x in 0..self.w {
-                let (mut best, mut bd) = (0, f32::MAX);
-                for (c, &(cx, cy, _, _)) in centres.iter().enumerate() {
-                    let dx = wrap(x as f32 - cx, w);
-                    let dy = wrap(y as f32 - cy, h);
-                    let d = dx * dx + dy * dy;
-                    if d < bd {
-                        bd = d;
-                        best = c;
-                    }
-                }
+                let best = near.at(x, y);
                 let (cx, cy, turn, hand) = centres[best];
                 let a = hand * wrap(y as f32 - cy, h).atan2(wrap(x as f32 - cx, w)) + turn;
                 let k = 1 + ((a / std::f32::consts::TAU).rem_euclid(1.0) * 3.0) as u8 % 3;
@@ -543,6 +548,62 @@ impl Hill {
             c[k as usize] += 1;
         }
         c
+    }
+}
+
+/// The pinwheels' centres a cell could be nearest: those of the grid's cells round its own (a centre is
+/// jittered at most 0.3 of a cell from its cell's middle, so one two cells away is never the nearest), in
+/// the order they were made, so ties fall as they would among all of them.
+struct Nearest<'a> {
+    centres: &'a [(f32, f32, f32, f32)],
+    near: Vec<Vec<usize>>,
+    grid: [usize; 2],
+    size: [f32; 2],
+}
+
+impl<'a> Nearest<'a> {
+    fn new(centres: &'a [(f32, f32, f32, f32)], nx: usize, ny: usize, w: f32, h: f32) -> Self {
+        let near = (0..nx * ny)
+            .map(|g| {
+                let (gx, gy) = ((g % nx) as isize, (g / nx) as isize);
+                let mut c: Vec<usize> = (-2..=2)
+                    .flat_map(|dy| (-2..=2).map(move |dx| (dx, dy)))
+                    .map(|(dx, dy)| {
+                        (gy + dy).rem_euclid(ny as isize) as usize * nx
+                            + (gx + dx).rem_euclid(nx as isize) as usize
+                    })
+                    .collect();
+                c.sort_unstable();
+                c.dedup();
+                c
+            })
+            .collect();
+        Nearest {
+            centres,
+            near,
+            grid: [nx, ny],
+            size: [w, h],
+        }
+    }
+
+    /// The centre nearest cell (`x`, `y`), on the torus.
+    fn at(&self, x: usize, y: usize) -> usize {
+        let [nx, ny] = self.grid;
+        let [w, h] = self.size;
+        let gx = (x * nx / w as usize).min(nx - 1);
+        let gy = (y * ny / h as usize).min(ny - 1);
+        let (mut best, mut bd) = (0, f32::MAX);
+        for &c in &self.near[gy * nx + gx] {
+            let (cx, cy) = (self.centres[c].0, self.centres[c].1);
+            let dx = wrap(x as f32 - cx, w);
+            let dy = wrap(y as f32 - cy, h);
+            let d = dx * dx + dy * dy;
+            if d < bd {
+                bd = d;
+                best = c;
+            }
+        }
+        best
     }
 }
 

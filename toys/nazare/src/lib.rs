@@ -124,24 +124,94 @@ pub struct Nazare {
     stay_until: f64,
     cam: Option<Cam>,
     ppp: f64,
+    /// The opening's swell, solved a part at a time (`Toy::warm`).
+    opening: Option<Staged>,
 }
 
 /// A swell being solved on its own thread: its field and its texels.
 #[cfg(not(target_arch = "wasm32"))]
 type Solving = std::thread::JoinHandle<(Field, Vec<u8>)>;
-/// A browser's WebAssembly has no threads: the swell is solved at once (a frame's stall) and taken up as
-/// late as on the phone.
+/// A browser's WebAssembly has no threads: the swell is solved a part at a time, a few milliseconds of each
+/// frame (`Solved::advance`), and taken up as late as on the phone.
 #[cfg(target_arch = "wasm32")]
 type Solving = Solved;
 #[cfg(target_arch = "wasm32")]
-struct Solved((Field, Vec<u8>));
+struct Solved(Staged, std::sync::Arc<Floor>);
 #[cfg(target_arch = "wasm32")]
 impl Solved {
-    fn join(self) -> Result<(Field, Vec<u8>), ()> {
-        Ok(self.0)
+    fn join(mut self) -> Result<(Field, Vec<u8>), ()> {
+        while !self.0.part(&self.1) {}
+        Ok(self.0.take())
     }
     fn is_finished(&self) -> bool {
-        true
+        self.0.done()
+    }
+    /// As many parts as fit in `ADVANCE_S` of this frame (all of them where there is no clock).
+    fn advance(&mut self) {
+        let start = toy_kit::work_clock();
+        while !self.0.part(&self.1) {
+            if let (Some(a), Some(b)) = (start, toy_kit::work_clock()) {
+                if b - a >= ADVANCE_S {
+                    return;
+                }
+            }
+        }
+    }
+}
+/// Seconds of a frame a swell's solving takes on the web.
+#[cfg(target_arch = "wasm32")]
+const ADVANCE_S: f64 = 0.006;
+
+/// Rows of texels a part turns out.
+const TEXEL_ROWS: usize = 48;
+
+/// A swell solved and turned into texels a part at a time (`sea::Solve`; the opening's warming, and a new
+/// swell on the web).
+struct Staged {
+    solve: Option<sea::Solve>,
+    field: Option<Field>,
+    data: Vec<u8>,
+    row: usize,
+    /// the floor's rows
+    h: usize,
+}
+
+impl Staged {
+    fn new(floor: &Floor, period: f64, from_deg: f64, rules: [bool; 2]) -> Staged {
+        Staged {
+            solve: Some(sea::Solve::new(floor, period, from_deg, rules)),
+            field: None,
+            data: vec![0u8; 3 * floor.w * floor.h * 4],
+            row: 0,
+            h: floor.h,
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn done(&self) -> bool {
+        self.field.is_some() && self.row == self.h
+    }
+
+    /// The next part; true once the field and its texels are done (`take`).
+    fn part(&mut self, floor: &Floor) -> bool {
+        if let Some(s) = self.solve.as_mut() {
+            if s.part(floor) {
+                self.field = self.solve.take().map(sea::Solve::field);
+            }
+            return false;
+        }
+        let Some(f) = &self.field else { return true };
+        let end = (self.row + TEXEL_ROWS).min(floor.h);
+        texel_rows(floor, f, &mut self.data, self.row..end);
+        self.row = end;
+        end == self.h
+    }
+
+    fn take(self) -> (Field, Vec<u8>) {
+        (
+            self.field.expect("a swell taken before it was solved"),
+            self.data,
+        )
     }
 }
 
@@ -186,13 +256,20 @@ fn short_train(f: &Field, cell_m: f64) -> (f32, [f32; 2]) {
 }
 
 /// The field into the texture's three blocks (max.wgsl says what each holds).
+#[cfg(not(target_arch = "wasm32"))]
 fn texels(floor: &Floor, f: &Field) -> Vec<u8> {
-    let (w, h) = (floor.w, floor.h);
+    let mut data = vec![0u8; 3 * floor.w * floor.h * 4];
+    texel_rows(floor, f, &mut data, 0..floor.h);
+    data
+}
+
+/// `texels`' rows `ys`, into `data`.
+fn texel_rows(floor: &Floor, f: &Field, data: &mut [u8], ys: std::ops::Range<usize>) {
+    let w = floor.w;
     let tg = f.period * GROUP;
-    let mut data = vec![0u8; 3 * w * h * 4];
     let unit = |v: f64| (127.5 + 127.0 * v) as u8;
     let angle = |tau: f64, period: f64| std::f64::consts::TAU * tau / period;
-    for y in 0..h {
+    for y in ys {
         for x in 0..w {
             let i = y * w + x;
             let a = (y * 3 * w + x) * 4;
@@ -239,7 +316,6 @@ fn texels(floor: &Floor, f: &Field) -> Vec<u8> {
             data[c + 1] = unit(g.sin());
         }
     }
-    data
 }
 
 impl Nazare {
@@ -272,15 +348,14 @@ impl Nazare {
         let floor = std::sync::Arc::clone(&self.floor);
         let (period, from) = self.want;
         let rules = self.on;
-        let solve = move || {
+        #[cfg(not(target_arch = "wasm32"))]
+        let job = std::thread::spawn(move || {
             let field = Field::with_rules(&floor, period, from, rules);
             let data = texels(&floor, &field);
             (field, data)
-        };
-        #[cfg(not(target_arch = "wasm32"))]
-        let job = std::thread::spawn(solve);
+        });
         #[cfg(target_arch = "wasm32")]
-        let job = Solved(solve());
+        let job = Solved(Staged::new(&floor, period, from, rules), floor);
         self.pending = Some((job, self.clock + SOLVE_S));
     }
 
@@ -444,7 +519,18 @@ impl Toy for Nazare {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let bounds: Bounds = serde_json::from_slice(&ctx.assets.read("floor.json")?)?;
         let floor = load_floor(&ctx.assets.read("floor.bin")?, &bounds)?;
-        let field = Field::new(&floor, PERIOD, FROM_DEG);
+        let opening = Staged::new(&floor, PERIOD, FROM_DEG, [true; 2]);
+        // (the opening's swell is solved by `warm`; until then the field holds none)
+        let field = Field {
+            period: PERIOD,
+            from_deg: FROM_DEG,
+            tau: Vec::new(),
+            tau_back: Vec::new(),
+            tau_group: Vec::new(),
+            height: Vec::new(),
+            height_back: Vec::new(),
+            rules: [true; 2],
+        };
         let blank = Pixels {
             width: 3 * floor.w as u32,
             height: floor.h as u32,
@@ -453,8 +539,7 @@ impl Toy for Nazare {
         };
         let tex = Texture::flat(&ctx.gpu, "nazare field", &blank);
         let max = Max::new(&ctx.gpu, &tex.view);
-        let data = texels(&floor, &field);
-        let mut toy = Nazare {
+        Ok(Nazare {
             max,
             tex,
             painter: Painter::new(&ctx.gpu),
@@ -476,16 +561,30 @@ impl Toy for Nazare {
             stay_until: 0.0,
             cam: None,
             ppp: ctx.ppp,
+            opening: Some(opening),
+        })
+    }
+
+    fn warm(&mut self, ctx: &mut Ctx) -> bool {
+        let Some(o) = self.opening.as_mut() else {
+            return true;
         };
-        toy.upload(&ctx.gpu, &data);
-        toy.peak = toy.find_peak();
+        if !o.part(&self.floor) {
+            return false;
+        }
+        let Some((field, data)) = self.opening.take().map(Staged::take) else {
+            return true;
+        };
+        self.field = field;
+        self.upload(&ctx.gpu, &data);
+        self.peak = self.find_peak();
         // something happens at once: the opening's first set is already on its way to the peak
         // (the sea's clock starts so a crest reaches the peak just then)
-        if let Some(i) = toy.peak {
-            toy.t = toy.field.tau[i] - FIRST_SET * RATE_FORT;
+        if let Some(i) = self.peak {
+            self.t = self.field.tau[i] - FIRST_SET * RATE_FORT;
         }
-        toy.time_set(FIRST_SET);
-        Ok(toy)
+        self.time_set(FIRST_SET);
+        true
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -510,6 +609,10 @@ impl Toy for Nazare {
         let dt = dt.min(0.1);
         self.clock += dt;
         self.t += dt * (RATE_FORT + (RATE_WALL - RATE_FORT) * self.down);
+        #[cfg(target_arch = "wasm32")]
+        if let Some((job, _)) = self.pending.as_mut() {
+            job.advance();
+        }
         let due = self
             .pending
             .as_ref()

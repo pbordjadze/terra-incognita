@@ -64,6 +64,8 @@ pub struct Wave {
     sound: sound::Sound,
     reduce_motion: bool,
     film: toy_kit::film::Film,
+    /// Ticks of the opening's wave still to run ahead before it is shown (`Toy::warm`).
+    run_ahead: usize,
 }
 
 impl Wave {
@@ -292,9 +294,6 @@ impl Toy for Wave {
         // of it; one behind it would meet a crowd that has only just sat down, and fizzle)
         crowd.new_group();
         crowd.stand(U as f32 * 0.10, V as f32 * 0.5, 6.0);
-        for _ in 0..(TICK_HZ * 9.5) as usize {
-            crowd.tick();
-        }
         let (verts, idx) = bowl::mesh();
         let vbuf = gpu
             .device
@@ -352,7 +351,19 @@ impl Toy for Wave {
             sound: sound::Sound::default(),
             reduce_motion: ctx.reduce_motion,
             film: beflix::new(gpu, [ctx.width, ctx.height]),
+            run_ahead: (TICK_HZ * 9.5) as usize,
         })
+    }
+
+    fn warm(&mut self, _ctx: &mut Ctx) -> bool {
+        for _ in 0..8 {
+            if self.run_ahead == 0 {
+                break;
+            }
+            self.crowd.tick();
+            self.run_ahead -= 1;
+        }
+        self.run_ahead == 0
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
