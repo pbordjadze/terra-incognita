@@ -10,11 +10,12 @@
 mod count;
 pub mod flock;
 mod growth;
+mod opening;
 pub mod sky;
 pub mod sun;
 mod wind;
 
-use flock::{addv, cross, dot, length, norm, scale, sub, Flock, V3};
+use flock::{addv, cross, dot, length, local, norm, ring_heading, scale, sub, Flock, V3};
 use std::sync::Arc;
 use toy_kit::{Ctx, Phase, PointerEvent, Synth, Toy};
 use wind::{put, Ears, Wind};
@@ -129,44 +130,9 @@ pub struct Murmuration {
     msaa: wgpu::TextureView,
     exposure: f32,
     growth: Option<growth::Growth>,
-}
-
-/// The heading of the birds between `r0` and `r1` metres of yours: the flock round you that your
-/// lean has not yet bent (the whole flock's, if none are there).
-fn ring_heading(f: &Flock, r0: f32, r1: f32) -> V3 {
-    let p = f.birds[f.you].pos;
-    let mut h = [0.0f32; 3];
-    let mut n = 0;
-    for b in &f.birds {
-        let d = sub(b.pos, p);
-        let d2 = dot(d, d);
-        if d2 > r0 * r0 && d2 < r1 * r1 {
-            h = addv(h, b.vel);
-            n += 1;
-        }
-    }
-    if n < 20 {
-        return norm(f.centre().1);
-    }
-    norm(h)
-}
-
-/// The birds within `r` metres of yours: their mean heading (unit), their centre, how many.
-fn local(f: &Flock, r: f32) -> (V3, V3, usize) {
-    let p = f.birds[f.you].pos;
-    let (mut h, mut c, mut n) = ([0.0f32; 3], [0.0f32; 3], 0usize);
-    for b in &f.birds {
-        let d = sub(b.pos, p);
-        if dot(d, d) < r * r {
-            h = addv(h, b.vel);
-            c = addv(c, b.pos);
-            n += 1;
-        }
-    }
-    if n == 0 {
-        return (norm(f.birds[f.you].vel), p, 0);
-    }
-    (norm(h), scale(c, 1.0 / n as f32), n)
+    /// The opening's warming (`opening.rs`): steps of the flock still to run ahead, the sky's table so far.
+    run_ahead: usize,
+    sky_work: sky::NowWork,
 }
 
 /// The tone curve the sky's shader uses, for colours worked out here (linear in, display out).
@@ -585,10 +551,7 @@ impl Toy for Murmuration {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let mut flock = Flock::new(BIRDS, 0x5eed_2026);
-        for _ in 0..360 {
-            flock.step(1.0 / 60.0);
-        }
+        let flock = Flock::new(BIRDS, 0x5eed_2026);
         let heading = norm({
             let v = flock.birds[flock.you].vel;
             [v[0], 0.0, v[2]]
@@ -640,13 +603,17 @@ impl Toy for Murmuration {
             msaa: msaa_view(ctx),
             growth: growth::ON.then(|| growth::Growth::new(ctx, &sky_layout)),
             exposure: 1.0,
+            run_ahead: opening::RUN_AHEAD,
+            sky_work: Default::default(),
         };
         let (el, az) = m.sun_at(m.minutes);
         (m.sun_el, m.sun_az) = (el, az);
-        m.sky.compute_now(el);
-        m.upload_sky(ctx);
-        m.place_eye(ctx, 1.0);
+        m.as_last_opened();
         Ok(m)
+    }
+
+    fn warm(&mut self, ctx: &mut Ctx) -> bool {
+        self.warm_part(ctx)
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {

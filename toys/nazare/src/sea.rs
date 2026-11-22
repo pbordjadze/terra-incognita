@@ -21,6 +21,9 @@
 //! is the arriving wave's at the face, spreading as it goes. Both grow as they slow (shoaling, through the
 //! group speed). The groups of bigger waves (sets) travel at the group speed.
 
+mod solve;
+pub use solve::Solve;
+
 /// Gravity (m/s²).
 const G: f64 = 9.81;
 /// The swell's height in open water (m), crest to trough: a big winter swell (the buoys off Portugal see a
@@ -124,93 +127,11 @@ impl Field {
         Field::with_rules(floor, period, from_deg, [true; 2])
     }
 
-    /// A swell's field with some of `RULES` switched off.
+    /// A swell's field with some of `RULES` switched off (`Solve`'s parts, all at once).
     pub fn with_rules(floor: &Floor, period: f64, from_deg: f64, rules: [bool; 2]) -> Field {
-        // the depth the swell feels: with the shallows not slowing it, the open ocean's everywhere
-        let felt = |i: usize| if rules[0] { floor.depth(i) } else { 4000.0 };
-        let back = rules[1] && reflects(period);
-        let wall = |i: usize| back && floor.canyon[i];
-        let n = floor.w * floor.h;
-        let mut phase = vec![f64::INFINITY; n];
-        let mut group = vec![f64::INFINITY; n];
-        let mut slow = vec![0.0f64; n];
-        let mut slow_g = vec![0.0f64; n];
-        let mut speed = vec![0.0f64; n];
-        for i in 0..n {
-            if floor.sea(i) {
-                let (c, cg) = speeds(period, felt(i));
-                speed[i] = c / floor.cell_m;
-                if wall(i) {
-                    // the rays meet the wall as a wall, not as deep water to bend away from before they
-                    // reach it: they see it as the shelf at its rim
-                    speed[i] =
-                        speeds(period, if rules[0] { RIM_M } else { felt(i) }).0 / floor.cell_m;
-                } else {
-                    slow[i] = floor.cell_m / c;
-                    slow_g[i] = floor.cell_m / cg;
-                }
-            }
-        }
-        let d = heading(from_deg);
-        let (c0, cg0) = speeds(period, 4000.0);
-        seed(floor, d, floor.cell_m / c0, &mut phase);
-        seed(floor, d, floor.cell_m / cg0, &mut group);
-        sweep(floor, &slow, &mut phase, ROUNDS);
-        // the sets' timing needs less care than the crests'
-        sweep(floor, &slow_g, &mut group, 1);
-        // the first arrival kinks where a faster path overtakes: a real crest there is a blend of both
-        // arrivals, diffraction rounding the corner over about a wavelength
-        smooth_sea(floor, &mut phase, SMOOTH);
-        smooth_sea(floor, &mut group, SMOOTH);
-        // the rays see the floor smoothed over about a wavelength: a swell does not feel a single rock
-        let mut smooth = speed.clone();
-        blur(&mut smooth, floor.w, floor.h);
-        blur(&mut smooth, floor.w, floor.h);
-        for (i, s) in smooth.iter_mut().enumerate() {
-            if !floor.sea(i) {
-                *s = 0.0;
-            }
-        }
-        let walls: Vec<bool> = (0..n).map(wall).collect();
-        let crowd = rays(floor, d, &smooth, &walls);
-        let shoal = |i: usize| (cg0 / speeds(period, felt(i)).1).sqrt();
-        let mut height = vec![0.0f32; n];
-        for i in 0..n {
-            if floor.sea(i) && phase[i].is_finite() {
-                let grow = if rules[0] {
-                    (crowd[i] * RAY * STEP).sqrt().min(REFRACT_MAX)
-                } else {
-                    // nothing bends: the train keeps its own height
-                    (crowd[i] * RAY * STEP).min(1.0)
-                };
-                height[i] = (H0 * shoal(i) * grow) as f32;
-            }
-        }
-        let (mut tau_back, mut height_back) = if back {
-            turned_back(floor, &walls, &slow, &phase, &height, &shoal)
-        } else {
-            (vec![f64::INFINITY; n], vec![0.0; n])
-        };
-        smooth_sea(floor, &mut tau_back, SMOOTH);
-        for i in 0..n {
-            // inside where they break the waves are broken: what is left of them is held to the depth
-            let most = (SPENT * felt(i).min(floor.depth(i))) as f32;
-            let both = height[i] + height_back[i];
-            if both > most {
-                height[i] *= most / both;
-                height_back[i] *= most / both;
-            }
-        }
-        Field {
-            period,
-            from_deg,
-            tau: phase,
-            tau_back,
-            tau_group: group,
-            height,
-            height_back,
-            rules,
-        }
+        let mut s = Solve::new(floor, period, from_deg, rules);
+        while !s.part(floor) {}
+        s.field()
     }
 
     /// The highest the two trains stand at a cell where their crests meet (m).
@@ -333,61 +254,6 @@ fn on_face(wall: &[bool], w: usize, h: usize, i: usize) -> bool {
         || (y + 1 < h && wall[i + w])
 }
 
-/// Each sea cell's nearest source over the sea (Dijkstra on the eight neighbours): how far it is (cells),
-/// and which it is (usize::MAX where none reaches).
-fn nearest_source(floor: &Floor, slow: &[f64], sources: &[usize]) -> (Vec<f64>, Vec<usize>) {
-    use std::cmp::Reverse;
-    use std::collections::BinaryHeap;
-    let (w, h) = (floor.w as i64, floor.h as i64);
-    let n = floor.w * floor.h;
-    let mut dist = vec![f64::INFINITY; n];
-    let mut from = vec![usize::MAX; n];
-    let mut heap = BinaryHeap::new();
-    for &i in sources {
-        dist[i] = 0.0;
-        from[i] = i;
-        heap.push(Reverse((0u64, i)));
-    }
-    while let Some(Reverse((dk, i))) = heap.pop() {
-        let di = f64::from_bits(dk);
-        if di > dist[i] {
-            continue;
-        }
-        let (x, y) = ((i % floor.w) as i64, (i / floor.w) as i64);
-        for (dx, dy) in [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (1, -1),
-            (-1, 1),
-            (1, 1),
-        ] {
-            let (nx, ny) = (x + dx, y + dy);
-            if nx < 0 || ny < 0 || nx >= w || ny >= h {
-                continue;
-            }
-            let j = (ny * w + nx) as usize;
-            if slow[j] <= 0.0 {
-                continue;
-            }
-            let nd = di
-                + if dx * dy != 0 {
-                    std::f64::consts::SQRT_2
-                } else {
-                    1.0
-                };
-            if nd < dist[j] {
-                dist[j] = nd;
-                from[j] = from[i];
-                heap.push(Reverse((nd.to_bits(), j)));
-            }
-        }
-    }
-    (dist, from)
-}
-
 /// A grid's value at a point (cells), bilinear; None off the grid or where any corner is 0 or less.
 fn at(floor: &Floor, v: &[f64], p: [f64; 2]) -> Option<f64> {
     let (w, h) = (floor.w, floor.h);
@@ -402,36 +268,6 @@ fn at(floor: &Floor, v: &[f64], p: [f64; 2]) -> Option<f64> {
         return None;
     }
     Some((c[0] * (1.0 - fx) + c[1] * fx) * (1.0 - fy) + (c[2] * (1.0 - fx) + c[3] * fx) * fy)
-}
-
-/// How the rays crowd. Each ray is the swell's own: it starts upstream of the floor, RAY apart across the
-/// swell, and turns toward the slower water as it goes (dv/ds = −(∇c − (∇c·v) v) / c), depositing once a
-/// STEP, so open water holds 1 / (RAY · STEP) a cell; more where rays converge. The wall ends it.
-fn rays(floor: &Floor, d: [f64; 2], speed: &[f64], wall: &[bool]) -> Vec<f64> {
-    let n = floor.w * floor.h;
-    let mut crowd = vec![0.0; n];
-    let (w, h) = (floor.w as f64, floor.h as f64);
-    let across = [-d[1], d[0]];
-    let centre = [0.5 * w, 0.5 * h];
-    let reach = 0.5 * w.hypot(h) + 2.0;
-    let mut s = -reach;
-    while s < reach {
-        // from a line across the swell, upstream of the floor, straight in until it is over the sea
-        let mut p = [
-            centre[0] + across[0] * s - d[0] * reach,
-            centre[1] + across[1] * s - d[1] * reach,
-        ];
-        for _ in 0..(4.0 * reach / STEP) as usize {
-            if at(floor, speed, p).is_some() {
-                trace(floor, speed, wall, &mut crowd, p, d);
-                break;
-            }
-            p = [p[0] + d[0] * STEP, p[1] + d[1] * STEP];
-        }
-        s += RAY;
-    }
-    blur(&mut crowd, floor.w, floor.h);
-    crowd
 }
 
 /// One ray, from `p` heading `v`, until it leaves the sea or meets the wall.
@@ -478,51 +314,6 @@ fn trace(
         }
         p = [p[0] + v[0] * STEP, p[1] + v[1] * STEP];
     }
-}
-
-/// The train the wall turns back: its crests (travel times) and height. Its sources are the sea's cells on
-/// the wall's face, each starting when the arriving crest reaches it and as tall as the arriving wave there;
-/// from them the crests are a second eikonal over the sea, and each cell takes its nearest source's height
-/// (as the arriving wave there grew to it, shoaling on from the face), halving over SPREAD_M.
-fn turned_back(
-    floor: &Floor,
-    wall: &[bool],
-    slow: &[f64],
-    phase: &[f64],
-    height: &[f32],
-    shoal: &dyn Fn(usize) -> f64,
-) -> (Vec<f64>, Vec<f32>) {
-    let (w, h) = (floor.w, floor.h);
-    let n = w * h;
-    let sources: Vec<usize> = (0..n)
-        .filter(|&i| !wall[i] && slow[i] > 0.0 && phase[i].is_finite() && height[i] > 0.0)
-        .filter(|&i| on_face(wall, w, h, i))
-        .collect();
-    let mut tau = vec![f64::INFINITY; n];
-    for &i in &sources {
-        tau[i] = phase[i];
-    }
-    sweep(floor, slow, &mut tau, ROUNDS);
-    let (dist, from) = nearest_source(floor, slow, &sources);
-    let mut out = vec![0.0f32; n];
-    for i in 0..n {
-        let src = from[i];
-        if src == usize::MAX || !tau[i].is_finite() {
-            continue;
-        }
-        let spread = (1.0 + dist[i] * floor.cell_m / SPREAD_M).sqrt().recip();
-        out[i] = (height[src] as f64 * spread * shoal(i) / shoal(src)) as f32;
-    }
-    let mut hb: Vec<f64> = out.iter().map(|&v| v as f64).collect();
-    blur(&mut hb, w, h);
-    for i in 0..n {
-        out[i] = if floor.sea(i) && !wall[i] {
-            hb[i] as f32
-        } else {
-            0.0
-        };
-    }
-    (tau, out)
 }
 
 /// Times smoothed over the sea alone (a box `passes` times, land cells left out of each mean): a ramp is
