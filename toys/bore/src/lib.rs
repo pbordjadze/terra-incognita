@@ -27,7 +27,7 @@ pub const PLACE: (f64, f64) = (120.535, 30.395);
 const COLS: usize = 512;
 const ZMIN: f64 = -400.0;
 const ZMAX: f64 = 9000.0;
-/// The moon it opens on: two days after full, the biggest tides.
+/// The moon it opens on: a day after full, among the biggest tides.
 const OPENING_AGE: usize = 8;
 
 /// A cut to another tide: fading to the paper, swapping, fading back.
@@ -88,12 +88,19 @@ impl Bore {
     }
 
     fn cut_to(&mut self, k: usize) {
-        if self.cut.as_ref().is_some_and(|c| c.to == k && !c.swapped) {
-            return;
-        }
+        // a cut already going to the paper goes on to the new tide instead; one coming back from it turns
+        // round where it is, so the paper never jumps
+        let at = match &mut self.cut {
+            Some(c) if !c.swapped => {
+                c.to = k;
+                return;
+            }
+            Some(_) => self.t - 0.45 * self.fade as f64,
+            None => self.t,
+        };
         self.cut = Some(Cut {
             to: k,
-            at: self.t,
+            at,
             swapped: false,
         });
     }

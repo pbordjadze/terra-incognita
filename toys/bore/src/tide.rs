@@ -6,7 +6,7 @@
 //! travel, √(g·depth), is faster at the crest than in the trough, so the tide's front catches itself up
 //! and stands as a wall (Chanson 2011; Pan, Lin & Lu 2007; SOURCES.md).
 //!
-//! The scheme: finite volumes of 100 m, the Rusanov flux on a hydrostatic reconstruction (Audusse et
+//! The scheme: finite volumes of 50 m, the Rusanov flux on a hydrostatic reconstruction (Audusse et
 //! al. 2004: the sea at rest over the sloping bed stays at rest, and the sands may dry), Manning's
 //! friction taken implicitly. Distances are metres along the estuary from the mouth (`x`), heights
 //! metres above mean sea level.
@@ -282,7 +282,8 @@ impl Tide {
             if i < 0 {
                 q[0]
             } else if i as usize >= N {
-                q[N - 1]
+                // the river coming down, as in the full equations' ghost cells
+                -RIVER
             } else {
                 q[i as usize]
             }
