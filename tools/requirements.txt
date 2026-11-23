@@ -1,8 +1,8 @@
 # The Python packages the tools, the checks and the linters use, pinned; Dependabot proposes the bumps
 # (.github/dependabot.yml). python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
-numpy==2.5.4
-ruff==0.17.4
+numpy==2.5.5
+ruff==0.17.6
 shellcheck-py==0.11.0.1
 actionlint-py==1.7.12.25
-lizard==1.26.0
+lizard==1.26.1
 pyright==1.1.414
