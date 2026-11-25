@@ -37,8 +37,17 @@ pub async fn start(
     // (a toy's warming and Nazaré's swells stop each frame's share of their work by it)
     toy_kit::set_work_clock(|| js_sys::Date::now() / 1000.0);
     let err = |e: &dyn std::fmt::Display| JsValue::from_str(&e.to_string());
+    // WebGPU where the browser gives an adapter, else WebGL2 (a browser can offer navigator.gpu and
+    // still find no adapter, as Opera on Windows does). Asked without the canvas: a canvas that has
+    // given a WebGPU context can't give a WebGL one after.
+    let backends = if webgpu_adapter().await {
+        wgpu::Backends::BROWSER_WEBGPU
+    } else {
+        toy_kit::log("gpu: no WebGPU adapter here, so WebGL2");
+        wgpu::Backends::GL
+    };
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::BROWSER_WEBGPU,
+        backends,
         ..wgpu::InstanceDescriptor::new_without_display_handle()
     });
     let surface = instance
@@ -62,6 +71,18 @@ pub async fn start(
     (h.ctx.night, h.ctx.reduce_motion) = (night, reduce_motion);
     h.toy.settings(&mut h.ctx);
     Ok(Shell { frame })
+}
+
+/// Whether the browser's WebGPU gives an adapter at all.
+async fn webgpu_adapter() -> bool {
+    let probe = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::BROWSER_WEBGPU,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    });
+    probe
+        .request_adapter(&wgpu::RequestAdapterOptions::default())
+        .await
+        .is_ok()
 }
 
 #[wasm_bindgen]

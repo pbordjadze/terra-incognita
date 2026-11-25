@@ -13,7 +13,8 @@ crate-type = ["cdylib", "rlib"]
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 terra = { path = "../terra" }
 toy-kit = { workspace = true }
-wgpu = { workspace = true, features = ["webgpu"] }
+# WebGL2 too: where the browser has no WebGPU adapter (Opera on Windows, older browsers), Terra runs on it
+wgpu = { workspace = true, features = ["webgpu", "webgl"] }
 wasm-bindgen = "=0.2.130"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"

@@ -41,8 +41,14 @@ impl Gpu {
         // least 4096), no features. Under KIT_IPHONE_LIMITS=1 (the launch check) the same request is
         // made with an iPhone's limits in place of this adapter's, and it must fit what an iPhone
         // grants, so a buffer, binding or pipeline the phone's device would refuse fails here too.
+        // On WebGL2 (the web's fallback) WebGL2's own limits instead: no compute or storage there.
+        let base = if adapter_info.backend == wgpu::Backend::Gl {
+            wgpu::Limits::downlevel_webgl2_defaults()
+        } else {
+            wgpu::Limits::default()
+        };
         let request = |granted: &wgpu::Limits| {
-            let mut l = wgpu::Limits::default().using_resolution(granted.clone());
+            let mut l = base.clone().using_resolution(granted.clone());
             l.max_texture_dimension_2d = l.max_texture_dimension_2d.max(4096);
             l
         };
@@ -107,9 +113,9 @@ impl Gpu {
                 )
             }));
         }
-        // on the web the device is neither Send nor Sync: one Arc type for every target
-        #[allow(clippy::arc_with_non_send_sync)]
-        let device = Arc::new(device);
+        // on the web the device (and with WebGL the queue) is neither Send nor Sync: one Arc type for every target
+        #[allow(clippy::arc_with_non_send_sync)] // (the same Arc on every target)
+        let (device, queue) = (Arc::new(device), Arc::new(queue));
         crate::budget::start_report(device.clone());
         let format = match surface {
             Some(s) => {
@@ -129,7 +135,7 @@ impl Gpu {
         };
         Ok(Gpu {
             device,
-            queue: Arc::new(queue),
+            queue,
             format,
             adapter_info,
         })

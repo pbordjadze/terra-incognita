@@ -108,7 +108,8 @@ async function load() {
 }
 
 async function main() {
-  if (!navigator.gpu) { say('Terra needs WebGPU: Safari 26 or newer on iPhone, iPad and Mac, or Chrome or Edge.'); return; }
+  // WebGPU, or WebGL2 where the browser has none (asked of a spare canvas: Terra's takes one context only)
+  if (!navigator.gpu && !document.createElement('canvas').getContext('webgl2')) { say('Terra needs WebGPU or WebGL2: a current Safari, Chrome, Edge, Firefox or Opera.'); return; }
   await init();
   const [names, files] = await load();
   const [w, h, dpr] = size();
