@@ -6,8 +6,8 @@
 //     bash tools/toys/web_build.sh /tmp/web && python3 -m http.server -d /tmp/web 8765 &
 //     xvfb-run -a node tools/toys/web_toys_check.cjs http://127.0.0.1:8765/ /tmp/web-shots [--webgl] [toy id ...]
 //
-// --webgl turns WebGPU's adapter off (navigator.gpu stays, as in Opera on Windows), so the page takes its
-// WebGL2 fallback.
+// --webgl keeps navigator.gpu but makes its requestAdapter find nothing (as Opera on Windows does), so the
+// page takes its WebGL2 fallback.
 //
 // With no ids it reads them from toys/terra/src/doors/. Runs headed under xvfb: headless Chromium's
 // SwiftShader loses the device at the globe's ground pass (Nov 22, 2026). Software rendering: slow, and a
@@ -18,7 +18,6 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const FLAGS = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-angle=swiftshader'];
-const WEBGL_FLAGS = ['--disable-features=WebGPU', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
 
 function ids() {
   const dir = path.join(__dirname, '../../toys/terra/src/doors');
@@ -31,10 +30,11 @@ function ids() {
   const [url, dir, ...given] = argv.filter(a => a !== '--webgl');
   if (!url || !dir) { console.error('usage: web_toys_check.cjs <url> <out-dir> [toy id ...]'); process.exit(2); }
   fs.mkdirSync(dir, { recursive: true });
-  const b = await chromium.launch({ args: webgl ? WEBGL_FLAGS : FLAGS, headless: false });
+  const b = await chromium.launch({ args: FLAGS, headless: false });
   let failed = 0;
   for (const id of given.length ? given : ids()) {
     const p = await b.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 1 });
+    if (webgl) await p.addInitScript(() => { if (navigator.gpu) navigator.gpu.requestAdapter = async () => null; });
     const bad = new Set();
     let shader = false; // (or a page that never started)
     p.on('pageerror', e => bad.add('pageerror: ' + String(e).split('\n')[0]));
