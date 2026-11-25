@@ -50,10 +50,9 @@ toys/crates/toy-kit/src/check.rs::play_with 291 70
 toys/crates/toy-kit/src/globe/mod.rs::pointer 162 41
 toys/crates/toy-kit/src/globe/rivers.rs::mask 123 14
 toys/crates/toy-kit/src/globe/rivers.rs::new 176 4
-toys/crates/toy-kit/src/gpu/mod.rs::new 103 6
 toys/crates/toy-kit/src/web.rs::run 188 30
 toys/fireflies/src/look.rs::new 127 1
-toys/frost/src/lib.rs::new 195 2
+toys/frost/src/lib.rs::new 184 2
 toys/frost/src/lib.rs::update 346 62
 toys/frost/src/sound.rs::render 175 27
 toys/jam/src/lib.rs::draw 381 60

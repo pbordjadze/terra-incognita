@@ -37,38 +37,8 @@ impl Gpu {
             .map_err(|e| anyhow::anyhow!("no adapter: {e}"))?;
         let adapter_info = adapter.get_info();
         log::info!("adapter: {adapter_info:?}");
-        // What the kit asks of the device: WebGPU's default limits, the adapter's texture sizes (at
-        // least 4096), no features. Under KIT_IPHONE_LIMITS=1 (the launch check) the same request is
-        // made with an iPhone's limits in place of this adapter's, and it must fit what an iPhone
-        // grants, so a buffer, binding or pipeline the phone's device would refuse fails here too.
-        let request = |granted: &wgpu::Limits| {
-            let mut l = wgpu::Limits::default().using_resolution(granted.clone());
-            l.max_texture_dimension_2d = l.max_texture_dimension_2d.max(4096);
-            l
-        };
         let required_features = wgpu::Features::empty();
-        let required_limits = if crate::budget::iphone() {
-            let phone = crate::budget::iphone_limits();
-            let l = request(&phone);
-            let mut over = Vec::new();
-            l.check_limits_with_fail_fn(&phone, false, |name, want, have| {
-                over.push(format!("{name} {want} > {have}"))
-            });
-            anyhow::ensure!(
-                over.is_empty(),
-                "an iPhone would refuse the device: {}",
-                over.join(", ")
-            );
-            let lacking = required_features - crate::budget::iphone_features();
-            anyhow::ensure!(
-                lacking.is_empty(),
-                "an iPhone lacks the features {lacking:?}"
-            );
-            log::info!("the iPhone's limits (KIT_IPHONE_LIMITS)");
-            l
-        } else {
-            request(&adapter.limits())
-        };
+        let required_limits = required_limits(&adapter, &adapter_info, required_features)?;
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("toy"),
@@ -107,9 +77,9 @@ impl Gpu {
                 )
             }));
         }
-        // on the web the device is neither Send nor Sync: one Arc type for every target
-        #[allow(clippy::arc_with_non_send_sync)]
-        let device = Arc::new(device);
+        // on the web the device (and with WebGL the queue) is neither Send nor Sync: one Arc type for every target
+        #[allow(clippy::arc_with_non_send_sync)] // (the same Arc on every target)
+        let (device, queue) = (Arc::new(device), Arc::new(queue));
         crate::budget::start_report(device.clone());
         let format = match surface {
             Some(s) => {
@@ -129,7 +99,7 @@ impl Gpu {
         };
         Ok(Gpu {
             device,
-            queue: Arc::new(queue),
+            queue,
             format,
             adapter_info,
         })
@@ -315,4 +285,48 @@ impl Offscreen {
         }
         out
     }
+}
+
+/// What the kit asks of the device: WebGPU's default limits, the adapter's texture sizes (at least
+/// 4096), no features. Under KIT_IPHONE_LIMITS=1 (the launch check) the same request is made with an
+/// iPhone's limits in place of this adapter's, and it must fit what an iPhone grants, so a buffer,
+/// binding or pipeline the phone's device would refuse fails here too. On WebGL2 (the web's fallback)
+/// WebGL2's own limits instead: no compute or storage there.
+fn required_limits(
+    adapter: &wgpu::Adapter,
+    adapter_info: &wgpu::AdapterInfo,
+    required_features: wgpu::Features,
+) -> anyhow::Result<wgpu::Limits> {
+    let base = if adapter_info.backend == wgpu::Backend::Gl {
+        wgpu::Limits::downlevel_webgl2_defaults()
+    } else {
+        wgpu::Limits::default()
+    };
+    let request = |granted: &wgpu::Limits| {
+        let mut l = base.clone().using_resolution(granted.clone());
+        l.max_texture_dimension_2d = l.max_texture_dimension_2d.max(4096);
+        l
+    };
+    Ok(if crate::budget::iphone() {
+        let phone = crate::budget::iphone_limits();
+        let l = request(&phone);
+        let mut over = Vec::new();
+        l.check_limits_with_fail_fn(&phone, false, |name, want, have| {
+            over.push(format!("{name} {want} > {have}"))
+        });
+        anyhow::ensure!(
+            over.is_empty(),
+            "an iPhone would refuse the device: {}",
+            over.join(", ")
+        );
+        let lacking = required_features - crate::budget::iphone_features();
+        anyhow::ensure!(
+            lacking.is_empty(),
+            "an iPhone lacks the features {lacking:?}"
+        );
+        log::info!("the iPhone's limits (KIT_IPHONE_LIMITS)");
+        l
+    } else {
+        request(&adapter.limits())
+    })
 }

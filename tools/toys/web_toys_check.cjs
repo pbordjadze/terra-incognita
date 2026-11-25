@@ -4,7 +4,10 @@
 // nothing) and reports each toy's shader and validation errors, page errors and a screenshot.
 //
 //     bash tools/toys/web_build.sh /tmp/web && python3 -m http.server -d /tmp/web 8765 &
-//     xvfb-run -a node tools/toys/web_toys_check.cjs http://127.0.0.1:8765/ /tmp/web-shots [toy id ...]
+//     xvfb-run -a node tools/toys/web_toys_check.cjs http://127.0.0.1:8765/ /tmp/web-shots [--webgl] [toy id ...]
+//
+// --webgl keeps navigator.gpu but makes its requestAdapter find nothing (as Opera on Windows does), so the
+// page takes its WebGL2 fallback.
 //
 // With no ids it reads them from toys/terra/src/doors/. Runs headed under xvfb: headless Chromium's
 // SwiftShader loses the device at the globe's ground pass (Nov 22, 2026). Software rendering: slow, and a
@@ -22,19 +25,23 @@ function ids() {
 }
 
 (async () => {
-  const [url, dir, ...given] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const webgl = argv.includes('--webgl');
+  const [url, dir, ...given] = argv.filter(a => a !== '--webgl');
   if (!url || !dir) { console.error('usage: web_toys_check.cjs <url> <out-dir> [toy id ...]'); process.exit(2); }
   fs.mkdirSync(dir, { recursive: true });
   const b = await chromium.launch({ args: FLAGS, headless: false });
   let failed = 0;
   for (const id of given.length ? given : ids()) {
     const p = await b.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 1 });
+    if (webgl) await p.addInitScript(() => { if (navigator.gpu) navigator.gpu.requestAdapter = async () => null; });
     const bad = new Set();
     let shader = false; // (or a page that never started)
     p.on('pageerror', e => bad.add('pageerror: ' + String(e).split('\n')[0]));
     p.on('console', m => {
       const t = m.text();
-      if (/WGSL|Invalid|validation|panicked|lost/i.test(t) && !/previous error/.test(t)) {
+      const gpu = /toy: gpu: /.test(t) && !/max buffer|no WebGPU/.test(t); // (a GPU error the device logged)
+      if ((gpu || /WGSL|Invalid|validation|panicked|lost/i.test(t)) && !/previous error/.test(t)) {
         bad.add(t.split('\n').slice(0, 2).join(' | ').slice(0, 240));
         if (/WGSL|validation/i.test(t)) shader = true;
       }
